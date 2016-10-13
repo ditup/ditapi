@@ -1,3 +1,6 @@
+# Secret
+config/secret
+
 # Vim stuff
 *.swp
 

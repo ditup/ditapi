@@ -1,9 +1,22 @@
+/*
 'use strict';
 
 var frisby = require('frisby');
 
-frisby.create('testing the test')
-  .get('http://localhost:4000')
-  .expectStatus(404)
-  .expectHeaderContains('content-type', 'application/vnd.api+json')
+frisby.create('create user')
+  .addHeader('Content-Type', 'application/vnd.api+json')
+  .post('http://localhost:3000/api/users', {
+    data: {
+      type: 'users',
+      attributes: {
+        username: 'test',
+        password: 'asdfasdf',
+        email: 'test@example.com'
+      }
+    }
+  }, {json: true})
+  .expectStatus(201)
+  .expectHeader('Location', 'http://localhost:3000/api/users/test')
+  .expectHeader('content-type', 'application/vnd.api+json')
   .toss();
+*/
