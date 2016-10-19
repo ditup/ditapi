@@ -1,20 +1,28 @@
-var express = require('express');
-var path = require('path');
-var bodyParser = require('body-parser');
-var expressValidator = require('express-validator');
+var express = require('express'),
+    bodyParser = require('body-parser'),
+    expressValidator = require('express-validator');
 
 var users = require('./routes/users');
+var models = require('./models');
+var config = require('./config'),
+    customValidators = require('./controllers/validators/custom');
+
+models.connect(config.database);
 
 // middleware which will deserialize JSON API requests
-var serializerMiddleware = require('./serializers').middleware;
+var deserializeMiddleware = require('./serializers').middleware;
 
 var app = express();
 
+app.set('env', process.env.NODE_ENV || 'development');
+
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
-app.use(expressValidator());
+app.use(expressValidator({
+  customValidators: customValidators
+}));
 
 // here we deserialize JSON API requests
-app.use(serializerMiddleware);
+app.post('*', deserializeMiddleware);
 
 // we set Content-Type header of all requests to JSON API
 app.use(function (req, res, next) {
@@ -36,7 +44,7 @@ app.use(function(req, res, next) {
 
 // development error handler
 // will print stacktrace
-if (app.get('env') === 'development') {
+if (app.get('env') === 'development' || app.get('env') === 'test') {
   app.use(function(err, req, res, next) {
     console.error(err);
     res.status(err.status || 500).json({

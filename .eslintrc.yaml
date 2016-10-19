@@ -1,0 +1,12 @@
+---
+  parserOptions:
+    ecmaVersion: 6
+  env:
+    node: true
+    mocha: true
+  rules:
+    quotes: [2, 'single']
+    semi: [2, 'always']
+    no-fallthrough: 2
+    no-redeclare: 2
+    no-self-assign: 2

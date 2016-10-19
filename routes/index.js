@@ -9,7 +9,7 @@ passport.use(new OAuth2Strategy(
     tokenURL: 'https://github.com/login/oauth/access_token',
     clientID: '4a553962719e75a0b4b9',
     clientSecret: '8be94d446a0cac4b827eb424677b62f94b7ec099',
-    callbackURL: "http://localhost:3000/login"
+    callbackURL: 'http://localhost:3000/login'
   },
   function(accessToken, refreshToken, profile, cb) {
     console.log(accessToken, refreshToken, profile);

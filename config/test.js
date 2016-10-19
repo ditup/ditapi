@@ -8,5 +8,9 @@ module.exports = {
     username: 'ditup-dev',
     password: ''
   },
-  host: {}
+  mailer: {
+    host: '0.0.0.0',
+    port: 1025,
+    ignoreTLS: true
+  }
 };
