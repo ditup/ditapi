@@ -2,15 +2,20 @@
 
 let co = require('co');
 
+var rules = {
+  username: {
+    notEmpty: true,
+    matches: {
+      options: [/^(?=.{2,32}$)[a-z0-9]+([_\-\.][a-z0-9]+)*$/]
+    },
+    errorMessage: 'Invalid Username (only a-z0-9.-_)' // Error message for the parameter
+  }
+};
+
+
 exports.postUsers = function (req, res, next) {
   req.checkBody({
-    username: {
-      notEmpty: true,
-      matches: {
-        options: [/^(?=.{2,32}$)[a-z0-9]+([_\-\.][a-z0-9]+)*$/]
-      },
-      errorMessage: 'Invalid Username (only a-z0-9.-_)' // Error message for the parameter
-    },
+    username: rules.username,
     email: {
       notEmpty: true,
       isEmail: true,
@@ -39,4 +44,23 @@ exports.postUsers = function (req, res, next) {
     console.log(errors);
     return res.status(409).json({ errors: errors.map((e) => { return { meta: e }; }) });
   });
+};
+
+exports.getUser = function (req, res, next) {
+  req.checkParams({
+    username: rules.username
+  });
+
+  var errors = req.validationErrors();
+
+  var errorOutput = {errors: []};
+
+  if (errors) {
+    for(let e of errors) {
+      errorOutput.errors.push({meta: e});
+    }
+    return res.status(400).json(errorOutput);
+  }
+
+  return next();
 };

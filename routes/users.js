@@ -9,7 +9,7 @@ router.route('/')
   .post(validators.postUsers, userController.postUsers);
 
 router.route('/:username')
-  .get(userController.getUser);
+  .get(validators.getUser, userController.getUser);
 
 router.route('/:username/account/email/verify/:code')
   .get(userController.verifyEmail); // TODO validate the username & code

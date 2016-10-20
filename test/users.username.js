@@ -166,10 +166,42 @@ describe('/users/username', function () {
       });
     });
     context('[user doesn\'t exist]', function () {
-      it('should show 404');
+      it('should show 404', function () {
+        return co(function * () {
+          let response = yield new Promise(function (resolve, reject) {
+            agent
+              .get(`/users/${nonexistentUser.username}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .set('Authorization', 'Basic '+
+                new Buffer(`${loggedUser.username}:${loggedUser.password}`)
+                  .toString('base64'))
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .end(function (err, res) {
+                if (err) return reject(err);
+                return resolve(res);
+              });
+          });
+        });
+      });
     });
+
     context('[username is invalid]', function () {
-      it('should show 400');
+      it('should show 400', function () {
+        return co(function * () {
+          let response = yield new Promise(function (resolve, reject) {
+            agent
+              .get(`/users/this--is-an-invalid--username`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .end(function (err, res) {
+                if (err) return reject(err);
+                return resolve(res);
+              });
+          });
+        });
+      });
     });
   });
 

@@ -60,8 +60,6 @@ describe('/users/:username/account/email/verify/:code', function () {
             }
         */
     });
-
-  
   });
 
   it('[wrong code] should error');
