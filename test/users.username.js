@@ -30,7 +30,7 @@ let dbData,
 
 describe('/users/username', function () {
   describe('GET', function () {
-    beforeEach(function (done) {
+    beforeEach(function () {
       return co(function * () {
         let data = {
           users: 3, // how many users to make
@@ -42,19 +42,17 @@ describe('/users/username', function () {
         existentUser = dbData.users[0];
         loggedUser = dbData.users[1];
         unverifiedUser = dbData.users[2];
-        return done();
       });
 
     });
 
-    afterEach(function (done) {
+    afterEach(function () {
       return co(function * () {
         yield dbHandle.clear();
-        return done();
       });
     });
     context('[user exists]', function () {
-      it('[logged] should read user`s profile', function (done) {
+      it('[logged] should read user`s profile', function () {
         return co(function * () {
           let response = yield new Promise(function (resolve, reject) {
             agent
@@ -80,12 +78,10 @@ describe('/users/username', function () {
           fields.should.have.property('username', existentUser.username);
           fields.should.have.property('givenName');
           // TODO givenName, familyName, birthDate, profile, ...
-          return done();
-        })
-        .catch(done);
+        });
       });
 
-      it('[not logged] should read simplified profile', function (done) {
+      it('[not logged] should read simplified profile', function () {
         return co(function * () {
           let response = yield new Promise(function (resolve, reject) {
             agent
@@ -108,12 +104,10 @@ describe('/users/username', function () {
           let fields = user.data.attributes;
           fields.should.have.property('username', existentUser.username);
           fields.should.not.have.property('givenName');
-          return done();
-        })
-        .catch(done);
+        });
       });
 
-      it('[logged, not verified] should read simplified profile', function (done) {
+      it('[logged, not verified] should read simplified profile', function () {
         return co(function * () {
           let response = yield new Promise(function (resolve, reject) {
             agent
@@ -139,12 +133,10 @@ describe('/users/username', function () {
           let fields = user.data.attributes;
           fields.should.have.property('username', existentUser.username);
           fields.should.not.have.property('givenName');
-          return done();
-        })
-        .catch(done);
+        });
       });
 
-      it('[logged, unverified] should read her own profile full', function (done) {
+      it('[logged, unverified] should read her own profile full', function () {
         return co(function * () {
           let response = yield new Promise(function (resolve, reject) {
             agent
@@ -170,9 +162,7 @@ describe('/users/username', function () {
           let fields = user.data.attributes;
           fields.should.have.property('username', unverifiedUser.username);
           fields.should.have.property('givenName');
-          return done();
-        })
-        .catch(done);
+        });
       });
     });
     context('[user doesn\'t exist]', function () {

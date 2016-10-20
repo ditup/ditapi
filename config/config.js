@@ -25,6 +25,6 @@ switch (process.env.NODE_ENV) {
 // fill the missing default values
 
 
-config.database.password = secret.database.password;
+config.database.password = _.get(secret, 'database.password');
 
 module.exports = config;

@@ -16,15 +16,14 @@ var agent = supertest.agent(app);
 
 describe('/users/:username/account/email/verify/:code', function () {
 
-  afterEach(function (done) {
+  afterEach(function () {
     return co(function * () {
       yield dbHandle.clear();
-      return done();
-    }).catch(done);
+    });
   });
 
-  it('[correct code] should make the user\'s email verified', function (done) {
-    co(function * () {
+  it('[correct code] should make the user\'s email verified', function () {
+    return co(function * () {
       let out = yield models.user.create({
         username: 'test',
         password: 'asdfasdf',
@@ -60,9 +59,7 @@ describe('/users/:username/account/email/verify/:code', function () {
               return done(e);
             }
         */
-      done();
-    })
-    .catch(done);
+    });
 
   
   });

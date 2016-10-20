@@ -16,6 +16,7 @@ var app = require(path.resolve('./app')),
     serializers = require(path.resolve('./serializers')),
     models = require(path.resolve('./models')),
     config = require(path.resolve('./config/config')),
+    dbHandle = require(path.resolve('./test/handleDatabase')),
     mailer = require(path.resolve('./services/mailer'));
 
 var deserialize = serializers.deserialize;
@@ -50,10 +51,9 @@ describe('/users', function () {
       return done();
     });
   });
-  afterEach(function (done) {
-    models.user.db.query('FOR u IN users REMOVE u IN users').then(function () {
-      done();
-    });
+
+  afterEach(function () {
+    return dbHandle.clear();
   });
 
   describe('POST', function () {
@@ -119,7 +119,7 @@ describe('/users', function () {
         });
     });
 
-    it('[good data] should send a verification email', function (done) {
+    it('[good data] should send a verification email', function () {
       return co(function * () {
         var user = {
           username: 'test',
@@ -142,12 +142,13 @@ describe('/users', function () {
             });
         });
 
-        mailEmitter.once('mail', function (email) {
-          console.log(email.from, email.to, email.text);
-          return done();
+        yield new Promise(function (resolve, reject) {
+          mailEmitter.once('mail', function (email) {
+            console.log(email.from, email.to, email.text);
+            return resolve();
+          });
         });
-      })
-      .catch(done);
+      });
     });
 
     it('[bad username] should respond with error', function (done) {
@@ -236,7 +237,7 @@ describe('/users', function () {
         });
     });
 
-    it('[existent email] should respond with error', function (done) {
+    it('[existent email] should respond with error', function () {
       return co(function * () {
         var user = {
           username: 'test',
@@ -286,9 +287,7 @@ describe('/users', function () {
 
         // testing on response body
         user2Response.body.should.have.property('errors');
-
-        return done();
-      }).catch(done);
+      });
     });
   });
 
