@@ -22,6 +22,11 @@ module.exports = function (user) {
           code: code,
           codeExpire: Date.now() + 2 * 3600 * 1000 // in 2 hours
         }
+      },
+      profile: {
+        givenName: '',
+        familyName: '',
+        description: ''
       }
     };
   });

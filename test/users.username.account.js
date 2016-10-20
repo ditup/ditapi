@@ -8,14 +8,21 @@ let path = require('path'),
     co = require('co');
 
 let app = require(path.resolve('./app')),
-    models = require(path.resolve('./models'));
+    models = require(path.resolve('./models')),
+    dbHandle = require(path.resolve('./test/handleDatabase'));
+
 
 var agent = supertest.agent(app);
 
 describe('/users/:username/account/email/verify/:code', function () {
-  afterEach(function () {
-    models.user.db.truncate();
+
+  afterEach(function (done) {
+    return co(function * () {
+      yield dbHandle.clear();
+      return done();
+    }).catch(done);
   });
+
   it('[correct code] should make the user\'s email verified', function (done) {
     co(function * () {
       let out = yield models.user.create({

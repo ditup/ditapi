@@ -5,6 +5,7 @@ var path = require('path'),
     config = require(path.resolve('./config/config')),
     serialize = require(path.resolve('./serializers')).serialize,
     models = require(path.resolve('./models')),
+    _ = require('lodash'),
     mailer = require(path.resolve('./services/mailer'));
 
 exports.postUsers = function (req, res, next) {
@@ -39,14 +40,31 @@ exports.postUsers = function (req, res, next) {
 
 exports.getUser = function (req, res, next) {
   return co(function * () {
+    let auth = _.get(req, 'body.user', { logged: false });
+
     let username = req.params.username;
     let user = yield models.user.read(username);
 
     if (user) {
-      console.log(user);
-      return res.status(200).json({});
+      // picking values to output from user and user.profile
+      let filteredUser = _.pick(user, ['username']);
+
+      // profile detail is for logged users only (or from loggedUnverified self)
+      let isLogged = auth.logged === true;
+      let isLoggedUnverifiedSelf = !auth.logged &&
+        auth.loggedUnverified === true && auth.username === username;
+
+      if (isLogged || isLoggedUnverifiedSelf) {
+        _.assign(filteredUser, _.pick(user.profile, ['givenName', 'familyName']));
+      }
+
+      filteredUser.id = filteredUser.username;
+
+      let serializedUser = serialize.user(filteredUser);
+
+      return res.status(200).json(serializedUser);
     } else {
-      next();
+      return next();
     }
   })
   .catch(next);

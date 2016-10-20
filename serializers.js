@@ -15,6 +15,7 @@ var newUserSerializer = new Serializer('users', {
 
 var userSerializer = new Serializer('users', {
   attributes: ['givenName', 'familyName', 'username', 'description'],
+  keyForAttribute: 'camelCase',
   topLevelLinks: {
     self: (data) => `${config.url.all}/users/${data.id}`
   }

@@ -1,6 +1,7 @@
 'use strict';
 
 var co = require('co'),
+    _ = require('lodash'),
     path = require('path');
 
 var Model = require(path.resolve('./models/model')),
@@ -52,6 +53,52 @@ class User extends Model {
     });
   }
 
+  // authenticate user provided username password combination
+  static authenticate(username, password) {
+    // get information from database
+    return co.call(this, function * () {
+      let query = `
+        FOR u IN users FILTER u.username == @username
+          RETURN {
+            username: u.username,
+            password: u.password,
+            email: u.email,
+            profile: u.profile
+          }`;
+      let params = { username: username };
+      let output = yield (yield this.db.query(query, params)).all();
+
+      // default not authenticated values
+      let credentialsMatch = false,
+          isVerified = false,
+          profile;
+
+      // change default values when authenticated
+      switch (output.length) {
+        case 0:
+          break;
+        case 1:
+          credentialsMatch = yield account.compare(password, output[0].password);
+          isVerified = Boolean(output[0].email);
+          profile = _.pick(output[0].profile, ['givenName', 'familyName']);
+          break;
+        default:
+          throw new Error('Database Error');
+      }
+
+      if (credentialsMatch) profile.username = username;
+
+      let user = {
+        authenticated: credentialsMatch,
+        verified: Boolean(isVerified && credentialsMatch)
+      };
+
+      _.assign(user, profile);
+
+      return user;
+    });
+  }
+
   static emailExists(email) {
     return co.call(this, function * () {
       let query = `
@@ -98,8 +145,6 @@ class User extends Model {
       let isCodeExpired = Date.now() > info.codeExpire;
       if (isCodeExpired) throw new Error('Code Is Expired');
 
-      console.log(code, info.code);
-      
       let codeMatches = yield account.compare(code, info.code);
 
       if (codeMatches !== true) throw new Error('Code Is Not Correct');

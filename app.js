@@ -1,10 +1,12 @@
 var express = require('express'),
     bodyParser = require('body-parser'),
+    passport = require('passport'),
     expressValidator = require('express-validator');
 
-var users = require('./routes/users');
-var models = require('./models');
-var config = require('./config'),
+var users = require('./routes/users'),
+    models = require('./models'),
+    config = require('./config'),
+    authenticate = require('./controllers/authenticate'),
     customValidators = require('./controllers/validators/custom');
 
 models.connect(config.database);
@@ -17,6 +19,11 @@ var app = express();
 app.set('env', process.env.NODE_ENV || 'development');
 
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
+
+// authentication
+app.use(passport.initialize());
+app.use(authenticate);
+
 app.use(expressValidator({
   customValidators: customValidators
 }));
