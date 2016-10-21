@@ -25,3 +25,14 @@ exports.isEmailAvailable = function (email) {
     }
   });
 };
+
+exports.isTagnameAvailable = function (tagname) {
+  return co(function * () {
+    let exists = yield models.tag.exists(tagname);
+    if (exists === false) {
+      return;
+    } else {
+      throw new Error();
+    }
+  });
+};

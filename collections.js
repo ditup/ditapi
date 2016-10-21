@@ -22,7 +22,44 @@ module.exports = {
         sparse: true
       }
     ]
-  }
+  },
+
+  tags: {
+    type: 'document',
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['tagname'],
+        unique: true
+      }
+    ]
+  },
+
+  userTag: {
+    type: 'edge',
+    from: ['users'],
+    to: ['tags'],
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['_from', '_to'],
+        unique: true
+      }
+    ]
+  },
+
+  tagCreator: {
+    type: 'edge',
+    from: ['tags'],
+    to: ['users'],
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['_from'],  // if multiple creators possible
+        unique: true
+      }
+    ]
+  },
 };
 
 /*  

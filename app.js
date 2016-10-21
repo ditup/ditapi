@@ -1,5 +1,8 @@
+'use strict';
+
 var express = require('express'),
     bodyParser = require('body-parser'),
+    _ = require('lodash'),
     passport = require('passport'),
     expressValidator = require('express-validator');
 
@@ -11,14 +14,21 @@ var users = require('./routes/users'),
 
 models.connect(config.database);
 
-// middleware which will deserialize JSON API requests
-var deserializeMiddleware = require('./serializers').middleware;
-
 var app = express();
 
 app.set('env', process.env.NODE_ENV || 'development');
 
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
+
+// here we deserialize JSON API requests
+app.post('*', function (req, res, next) {
+  if (!req.body.data) {
+    let e = new Error();
+    e.status = 400;
+    throw e;
+  }
+  return next();
+}, require('./serializers').middleware);
 
 // authentication
 app.use(passport.initialize());
@@ -28,17 +38,15 @@ app.use(expressValidator({
   customValidators: customValidators
 }));
 
-// here we deserialize JSON API requests
-app.post('*', deserializeMiddleware);
-
 // we set Content-Type header of all requests to JSON API
 app.use(function (req, res, next) {
   res.contentType('application/vnd.api+json');
   return next();
 });
 
-// users router
+// actual routers
 app.use('/users', users);
+app.use('/tags', require('./routes/tags'));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -53,7 +61,9 @@ app.use(function(req, res, next) {
 // will print stacktrace
 if (app.get('env') === 'development' || app.get('env') === 'test') {
   app.use(function(err, req, res, next) {
-    console.error(err);
+    if (!err.status) {
+      console.error(err);
+    }
     res.status(err.status || 500).json({
       message: err.message,
       error: err

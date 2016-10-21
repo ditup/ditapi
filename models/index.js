@@ -2,8 +2,10 @@
 
 let arangojs = require('arangojs');
 
-let model = require('./model');
-let user = require('./user');
+let model = require('./model'),
+    tag = require('./tag'),
+    user = require('./user');
+
 
 let models = {
   connect: function (params) {
@@ -16,6 +18,7 @@ let models = {
 };
 
 models.user = user;
+models.tag = tag;
 models.model = model;
 
 

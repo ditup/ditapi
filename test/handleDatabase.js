@@ -10,7 +10,8 @@ exports.fill = function (data) {
   return co(function * () {
     let def = {
       users: 0,
-      verifiedUsers: []
+      verifiedUsers: [],
+      tags: 0
     };
 
     data = _.defaults(data, def);
@@ -21,6 +22,10 @@ exports.fill = function (data) {
       yield models.user.create(_.pick(user, ['username', 'email', 'password']));
       if (user.verified === true)
         yield models.user.finalVerifyEmail(user.username);
+    }
+
+    for(let tag of processed.tags) {
+      yield models.tag.create(_.pick(tag, ['tagname', 'description', 'creator']));
     }
 
     return processed;
@@ -41,6 +46,16 @@ function processData(data) {
       email: `user${n}@example.com`
     };
     if(data.verifiedUsers.indexOf(n) > -1) resp.verified = true;
+    return resp;
+  });
+
+  output.tags = _.map(_.range(data.tags), function (n) {
+    let pickedUser = n % data.users;
+    let resp = {
+      tagname: `tag${n}`,
+      description: `description of tag${n}`,
+      creator: output.users[pickedUser].username
+    };
     return resp;
   })
 

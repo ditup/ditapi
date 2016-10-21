@@ -28,7 +28,7 @@ let dbData,
     };
 
 
-describe('/users/username', function () {
+describe('/users/:username', function () {
   describe('GET', function () {
     beforeEach(function () {
       return co(function * () {
@@ -205,7 +205,14 @@ describe('/users/username', function () {
     });
   });
 
-  describe('PATCH', function () {});
-  describe('DELETE', function () {});
-  describe('HEAD', function () {});
+  describe('PATCH', function () {
+    it('should update user profile');
+  });
+  describe('DELETE', function () {
+    it('should delete user and all her graph connections');
+    it('should delete user\'s profile picture');
+  });
+  describe('HEAD', function () {
+    it('should return header of GET request');
+  });
 });

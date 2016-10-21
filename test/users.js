@@ -144,7 +144,9 @@ describe('/users', function () {
 
         yield new Promise(function (resolve, reject) {
           mailEmitter.once('mail', function (email) {
-            console.log(email.from, email.to, email.text);
+            email.should.have.property('from');
+            email.should.have.property('to');
+            email.should.have.property('text');
             return resolve();
           });
         });
@@ -292,6 +294,6 @@ describe('/users', function () {
   });
 
   describe('GET', function () {
-    it('should show users');
+    it('should get lists of users (specified by query)');
   });
 });
