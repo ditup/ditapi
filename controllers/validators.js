@@ -104,3 +104,19 @@ exports.postTags = function (req, res, next) {
     return res.status(409).json({ errors: errors.map((e) => { return { meta: e }; }) });
   });
 };
+
+exports.getTag = function (req, res, next) {
+  req.checkParams({ tagname: rules.tag.tagname });
+
+  var errors = req.validationErrors();
+
+  var errorOutput = {errors: []};
+  if (errors) {
+    for(let e of errors) {
+      errorOutput.errors.push({meta: e});
+    }
+
+    return res.status(400).json(errorOutput);
+  }
+  next();
+};

@@ -50,14 +50,13 @@ describe('/tags', function () {
 
     let serializedInvalidTagname = serialize.newTag(invalidTagname);
 
-
     // put pre-data into database
     beforeEach(function () {
       return co(function* () {
         let data = {
           users: 3, // how many users to make
           verifiedUsers: [0, 1], // which  users to make verified
-          tags: 7
+          tags: 1
         }
         // create data in database
         dbData = yield dbHandle.fill(data);
@@ -91,6 +90,8 @@ describe('/tags', function () {
           (typeof tag).should.equal('object');
           tag.should.have.property('tagname', newTag.tagname);
           tag.should.have.property('description', newTag.description);
+          tag.should.have.property('creator');
+          tag.creator.should.have.property('username', loggedUser.username);
         });
       });
 
@@ -184,12 +185,111 @@ describe('/tags', function () {
 });
 
 describe('/tags/:tagname', function () {
+  // put pre-data into database
+  beforeEach(function () {
+    return co(function* () {
+      let data = {
+        users: 3, // how many users to make
+        verifiedUsers: [0, 1], // which  users to make verified
+        tags: 7
+      }
+      // create data in database
+      dbData = yield dbHandle.fill(data);
+
+      loggedUser = dbData.users[0];
+    });
+  });
+  // clear database after every test
+  afterEach(function () {
+    return co(function* () {
+      yield dbHandle.clear();
+    });
+  });
+
   describe('GET', function () {
-    it('should show the tag');
+    it('should show the tag', function () {
+      let existentTag = dbData.tags[0];
+      return co(function* () {
+        let response = yield new Promise(function (resolve, reject) {
+          agent
+            .get(`/tags/${existentTag.tagname}`)
+            .set('Content-Type', 'application/vnd.api+json')
+            .set('Authorization', 'Basic '+
+              new Buffer(`${loggedUser.username}:${loggedUser.password}`)
+                .toString('base64'))
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .end(function (err, res) {
+              if (err) return reject(err);
+              return resolve(res);
+            });
+        });
+
+        let tag = response.body;
+
+        tag.should.have.property('data');
+        tag.data.should.have.property('id', existentTag.tagname);
+        tag.data.should.have.property('attributes');
+
+        let attrs = tag.data.attributes;
+        attrs.should.have.property('tagname', existentTag.tagname);
+        attrs.should.have.property('description', existentTag.description);
+
+        // TODO figure out JSON API creator & contributors...
+      });
+    });
+
+    it('show creator'); // as a json api relation
+
+    it('[nonexistent tagname] should error 404', function () {
+      let existentTag = dbData.tags[0];
+      return co(function* () {
+        let response = yield new Promise(function (resolve, reject) {
+          agent
+            .get(`/tags/nonexistent-tag`)
+            .set('Content-Type', 'application/vnd.api+json')
+            .set('Authorization', 'Basic '+
+              new Buffer(`${loggedUser.username}:${loggedUser.password}`)
+                .toString('base64'))
+            .expect(404)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .end(function (err, res) {
+              if (err) return reject(err);
+              return resolve(res);
+            });
+        });
+
+        response.body.should.have.property('errors');
+      });
+    });
+
+    it('[invalid tagname] should error 400', function () {
+      let existentTag = dbData.tags[0];
+      return co(function* () {
+        let response = yield new Promise(function (resolve, reject) {
+          agent
+            .get(`/tags/invalid_tag`)
+            .set('Content-Type', 'application/vnd.api+json')
+            .set('Authorization', 'Basic '+
+              new Buffer(`${loggedUser.username}:${loggedUser.password}`)
+                .toString('base64'))
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .end(function (err, res) {
+              if (err) return reject(err);
+              return resolve(res);
+            });
+        });
+
+        response.body.should.have.property('errors');
+      });
+    });
   });
 
   describe('PATCH', function () {
-    it('should update the tag (description, not tagname)');
+    it('update the tag (description, not tagname)');
+    it('keep history (vcdiff, zlib)');
+    // http://ericsink.com/entries/time_space_tradeoffs.html
   });
 
   describe('DELETE', function () {

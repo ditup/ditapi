@@ -1,4 +1,5 @@
 let path = require('path'),
+    _ = require('lodash'),
     co = require('co');
 
 let Model = require(path.resolve('./models/model')),
@@ -14,8 +15,8 @@ class Tag extends Model {
       yield this.db.query(query, params);
 
       let queryCreator = `
-        FOR u IN users FILTER u.username = @creator
-          FOR t IN tags FILTER t.tagname = @tagname
+        FOR u IN users FILTER u.username == @creator
+          FOR t IN tags FILTER t.tagname == @tagname
             INSERT {
               _from: t._id,
               _to: u._id,
@@ -27,16 +28,28 @@ class Tag extends Model {
         tagname,
         created: Date.now()
       };
+
+      yield this.db.query(queryCreator, paramsCreator);
     });
   }
 
   static read(tagname) {
     return co.call(this, function* () {
-      let query = `FOR t IN tags FILTER t.tagname == @tagname RETURN t`;
+      let query = `
+        FOR t IN tags FILTER t.tagname == @tagname
+          FOR v, e, p
+            IN 0..1
+            OUTBOUND t
+            OUTBOUND tagCreator
+            RETURN KEEP(v, 'username', 'tagname', 'description', 'created')`;
       let params = { tagname: tagname };
       let out = yield (yield this.db.query(query, params)).all();
 
-      return out[0];
+      let tag = _.pick(out[0], 'tagname', 'description', 'created');
+      let creator = _.pick(out[1], 'username');
+      _.assign(tag, { creator });
+
+      return (out[0]) ? tag : null;
     });
   }
 

@@ -11,4 +11,7 @@ let authorize = require(path.resolve('./controllers/authorize'));
 router.route('/')
   .post(authorize.onlyLogged, validators.postTags, tagController.postTags);
 
+router.route('/:tagname')
+  .get(validators.getTag, tagController.getTag);
+
 module.exports = router;

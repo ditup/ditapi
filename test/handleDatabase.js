@@ -25,7 +25,9 @@ exports.fill = function (data) {
     }
 
     for(let tag of processed.tags) {
-      yield models.tag.create(_.pick(tag, ['tagname', 'description', 'creator']));
+      let tagData = _.pick(tag, ['tagname', 'description']);
+      tagData.creator = processed.users[tag.creator];
+      yield models.tag.create(tagData);
     }
 
     return processed;
@@ -54,7 +56,7 @@ function processData(data) {
     let resp = {
       tagname: `tag${n}`,
       description: `description of tag${n}`,
-      creator: output.users[pickedUser].username
+      creator: pickedUser
     };
     return resp;
   })

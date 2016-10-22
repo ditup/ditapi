@@ -1,0 +1,32 @@
+language: node_js
+node_js:
+  - 6
+env:
+  - NODE_ENV=test CXX="g++-4.8" CC="gcc-4.8"
+services:
+sudo: required
+dist: trusty
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - g++-4.8
+    - gcc-4.8
+    - clang
+before_install:
+  - ls -la /var/cache/debconf
+  - sudo chmod -R 777 /var/cache/debconf
+  - sudo echo arangodb3 arangodb3/password password somepwd | debconf-set-selections
+  - sudo echo arangodb3 arangodb3/password_again password somepwd | debconf-set-selections
+  - wget https://www.arangodb.com/repositories/travisCI/ArangoDB-3.0.10.tar.gz -O /tmp/arangodb.tar.gz
+  - wget https://www.arangodb.com/repositories/travisCI/setup_arangodb_3.0.10.sh
+# - gem update --system
+before_script:
+  - tar -xf /tmp/arangodb.tar.gz
+  - export PATH=$PATH:$PWD/arangodb-3.0.10/bin/
+  - sudo chmod 755 setup_arangodb_3.0.10.sh
+  - ./setup_arangodb_3.0.10.sh
+  - cp ./config/secret/sample.js ./config/secret/test.js
+  - ./bin/init-db-standalone
+after_script:

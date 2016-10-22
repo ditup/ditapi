@@ -29,3 +29,25 @@ exports.postTags = function (req, res, next) {
   })
   .catch(next);
 };
+
+// controller for GET /tags/:tagname
+exports.getTag = function (req, res, next) {
+  return co(function* () {
+    let tagname = req.params.tagname;
+
+    let tag = yield models.tag.read(tagname);
+
+    // testing whether the tag was found, sending to 404
+    // TODO not just next(), but some end?
+    if (!tag) return next();
+
+
+    _.assign(tag, { id: tagname });
+    var selfLink = `${config.url.all}/tags/${tagname}`;
+    
+    return res.status(200)
+      .set('Location', selfLink)
+      .json(serialize.tag(tag));
+  })
+  .catch(next);
+};

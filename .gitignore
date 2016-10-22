@@ -1,5 +1,6 @@
 # Secret
-config/secret
+config/secret/*
+!config/secret/sample.js
 
 # Vim stuff
 *.swp

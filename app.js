@@ -65,8 +65,12 @@ if (app.get('env') === 'development' || app.get('env') === 'test') {
       console.error(err);
     }
     res.status(err.status || 500).json({
-      message: err.message,
-      error: err
+      errors: [
+        {
+          message: err.message,
+          error: err
+        }
+      ]
     });
   });
 }
@@ -76,8 +80,12 @@ if (app.get('env') === 'development' || app.get('env') === 'test') {
 app.use(function(err, req, res, next) {
   res.status(err.status || 500)
     .json({
-      message: err.message,
-      error: {}
+      errors: [
+        {
+          message: err.message,
+          error: err
+        }
+      ]
     });
 });
 
