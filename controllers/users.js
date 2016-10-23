@@ -9,7 +9,7 @@ var path = require('path'),
     mailer = require(path.resolve('./services/mailer'));
 
 exports.postUsers = function (req, res, next) {
-  return co(function * () {
+  return co(function* () {
     let username = req.body.username;
     // validate users is done outside
     // save users
@@ -39,7 +39,7 @@ exports.postUsers = function (req, res, next) {
 };
 
 exports.getUser = function (req, res, next) {
-  return co(function * () {
+  return co(function* () {
     let auth = _.get(req, 'body.user', { logged: false });
 
     let username = req.params.username;
@@ -71,7 +71,7 @@ exports.getUser = function (req, res, next) {
 };
 
 exports.verifyEmail = function (req, res, next) {
-  return co(function * () {
+  return co(function* () {
     let username = req.params.username;
     let code = req.params.code;
 
@@ -83,7 +83,7 @@ exports.verifyEmail = function (req, res, next) {
 }
 
 exports.postUserTags = function (req, res, next) {
-  return co(function * () {
+  return co(function* () {
     // should be already validated
     let username = req.params.username;
     let tagname = req.body.tagname;
@@ -114,6 +114,44 @@ exports.postUserTags = function (req, res, next) {
     return res.status(201)
       .set('Location', selfLink)
       .json(resp);
+  })
+  .catch(next);
+};
+
+exports.getUserTags = function (req, res, next) {
+  return co(function* () {
+    // should be already validated
+    let username = req.params.username;
+
+    let userTags = yield models.user.readTags(username);
+
+    _.forEach(userTags, function (userTag) {
+      _.assign(userTag, { id: userTag.tag.tagname });
+    });
+
+    let serialized = serialize.userTags({ username, userTags });
+
+    return res.status(200)
+      .json(serialized);
+  })
+  .catch(next);
+};
+
+exports.getUserTag = function (req, res, next) {
+  return co(function* () {
+    // should be already validated
+    let { username, tagname } = req.params;
+
+    let userTag = yield models.userTag.read(username, tagname);
+
+    _.assign(userTag, { id: userTag.tag.tagname });
+
+    // respond
+    var selfLink = `${config.url.all}/users/${username}/tags/${tagname}`;
+    let serialized = serialize.userTag(userTag);
+
+    return res.status(200)
+      .json(serialized);
   })
   .catch(next);
 };

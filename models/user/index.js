@@ -168,6 +168,24 @@ class User extends Model {
       yield this.db.query(query, params);
     });
   }
+
+  static readTags(username) {
+    return co.call(this, function * () {
+      let query = `
+        FOR u IN users FILTER u.username == @username
+          FOR v, e IN 1
+            OUTBOUND u
+            userTag
+            LET ut = KEEP(e, 'story', 'created')
+            LET us = MERGE(KEEP(u, 'username'), u.profile)
+            LET tg = KEEP(v, 'tagname', 'description', 'created')
+            RETURN MERGE(ut, { user: us }, { tag: tg })`;
+      let params = { username: username };
+      let cursor = yield this.db.query(query, params);
+      let output = yield cursor.all();
+      return output;
+    });
+  }
 }
 
 module.exports = User;

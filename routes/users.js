@@ -15,7 +15,11 @@ router.route('/:username')
   .get(validators.getUser, userController.getUser);
 
 router.route('/:username/tags')
-  .post(authorize.onlyLoggedMe, validators.postUserTags, userController.postUserTags);
+  .post(authorize.onlyLoggedMe, validators.postUserTags, userController.postUserTags)
+  .get(userController.getUserTags);
+
+router.route('/:username/tags/:tagname')
+  .get(userController.getUserTag);
 
 router.route('/:username/account/email/verify/:code')
   .get(userController.verifyEmail); // TODO validate the username & code

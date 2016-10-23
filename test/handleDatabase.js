@@ -11,7 +11,8 @@ exports.fill = function (data) {
     let def = {
       users: 0,
       verifiedUsers: [],
-      tags: 0
+      tags: 0,
+      userTag: []
     };
 
     data = _.defaults(data, def);
@@ -31,8 +32,8 @@ exports.fill = function (data) {
     }
 
     for(let userTag of processed.userTag) {
-      let username = processed.users[userTag.user].username;
-      let tagname = processed.tags[userTag.tag].tagname;
+      let username = userTag.user.username;
+      let tagname = userTag.tag.tagname;
       let story = userTag.story || '';
       yield models.userTag.create({ username, tagname, story });
     }
@@ -70,10 +71,19 @@ function processData(data) {
   });
 
   output.userTag = _.map(data.userTag, function (vals) {
-    let [user, tag, story] = vals;
-    let resp = { user, tag, story: story || '' };
+    let [userno, tagno, story] = vals;
+    let resp = {
+      userno,
+      tagno,
+      get tag() {
+        return output.tags[tagno];
+      },
+      get user() {
+        return output.users[userno];
+      },
+      story: story || '' };
     
-    output.users[user].tags.push(tag);
+    output.users[userno].tags.push(tagno);
     return resp;
   });
 

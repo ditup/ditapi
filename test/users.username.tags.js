@@ -22,38 +22,84 @@ describe('Tags of user', function () {
       loggedUser,
       otherUser;
 
-  afterEach(function () {
-    return co(function* () {
-      yield dbHandle.clear();
+  function beforeEachPopulate(data) {
+    // put pre-data into database
+    beforeEach(function () {
+      return co(function* () {
+        // create data in database
+        dbData = yield dbHandle.fill(data);
+      });
     });
-  });
   
-  // put pre-data into database
-  beforeEach(function () {
-    return co(function* () {
-      let data = {
+    afterEach(function () {
+      return co(function* () {
+        yield dbHandle.clear();
+      });
+    });
+  }
+
+  describe('/users/:username/tags', function () {
+    describe('GET', function () {
+      let loggedUser, taggedUser;
+
+      beforeEachPopulate({
+        users: 3, // how many users to make
+        verifiedUsers: [0, 1], // which  users to make verified
+        tags: 8,
+        userTag: [
+          [1, 0, 'story'],
+          [1, 1, 'story'],
+          [1, 3, 'story'],
+          [1, 4, 'story'],
+          [1, 5, 'story'],
+        ]
+      });
+
+      beforeEach(function () {
+        loggedUser = dbData.users[0];
+        taggedUser = dbData.users[1];
+      });
+
+      it(`list of user's tags`, // (may include user's story about the tag)
+        function () {
+          return co(function* () {
+            let response = yield new Promise(function (resolve, reject) {
+              agent
+                .get(`/users/${taggedUser.username}/tags`)
+                .set('Content-Type', 'application/vnd.api+json')
+                .set('Authorization', 'Basic '+
+                  new Buffer(`${loggedUser.username}:${loggedUser.password}`)
+                    .toString('base64'))
+                .expect(200)
+                .expect('Content-Type', /^application\/vnd\.api\+json/)
+                .end(function (err, res) {
+                  if (err) return reject(err);
+                  return resolve(res);
+                });
+            });
+            
+            let userTags = response.body;
+            userTags.should.have.property('data');
+            userTags.data.length.should.equal(5);
+          });
+        });
+    });
+
+    describe('POST', function () {
+      beforeEachPopulate({
         users: 3, // how many users to make
         verifiedUsers: [0, 1], // which  users to make verified
         tags: 2,
         userTag: [
           [0, 1, 'story']
         ]
-      }
-      // create data in database
-      dbData = yield dbHandle.fill(data);
+      });
 
-      loggedUser = dbData.users[0];
-      otherUser = dbData.users[1];
-    });
-  });
+      beforeEach(function () {
+        loggedUser = dbData.users[0];
+        otherUser = dbData.users[1];
+      });
 
-
-  describe('/users/:username/tags', function () {
-    describe('GET', function () {
-      it(`list of user's tags (may include user's story about the tag)`);
-    });
-
-    describe('POST', function () {
       let newUserTag;
       beforeEach(function () {
         newUserTag = {
@@ -102,6 +148,9 @@ describe('Tags of user', function () {
 
             let userTagDb = yield models.userTag.read(loggedUser.username,
               newUserTag.tagname);
+            userTagDb.should.have.property('story');
+            userTagDb.should.have.property('user');
+            userTagDb.should.have.property('tag');
           });
         });
 
@@ -209,7 +258,63 @@ describe('Tags of user', function () {
 
   describe('/users/:username/tags/:tagname', function () {
     describe('GET', function () {
-      it(`show tag with user's relation/story to it`);
+      let loggedUser, taggedUser;
+
+      beforeEachPopulate({
+        users: 3, // how many users to make
+        verifiedUsers: [0, 1], // which  users to make verified
+        tags: 8,
+        userTag: [
+          [1, 0, 'story'],
+          [1, 1, 'story'],
+          [1, 3, 'a story of relationship of taggedUser to relation3'],
+          [1, 4, 'story'],
+          [1, 5, 'story'],
+        ]
+      });
+
+      beforeEach(function () {
+        loggedUser = dbData.users[0];
+        taggedUser = dbData.users[1];
+      });
+
+      it(`show tag with user's story to it`, function () {
+        let userTag = dbData.userTag[2];
+        return co(function* () {
+          let response = yield new Promise(function (resolve, reject) {
+            agent
+              .get(`/users/${userTag.user.username}/tags/${userTag.tag.tagname}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .set('Authorization', 'Basic '+
+                new Buffer(`${loggedUser.username}:${loggedUser.password}`)
+                  .toString('base64'))
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .end(function (err, res) {
+                if (err) return reject(err);
+                return resolve(res);
+              });
+          });
+
+          let respUserTag = response.body;
+          respUserTag.should.have.property('data');
+          respUserTag.should.have.property('links');
+          respUserTag.should.have.property('meta');
+
+          let data = respUserTag.data;
+          let links = respUserTag.links;
+          let meta = respUserTag.meta;
+
+          data.should.have.property('type', 'tags');
+          data.should.have.property('id', userTag.tag.tagname);
+
+          links.should.have.property('self', `${config.url.all}/users/${userTag.user.username}/relationships/tags/${userTag.tag.tagname}`);
+          links.should.have.property('related', `${config.url.all}/users/${userTag.user.username}/tags/${userTag.tag.tagname}`);
+
+          meta.should.have.property('story', userTag.story);
+          meta.should.have.property('created');
+        });
+      });
     });
 
     describe('PATCH', function () {

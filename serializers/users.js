@@ -1,8 +1,9 @@
 'use strict';
 
-var path = require('path');
-var Serializer = require('jsonapi-serializer').Serializer;
-var config = require(path.resolve('./config/config'));
+let path = require('path'),
+    _ = require('lodash');
+let Serializer = require('jsonapi-serializer').Serializer;
+let config = require(path.resolve('./config/config'));
 
 var newUserSerializer = new Serializer('users', {
   attributes: ['username', 'password', 'email']
@@ -43,5 +44,21 @@ var userTagSerializer = new Serializer('tags', {
   }
 });
 exports.userTag = function (data) {
-  return userTagSerializer.serialize(data);
+  let serialized = userTagSerializer.serialize(data);
+  let meta = _.pick(data, ['created', 'story']);
+  _.assign(serialized, { meta });
+  return serialized;
+};
+
+// serialize userTags
+var userTagsSerializer = new Serializer('tags', {});
+exports.userTags = function ({ username, userTags }) {
+  let serialized = userTagsSerializer.serialize(userTags);
+
+  serialized.links = {
+    self: `${config.url.all}/users/${username}/relationships/tags`,
+    related: `${config.url.all}/users/${username}/tags`
+  };
+
+  return serialized;
 };
