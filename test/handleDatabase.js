@@ -30,6 +30,13 @@ exports.fill = function (data) {
       yield models.tag.create(tagData);
     }
 
+    for(let userTag of processed.userTag) {
+      let username = processed.users[userTag.user].username;
+      let tagname = processed.tags[userTag.tag].tagname;
+      let story = userTag.story || '';
+      yield models.userTag.create({ username, tagname, story });
+    }
+
     return processed;
   });
 }
@@ -45,7 +52,8 @@ function processData(data) {
     let resp = {
       username: `user${n}`,
       password: 'asdfasdf',
-      email: `user${n}@example.com`
+      email: `user${n}@example.com`,
+      tags: []
     };
     if(data.verifiedUsers.indexOf(n) > -1) resp.verified = true;
     return resp;
@@ -59,7 +67,16 @@ function processData(data) {
       creator: pickedUser
     };
     return resp;
-  })
+  });
+
+  output.userTag = _.map(data.userTag, function (vals) {
+    let [user, tag, story] = vals;
+    let resp = { user, tag, story: story || '' };
+    
+    output.users[user].tags.push(tag);
+    return resp;
+  });
+
 
   return output;
 }

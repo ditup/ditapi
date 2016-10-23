@@ -120,3 +120,7 @@ exports.getTag = function (req, res, next) {
   }
   next();
 };
+
+exports.postUserTags = function (req, res, next) {
+  next();
+};

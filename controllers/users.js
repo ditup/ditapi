@@ -81,3 +81,39 @@ exports.verifyEmail = function (req, res, next) {
   })
   .catch(next);
 }
+
+exports.postUserTags = function (req, res, next) {
+  return co(function * () {
+    // should be already validated
+    let username = req.params.username;
+    let tagname = req.body.tagname;
+    let story = req.body.story;
+
+    let exists = yield models.userTag.exists(username, tagname);
+
+    if(exists !== false) {
+      let e = new Error('userTag already exists');
+      e.status = 409;
+      throw e;
+    }
+
+    let created = yield models.userTag.create({ username, tagname, story });
+    if (!created) {
+      return next(); // forwarding to 404 error
+    }
+
+    _.assign(created, { id: created.tag.tagname });
+
+    // respond
+    var selfLink = `${config.url.all}/users/${username}/tags/${tagname}`;
+    let resp = serialize.userTag(created);
+    let meta = _.pick(created, ['created', 'story']);
+    _.assign(resp, { meta: meta });
+
+
+    return res.status(201)
+      .set('Location', selfLink)
+      .json(resp);
+  })
+  .catch(next);
+};

@@ -4,7 +4,8 @@ let arangojs = require('arangojs');
 
 let model = require('./model'),
     tag = require('./tag'),
-    user = require('./user');
+    user = require('./user'),
+    userTag = require('./user-tag');
 
 
 let models = {
@@ -19,6 +20,7 @@ let models = {
 
 models.user = user;
 models.tag = tag;
+models.userTag = userTag;
 models.model = model;
 
 
