@@ -1,13 +1,7 @@
 'use strict';
 
 var co = require('co');
-module.exports = function (parameters) {
-  let db = parameters.db;
-  let dbUser = parameters.dbUser;
-  let dbPasswd = parameters.dbPasswd;
-  let dbName = parameters.dbName;
-  let collections = parameters.collections;
-
+module.exports = function ({ db, dbUser, dbPasswd, dbName, collections }) {
   return co(function *() {
     //dropping database if exist
     try {
@@ -16,6 +10,17 @@ module.exports = function (parameters) {
     catch (err) {
       console.log('creating new database');
     }
+
+    if (dbUser === 'root') throw new Error(`Don't use root. Change your config.`);
+    
+    let cursor = yield db.query('FOR u IN _users FILTER u.user == @username REMOVE u IN _users', { username: dbUser });
+
+    if (cursor.extra.stats.writesExecuted === 1) {
+      console.log(`recreating user ${dbUser}`);
+    } else {
+      console.log(`creating a new user ${dbUser}`);
+    }
+
     //(re)creating the database
     yield db.createDatabase(dbName, [{username: dbUser, passwd: dbPasswd}]);
     

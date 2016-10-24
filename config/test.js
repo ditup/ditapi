@@ -4,8 +4,8 @@ module.exports = {
   database: {
     host: '127.0.0.1',
     port: 8529,
-    database: 'ditup-dev',
-    username: 'ditup-dev',
+    database: 'ditup-test',
+    username: 'ditup-test',
     password: ''
   },
   mailer: {

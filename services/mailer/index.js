@@ -11,10 +11,11 @@ var config = require(path.resolve('./config'));
 var dataNotProvided = new Error('data not provided');
 
 exports.general = function ({ to: email, from: from, subject: subject, html: html, text: text }) {
+  let transport;
   return co(function * () {
     if(!email) throw dataNotProvided;
 
-    var transport = nodemailer.createTransport(smtpTransport(config.mailer));
+    transport = nodemailer.createTransport(smtpTransport(config.mailer));
 
     var emailOptions = {
       from: from ? `<${from}>` : 'info@ditup.org <info@ditup.org>',
