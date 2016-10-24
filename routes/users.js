@@ -19,7 +19,8 @@ router.route('/:username/tags')
   .get(userController.getUserTags);
 
 router.route('/:username/tags/:tagname')
-  .get(userController.getUserTag);
+  .get(userController.getUserTag)
+  .delete(authorize.onlyLoggedMe, userController.deleteUserTag);
 
 router.route('/:username/account/email/verify/:code')
   .get(userController.verifyEmail); // TODO validate the username & code

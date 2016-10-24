@@ -155,3 +155,18 @@ exports.getUserTag = function (req, res, next) {
   })
   .catch(next);
 };
+
+exports.deleteUserTag = function (req, res, next) {
+  return co(function* () {
+    // should be already validated
+    // and checked rights
+    let { username, tagname } = req.params;
+
+    let isSuccess = yield models.userTag.delete(username, tagname);
+
+    if (isSuccess !== true) return next(); // sending to 404
+
+    return res.status(204).end();
+  })
+  .catch(next);
+};

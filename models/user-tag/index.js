@@ -73,6 +73,33 @@ class UserTag extends Model {
       }
     });
   }
+
+  static delete(username, tagname) {
+    return co.call(this, function* () {
+      let query = `
+        FOR u IN users FILTER u.username == @username
+          FOR v, e IN 1
+            OUTBOUND u
+            userTag
+            FILTER v.tagname == @tagname
+            REMOVE e IN userTag
+            RETURN OLD`;
+      let params = { username, tagname };
+      let cursor = yield this.db.query(query, params);
+      let writes = cursor.extra.stats.writesExecuted;
+
+      switch (writes) {
+        case 0:
+          return false;
+          break;
+        case 1:
+          return true;
+          break;
+        default:
+          throw new Error('database corruption');
+      }
+    });
+  }
 }
 
 module.exports = UserTag;

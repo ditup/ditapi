@@ -269,7 +269,7 @@ describe('Tags of user', function () {
           [1, 1, 'story'],
           [1, 3, 'a story of relationship of taggedUser to relation3'],
           [1, 4, 'story'],
-          [1, 5, 'story'],
+          [1, 5, 'story']
         ]
       });
 
@@ -322,7 +322,96 @@ describe('Tags of user', function () {
     });
 
     describe('DELETE', function () {
-      it('delete tag from user');
+      let loggedUser, taggedUser;
+
+      beforeEachPopulate({
+        users: 3, // how many users to make
+        verifiedUsers: [0, 1], // which  users to make verified
+        tags: 8,
+        userTag: [
+          [1, 0, 'story'],
+          [1, 1, 'story'],
+          [0, 3, 'a story of relationship of taggedUser to relation3'],
+          [1, 4, 'story'],
+          [1, 5, 'story']
+        ]
+      });
+
+      beforeEach(function () {
+        loggedUser = dbData.users[0];
+        taggedUser = dbData.users[1];
+      });
+
+      it('[user has tag] delete tag from user, respond with 204', function () {
+        let userTag = dbData.userTag[2];
+        let user = userTag.user;
+        let tag = userTag.tag;
+        return co(function* () {
+          let response = yield new Promise(function (resolve, reject) {
+            agent
+              .delete(`/users/${user.username}/tags/${tag.tagname}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .set('Authorization', 'Basic '+
+                new Buffer(`${user.username}:${user.password}`)
+                  .toString('base64'))
+              .expect(204)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .end(function (err, res) {
+                if (err) return reject(err);
+                return resolve(res);
+              });
+          });
+
+          (Boolean(response.body)).should.equal(false);
+
+          let userTagExists = yield models.userTag.exists(user.username, tag.tagname);
+          (userTagExists).should.equal(false);
+        });
+      });
+
+      it(`[user doesn't have the tag] fail with 404`, function () {
+        let user = dbData.users[0];
+        let tag = dbData.tags[0];
+        return co(function* () {
+          let response = yield new Promise(function (resolve, reject) {
+            agent
+              .delete(`/users/${user.username}/tags/${tag.tagname}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .set('Authorization', 'Basic '+
+                new Buffer(`${user.username}:${user.password}`)
+                  .toString('base64'))
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .end(function (err, res) {
+                if (err) return reject(err);
+                return resolve(res);
+              });
+          });
+        });
+      });
+
+      it(`[not me] fail with 403`, function () {
+        let userTag = dbData.userTag[2];
+        let user = userTag.user;
+        let tag = userTag.tag;
+        let otherUser = dbData.users[2];
+        return co(function* () {
+          let response = yield new Promise(function (resolve, reject) {
+            agent
+              .delete(`/users/${user.username}/tags/${tag.tagname}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .set('Authorization', 'Basic '+
+                new Buffer(`${otherUser.username}:${otherUser.password}`)
+                  .toString('base64'))
+              .expect(403)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .end(function (err, res) {
+                if (err) return reject(err);
+                return resolve(res);
+              });
+          });
+        });
+      });
     });
   });
 });
