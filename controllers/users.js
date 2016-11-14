@@ -51,11 +51,18 @@ exports.getUser = function (req, res, next) {
 
       // profile detail is for logged users only (or from loggedUnverified self)
       let isLogged = auth.logged === true;
+      let isSelf = auth.username === username;
+
       let isLoggedUnverifiedSelf = !auth.logged &&
-        auth.loggedUnverified === true && auth.username === username;
+        auth.loggedUnverified === true && isSelf;
 
       if (isLogged || isLoggedUnverifiedSelf) {
-        _.assign(filteredUser, _.pick(user.profile, ['givenName', 'familyName']));
+        _.assign(filteredUser, _.pick(user.profile, ['givenName', 'familyName', 'description']));
+      }
+
+      // show email in self profile
+      if (isSelf) {
+        filteredUser.email = user.email;
       }
 
       filteredUser.id = filteredUser.username;

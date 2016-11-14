@@ -15,7 +15,7 @@ exports.newUser = function (data) {
 };
 
 var userSerializer = new Serializer('users', {
-  attributes: ['givenName', 'familyName', 'username', 'description'],
+  attributes: ['givenName', 'familyName', 'username', 'description', 'email'],
   keyForAttribute: 'camelCase',
   topLevelLinks: {
     self: ({ id }) => `${config.url.all}/users/${id}`

@@ -44,6 +44,13 @@ app.use(function (req, res, next) {
   return next();
 });
 
+// access control allow origin
+app.use(function (req, res, next) {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
+
 // actual routers
 app.use('/users', users);
 app.use('/tags', require('./routes/tags'));
