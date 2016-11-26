@@ -207,7 +207,7 @@ describe('/users/:username', function () {
     });
   });
 
-  describe.only('PATCH', function () {
+  describe('PATCH', function () {
     let loggedUser;
 
     beforeEach(function () {
