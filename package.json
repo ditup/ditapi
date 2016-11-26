@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www",
-    "test": "NODE_ENV=test mocha ./test/",
-    "test:watch": "NODE_ENV=test mocha ./test/ --watch"
+    "start": "node --harmony ./bin/www",
+    "test": "NODE_ENV=test mocha --harmony ./test/",
+    "test:watch": "NODE_ENV=test mocha --harmony ./test/ --watch"
   },
   "dependencies": {
     "arangojs": "^5.0.3",

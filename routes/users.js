@@ -12,7 +12,8 @@ router.route('/')
   .post(validators.postUsers, userController.postUsers);
 
 router.route('/:username')
-  .get(validators.getUser, userController.getUser);
+  .get(validators.getUser, userController.getUser)
+  .patch(validators.patchUser, userController.patchUser, userController.getUser);
 
 router.route('/:username/tags')
   .post(authorize.onlyLoggedMe, validators.postUserTags, userController.postUserTags)

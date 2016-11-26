@@ -20,15 +20,18 @@ app.set('env', process.env.NODE_ENV || 'development');
 
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
-// here we deserialize JSON API requests
-app.post('*', function (req, res, next) {
+function checkData (req, res, next) {
   if (!req.body.data) {
     let e = new Error();
     e.status = 400;
     throw e;
   }
   return next();
-}, require('./serializers').middleware);
+}
+// here we deserialize JSON API requests
+app.post('*', checkData, require('./serializers').middleware);
+
+app.patch('*', checkData, require('./serializers').middleware);
 
 // authentication
 app.use(passport.initialize());

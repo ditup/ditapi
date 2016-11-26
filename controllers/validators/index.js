@@ -81,6 +81,10 @@ exports.getUser = function (req, res, next) {
   return next();
 };
 
+exports.patchUser = function (req, res, next) {
+  return next();
+};
+
 exports.postTags = function (req, res, next) {
   req.checkBody(rules.tag);
 

@@ -15,13 +15,15 @@ exports.serialize = serialize;
 
 
 // deserializing
-exports.deserialize = new Deserializer().deserialize;
+exports.deserialize = new Deserializer({
+    keyForAttribute: 'camelCase'
+  }).deserialize;
 
 // express middleware for deserializing the data in body
 exports.middleware = function (req, res, next) {
   exports.deserialize(req.body, function (err, resp) {
     if (err) return next(err); // TODO
-    
+
     req.body = {};
     
     for(let key in resp) {

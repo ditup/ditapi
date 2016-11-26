@@ -2,7 +2,6 @@
 
 var crypto = require('crypto'),
     path = require('path'),
-    co = require('co'),
     config = require(path.resolve('./config'));
 
 module.exports.hashPassword = function hashPassword(password, salt, iterations) {
@@ -15,21 +14,17 @@ module.exports.hashPassword = function hashPassword(password, salt, iterations) 
   });
 };
 
-exports.hash = function (password) {
-  return co(function * () {
-    let iterations = config.security.iterations;
-    let salt = yield exports.generateSalt();
-    let hash = yield exports.hashPassword(password, salt, iterations);
+exports.hash = async function (password) {
+  let iterations = config.security.iterations;
+  let salt = await exports.generateSalt();
+  let hash = await exports.hashPassword(password, salt, iterations);
 
-    return { hash, salt, iterations };
-  });
+  return { hash, salt, iterations };
 };
 
-exports.compare = function (password, { hash: hash, salt: salt, iterations: iterations }) {
-  return co(function * () {
-    var currentHash = yield exports.hashPassword(password,  salt, iterations);
-    return exports.compareHashes(hash, currentHash);
-  });
+exports.compare = async function (password, { hash, salt, iterations }) {
+  var currentHash = await exports.hashPassword(password,  salt, iterations);
+  return exports.compareHashes(hash, currentHash);
 };
 
 function constantEquals(x, y) {

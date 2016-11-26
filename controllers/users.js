@@ -77,16 +77,25 @@ exports.getUser = function (req, res, next) {
   .catch(next);
 };
 
-exports.verifyEmail = function (req, res, next) {
-  return co(function* () {
+exports.patchUser = async function (req, res, next) {
+  let receivedUser = req.body.user;
+  receivedUser.id = req.params.username;
+  let savedUser = await models.user.update(req.params.username, { givenName: req.body.givenName });
+  return next();
+};
+
+exports.verifyEmail = async function (req, res, next) {
+  try {
     let username = req.params.username;
     let code = req.params.code;
 
-    yield models.user.verifyEmail(username, code);
+    await models.user.verifyEmail(username, code);
 
     return res.status(200).json({});
-  })
-  .catch(next);
+    
+  } catch (e) {
+    return next(e);
+  }
 }
 
 exports.postUserTags = function (req, res, next) {

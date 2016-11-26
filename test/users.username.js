@@ -51,6 +51,7 @@ describe('/users/:username', function () {
         yield dbHandle.clear();
       });
     });
+
     context('[user exists]', function () {
       it('[logged] should read user`s profile', function () {
         return co(function * () {
@@ -165,6 +166,7 @@ describe('/users/:username', function () {
         });
       });
     });
+
     context('[user doesn\'t exist]', function () {
       it('should show 404', function () {
         return co(function * () {
@@ -205,13 +207,77 @@ describe('/users/:username', function () {
     });
   });
 
-  describe('PATCH', function () {
+  describe.only('PATCH', function () {
+    let loggedUser;
+
+    beforeEach(function () {
+      return co(function * () {
+        let data = {
+          users: 1, // how many users to make
+          verifiedUsers: [] // which  users to make verified
+        }
+        // create data in database
+        dbData = yield dbHandle.fill(data);
+
+        loggedUser = dbData.users[0];
+      });
+    });
+
+    afterEach(function () {
+      return co(function * () {
+        yield dbHandle.clear();
+      });
+    });
+
+    context('logged in', function () {
+      context('the edited user is the logged user', function () {
+        // profile fields are givenName, familyName, description, birthday
+        //
+        it('should update 1 profile field', async function () {
+          let res = await agent
+            .patch(`/users/${loggedUser.username}`)
+            .send({
+              data: {
+                type: 'users',
+                id: loggedUser.username,
+                attributes: {
+                  givenName: 'new-given-name'
+                }
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(200);
+
+          should(res.body).have.property('data');
+          let dt = res.body.data;
+          should(dt).have.property('id', loggedUser.username);
+          should(dt.attributes).have.property('username', loggedUser.username);
+          should(dt.attributes).have.property('givenName', 'new-given-name');
+        });
+
+        it('should save multiple profile fields');
+        it('should error when profile fields are mixed with settings or email');
+        it('should fail when not valid data provided');
+      });
+
+      context('the edited user is not the logged one', function () {
+        it('should error with 403 Not Authorized');
+      });
+    });
+
+    context('not logged in', function () {
+      it('should error with 403 Not Authorized');
+    });
     it('should update user profile');
   });
+
   describe('DELETE', function () {
     it('should delete user and all her graph connections');
     it('should delete user\'s profile picture');
   });
+
   describe('HEAD', function () {
     it('should return header of GET request');
   });
