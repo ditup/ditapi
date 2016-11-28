@@ -1,0 +1,341 @@
+---
+# this is an API for ditup.org/api
+# the repository https://github.com/ditup/ditapi
+swagger: "2.0"
+info:
+  title: ditup API
+  description: the REST JSON API for ditup.org online platform for real-world collaboration
+  version: "1.0.0"
+# the domain of the service
+host: ditup.org
+# array of all schemes that your API supports
+schemes:
+  - http
+  - https
+# will be prefixed to all paths
+basePath: /api
+securityDefinitions:
+  basicAuth:
+    type: basic
+    description: HTTP Basic Authentication
+consumes:
+  - application/vnd.api+json
+produces:
+  - application/vnd.api+json
+paths:
+  # CRUD users
+  /users:
+    get:
+      tags:
+        - users
+      summary: users
+      description: The users collection
+      security: 
+        - basicAuth: []
+      responses:  
+        200:
+          description: An array of users
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      tags:
+        - users
+      description: Create a new user
+      security:
+        - basicAuth: []
+      parameters:  
+        - in: body
+          name: body
+          description:  
+          required:  true
+          schema:
+            $ref: '#/definitions/NewUser'
+      responses:
+        201:
+          description: A new user
+          schema:
+            $ref: '#/definitions/User'
+  /users/{username}:
+    get:
+      tags:
+        - users
+      description: get user by username
+      security:
+        - basicAuth: []
+      parameters:
+        - in: path
+          name: username
+          description: The username of the user we want to GET. Use user1 for testing.
+          required: true
+          type: string
+      responses:
+        200:
+          description: OK
+    patch:
+      tags:
+        - users
+      description: update the user data
+      security:
+        - basicAuth: []
+      parameters:
+        - in: path
+          name: username
+          description: The username of the user we want to GET. Use user1 for testing.
+          required: true
+          type: string
+        - in: body
+          name: body
+          description: profile or settings parameter(s) to update. Must update only profile XOR settings XOR email
+          required: true
+          schema:
+            $ref: '#/definitions/User'
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/User'
+    delete:
+      tags:
+        - users
+      description: delete user by username
+      security:
+        - basicAuth: []
+      parameters:
+        - in: path
+          name: username
+          description: The username of the user we want to DELETE
+          required: true
+          type: string
+      responses:
+        204:
+          description: No Content
+  # CRUD tags
+  /tags:
+    get:
+      tags:
+        - tags
+      description: get list of tags (should be filtered by parameters)
+      security:
+        - basicAuth: []
+      responses:
+        200:
+          description: OK
+    post:
+      tags:
+        - tags
+      description: create a new tag
+      security:
+        - basicAuth: []
+      parameters:  
+        - in: body
+          name: body
+          description: data for creating a new tag
+          required:  true
+          schema:
+            $ref: '#/definitions/NewTag'
+      responses:
+        201:
+          description: Created
+          schema:
+            $ref: '#/definitions/Tag'
+  /tags/{tagname}:
+    get:
+      tags:
+        - tags
+      description: get a tag by tagname
+      security:
+        - basicAuth: []
+      parameters:
+        - in: path
+          name: tagname
+          description: The tagname of the tag to get
+          required: true
+          type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Tag'
+        404:
+          description: Not Found
+    patch:
+      tags:
+        - tags
+      description: update a tag
+      parameters:
+        - in: body
+          name: body
+          description: tag object with attributes to update
+          required: true
+          schema:
+            $ref: '#/definitions/Tag'
+        - in: path
+          name: tagname
+          description: The tagname of the tag to update
+          required: true
+          type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/Tag'
+        403:
+          description: Not Authorized
+        404:
+          description: Not Found
+    delete:
+      tags:
+        - tags
+      description: delete tag by tagname
+      security:
+        - basicAuth: []
+      parameters:
+        - in: path
+          name: tagname
+          description: The tagname of the tag we want to DELETE
+          required: true
+          type: string
+      responses:
+        204:
+          description: No Content
+        403:
+          description: Not Authorized
+        404:
+          description: Not Found
+definitions:
+  User:
+    type: object
+    required: 
+      - data
+    properties:
+      data:
+        type: object
+        required:
+          - id
+          - type
+          - attributes
+        properties:
+          id:
+            type: string
+            description: the username
+          type:
+            type: string
+            enum:
+              - users
+          attributes:
+            type: object
+            required:
+              - username
+            properties:
+              username:
+                type: string
+                description: description
+              email:
+                type: string
+                description: description
+              givenName:
+                type: string
+                description: description
+              familyName:
+                type: string
+                description: description
+              description:
+                type: string
+                description: description
+  NewUser:
+    type: object
+    required:
+      - data
+    properties:
+      data:
+        type: object
+        required:
+          - type
+          - attributes
+        properties:
+          type:
+            type: string
+            enum:
+              - users
+          attributes:
+            type: object
+            required:
+              - username
+              - email
+              - password
+            properties:
+              username:
+                type: string
+              email:
+                type: string
+              password:
+                type: string
+  Tag:
+    type: object
+    required:
+      - data
+    properties:
+      data:
+        type: object
+        required:
+          - id
+          - type
+          - attributes
+        properties:
+          id:
+            type: string
+            description: a unique tagname of the tag
+          type:
+            type: string
+            enum:
+              - tags
+          attributes:
+            type: object
+            required:
+              - tagname
+              - description
+            properties:
+              tagname:
+                type: string
+              description:
+                type: string
+                description: description of the tag
+  NewTag:
+    type: object
+    required:
+      - data
+    properties:
+      data:
+        type: object
+        required:
+          - type
+          - attributes
+        properties:
+          type:
+            type: string
+            enum:
+              - tags
+          attributes:
+            type: object
+            required:
+              - tagname
+            properties:
+              tagname:
+                type: string
+              description:
+                type: string
+  Error:
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      fields:
+        type: string
