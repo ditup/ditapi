@@ -1,7 +1,5 @@
 'use strict';
 
-let co = require('co');
-
 var rules = {
   user: {
     username: {
@@ -31,7 +29,7 @@ var rules = {
     },
     description: {
       isLength: {
-        options: [{ min: 0, max: 2048}]
+        options: [{ min: 0, max: 2048 }]
       }
     }
   }
@@ -40,26 +38,18 @@ var rules = {
 exports.postUsers = function (req, res, next) {
   req.checkBody(rules.user);
 
+  // prepare and return errors
   var errors = req.validationErrors();
 
-  var errorOutput = {errors: []};
+  var errorOutput = { errors: [] };
   if (errors) {
     for(let e of errors) {
-      errorOutput.errors.push({meta: e});
+      errorOutput.errors.push({ meta: e });
     }
     return res.status(400).json(errorOutput);
   }
 
-  req.checkBody('username', 'Username Not Available').isUsernameAvailable();
-  req.checkBody('email', 'Email Not Available').isEmailAvailable();
-
-  return co(function * () {
-    var asyncErrors = yield req.asyncValidationErrors();
-    return next();
-  })
-  .catch(function (errors) {
-    return res.status(409).json({ errors: errors.map((e) => { return { meta: e }; }) });
-  });
+  return next();
 };
 
 exports.getUser = function (req, res, next) {
@@ -98,15 +88,7 @@ exports.postTags = function (req, res, next) {
     return res.status(400).json(errorOutput);
   }
 
-  req.checkBody('tagname', 'Tagname Already Exists').isTagnameAvailable();
-
-  return co(function * () {
-    var asyncErrors = yield req.asyncValidationErrors();
-    return next();
-  })
-  .catch(function (errors) {
-    return res.status(409).json({ errors: errors.map((e) => { return { meta: e }; }) });
-  });
+  return next();
 };
 
 exports.getTag = function (req, res, next) {

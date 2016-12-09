@@ -8,23 +8,33 @@ var path = require('path'),
     _ = require('lodash'),
     mailer = require(path.resolve('./services/mailer'));
 
-exports.postUsers = function (req, res, next) {
-  return co(function* () {
-    let username = req.body.username;
-    // validate users is done outside
+exports.postUsers = async function (req, res, next) {
+  try {
+    let { username, email } = req.body;
+
+    // check the uniqueness of username and email (among verified email addresses)
+    let usernameExists = await models.user.exists(username);
+
+    let emailExists = await models.user.emailExists(email);
+
+    if (usernameExists || emailExists) {
+      return res.status(409).json({ errors: { meta: '' } });
+    }
+
+    // validating the data should be already done
     // save users
-    let user = yield models.user.create({
+    let user = await models.user.create({
       username: req.body.username,
       password: req.body.password,
       email: req.body.email
     });
 
-    yield mailer.verifyEmail({
+    // send a link for email verification to the provided email address
+    await mailer.verifyEmail({
       username: username,
       url: `${config.url.all}/users/${username}/account/email/verify/${user.emailVerifyCode}`,
       email: req.body.email
     });
-
 
     // respond
     var selfLink = `${config.url.all}/users/${username}`;
@@ -34,8 +44,10 @@ exports.postUsers = function (req, res, next) {
         id: req.body.username,
         username: req.body.username
       }));
-  })
-  .catch(next);
+    
+  } catch (e) {
+    return next(e);
+  }
 };
 
 exports.getUser = function (req, res, next) {

@@ -1,17 +1,21 @@
 'use strict';
 
-var express = require('express'),
+// load module dependencies
+let express = require('express'),
     bodyParser = require('body-parser'),
     _ = require('lodash'),
     passport = require('passport'),
     expressValidator = require('express-validator');
 
-var users = require('./routes/users'),
-    models = require('./models'),
+// load internal dependencies
+let models = require('./models'),
     config = require('./config'),
     authenticate = require('./controllers/authenticate'),
+    deserialize = require('./controllers/deserialize'),
     customValidators = require('./controllers/validators/custom');
 
+
+// configure the database for all the models
 models.connect(config.database);
 
 var app = express();
@@ -20,20 +24,10 @@ app.set('env', process.env.NODE_ENV || 'development');
 
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
-function checkData (req, res, next) {
-  if (!req.body.data) {
-    let e = new Error();
-    e.status = 400;
-    throw e;
-  }
-  return next();
-}
 // here we deserialize JSON API requests
-app.post('*', checkData, require('./serializers').middleware);
+app.use(deserialize);
 
-app.patch('*', checkData, require('./serializers').middleware);
-
-// authentication
+// authentication with passport
 app.use(passport.initialize());
 app.use(authenticate);
 
@@ -47,16 +41,16 @@ app.use(function (req, res, next) {
   return next();
 });
 
-// access control allow origin
+// Cross Origin Resource Sharing
 app.use(function (req, res, next) {
   res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE');
-  next();
+  return next();
 });
 
-// actual routers
-app.use('/users', users);
+// actual routes
+app.use('/users', require('./routes/users'));
 app.use('/tags', require('./routes/tags'));
 
 // catch 404 and forward to error handler

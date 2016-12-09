@@ -13,14 +13,10 @@ class MailEmitter extends EventEmitter {}
 const mailEmitter = new MailEmitter();
 
 var app = require(path.resolve('./app')),
-    serializers = require(path.resolve('./serializers')),
     models = require(path.resolve('./models')),
     config = require(path.resolve('./config/config')),
     dbHandle = require(path.resolve('./test/handleDatabase')),
     mailer = require(path.resolve('./services/mailer'));
-
-var deserialize = serializers.deserialize;
-var serialize = serializers.serialize;
 
 var agent = supertest.agent(app);
 
@@ -28,6 +24,7 @@ var maildev, incomingMail;
 
 
 describe('/users', function () {
+  // set mailer at the beginning
   before(function (done) {
     maildev = new MailDev({
       smtp: 1025
@@ -39,12 +36,17 @@ describe('/users', function () {
     });
   });
 
+  /**
+   * @todo better description
+   * mail event (probably to know that the email was sent)
+   */
   before(function () {
     maildev.on('new', function (email) {
       mailEmitter.emit('mail', email);
     }); 
   });
 
+  // unset mailer at the end
   after(function (done) {
     maildev.end(function (err) {
       if(err) return done(err);
@@ -52,97 +54,75 @@ describe('/users', function () {
     });
   });
 
+  // clear database after every test
   afterEach(function () {
     return dbHandle.clear();
   });
 
   describe('POST', function () {
-    it('[good data] should respond properly', function (done) {
-      var user = {
+
+    context('good data', function () {
+
+      // valid user data
+      let user = {
         username: 'test',
         password: 'asdfasdf',
         email: 'test@example.com'
       };
 
-      var apiUser = serialize.newUser(user);
-      var selfLink = `${config.url.all}/users/${user.username}`;
-
-      agent
-        .post('/users')
-        .send(apiUser)
-        .set('Content-Type', 'application/vnd.api+json')
-        .expect('Content-Type', /^application\/vnd\.api\+json/)
-        .expect('Location', selfLink)
-        .expect(201)
-        .end(function (err, res) {
-          if (err) return done(err);
-          try {
-            res.body.should.have.property('data');
-            res.body.data.should.have.property('id', user.username);
-            res.body.links.should.have.property('self', selfLink);
-          } catch (e) {
-            return done(e);
-          }
-
-          deserialize(res.body, function (err, user, more) {
-            if (err) return done(err);
-            try {
-              user.should.have.property('username', user.username);
-            } catch (e) {
-              return done(e);
-            }
-            return done();
-          });
-        });
-    });
-
-    it('[good data] should create a new user', function (done) {
-      var user = {
-        username: 'test',
-        password: 'asdfasdf',
-        email: 'test@example.com'
+      // valid user data to POST as JSON API
+      let userData = {
+        data: {
+          type: 'users',
+          attributes: user
+        }
       };
 
-      var apiUser = serialize.newUser(user);
-      var selfLink = `${config.url.all}/users/${user.username}`;
+      // link to the created user
+      let selfLink = `${config.url.all}/users/${user.username}`;
 
-      agent
-        .post('/users')
-        .send(apiUser)
-        .set('Content-Type', 'application/vnd.api+json')
-        .expect(201)
-        .end(function (err, res) {
-          agent.get(`/users/${res.body.data.id}`)
-            .set('Content-Type', 'application/vnd.api+json')
-            .expect(200)
-            .end(done);
-        });
-    });
+      it('should respond properly', async function () {
 
-    it('[good data] should send a verification email', function () {
-      return co(function * () {
-        var user = {
-          username: 'test',
-          password: 'asdfasdf',
-          email: 'test@example.com'
-        };
+        let res = await agent
+          .post('/users')
+          .send(userData)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect('Location', selfLink)
+          .expect(201);
 
-        var apiUser = serialize.newUser(user);
-        var selfLink = `${config.url.all}/users/${user.username}`;
+        res.body.should.have.property('data');
+        res.body.data.should.have.property('id', user.username);
+        res.body.links.should.have.property('self', selfLink);
+        res.body.data.attributes.should.have.property('username', user.username);
+      });
 
-        yield new Promise(function (resolve, reject) {
-          agent
-            .post('/users')
-            .send(apiUser)
-            .set('Content-Type', 'application/vnd.api+json')
-            .expect(201)
-            .end(function (err, res) {
-              if (err) return reject(err);
-              return resolve(err);
-            });
-        });
+      it('should create a new user', async function () {
 
-        yield new Promise(function (resolve, reject) {
+        // POST a new user
+        let res = await agent
+          .post('/users')
+          .send(userData)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(201);
+
+        // GET the new user in another request to test its presence
+        await agent
+          .get(`/users/${res.body.data.id}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(200);
+      });
+
+      it('should send a verification email', async function () {
+
+        await agent
+          .post('/users')
+          .send(userData)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(201);
+
+        // wait for the 'mail' event
+        await new Promise(function (resolve, reject) {
           mailEmitter.once('mail', function (email) {
             email.should.have.property('from');
             email.should.have.property('to');
@@ -153,143 +133,133 @@ describe('/users', function () {
       });
     });
 
-    it('[bad username] should respond with error', function (done) {
-      var user = {
+    it('[bad username] should respond with error', async function () {
+
+      // user data with invalid username
+      let user = {
         username: 'test*',
         password: 'asdfasdf',
         email: 'test@example.com'
       };
 
-      var apiUser = serialize.newUser(user);
+      // the above in JSON API format
+      let userData = {
+        data: {
+          type: 'users',
+          attributes: user
+        }
+      }
 
-      agent
+      let res = await agent
         .post('/users')
-        .send(apiUser)
+        .send(userData)
         .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
-        .expect(400)
-        .end(function (err, res) {
-          if (err) return done(err);
-          try {
-            res.body.should.have.property('errors');
-            return done();
-          } catch (e) {
-            return done(e);
-          }
-        });
+        .expect(400);
+
+      // TODO better, more detailed errors
+      res.body.should.have.property('errors');
     });
 
-    it('[existing username] should respond with error', function (done) {
-      var user = {
+    it('[existing username] should respond with error', async function () {
+      var userData = {
+        data: {
+          type: 'users',
+          attributes: {
+            username: 'test',
+            password: 'asdfasdf',
+            email: 'test@example.com'
+          }
+        }
+      };
+
+      await agent
+        .post('/users')
+        .send(userData)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(201);
+
+      let res = await agent
+        .post('/users')
+        .send(userData)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(409); // Conflict
+
+      res.body.should.have.property('errors');
+    });
+
+    it('[bad email] should respond with error', async function () {
+      let userData = {
+        data: {
+          type: 'users',
+          attributes: {
+            username: 'test',
+            password: 'asdfasdf',
+            email: 'test@example'
+          }
+        }
+      };
+
+      let res = await agent
+        .post('/users')
+        .send(userData)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(400);
+
+      res.body.should.have.property('errors');
+    });
+
+    it('[existent email] should respond with error', async function () {
+      let user = {
         username: 'test',
         password: 'asdfasdf',
         email: 'test@example.com'
       };
 
-      var apiUser = serialize.newUser(user);
-
-      agent
-        .post('/users')
-        .send(apiUser)
-        .set('Content-Type', 'application/vnd.api+json')
-        .expect('Content-Type', /^application\/vnd\.api\+json/)
-        .expect(201)
-        .end(function (err, res) {
-          agent
-            .post('/users')
-            .send(apiUser)
-            .set('Content-Type', 'application/vnd.api+json')
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(409) // Conflict
-            .end(function (err, res) {
-              if (err) return done(err);
-              try {
-                res.body.should.have.property('errors');
-                return done();
-              } catch (e) {
-                return done(e);
-              }
-            });
-        });
-    });
-
-    it('[bad email] should respond with error', function (done) {
-      var user = {
-        username: 'test',
-        password: 'asdfasdf',
-        email: 'test@example'
+      let userData = {
+        data: {
+          type: 'users',
+          attributes: user
+        }
       };
 
-      var apiUser = serialize.newUser(user);
+      // the second user has the same email as the user
+      let user2 = {
+        username: 'test2',
+        password: 'asdfasdf',
+        email: 'test@example.com' // the same email
+      };
 
-      agent
-        .post('/users')
-        .send(apiUser)
+      let userData2 = {
+        data: {
+          type: 'users',
+          attributes: user2
+        }
+      };
+
+
+      // post the first user
+      let userResponse = await agent.post('/users')
+        .send(userData)
         .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
-        .expect(400)
-        .end(function (err, res) {
-          if (err) return done(err);
-          try {
-            res.body.should.have.property('errors');
-            return done();
-          } catch (e) {
-            return done(e);
-          }
-        });
-    });
+        .expect(201);
 
-    it('[existent email] should respond with error', function () {
-      return co(function * () {
-        var user = {
-          username: 'test',
-          password: 'asdfasdf',
-          email: 'test@example.com'
-        };
+      // verify the first user
+      await models.user.finalVerifyEmail(user.username);
 
-        var user2 = {
-          username: 'test2',
-          password: 'asdfasdf',
-          email: 'test@example.com' // the same email
-        };
+      // post the 2nd user and test
+      let user2Response = await agent
+        .post('/users')
+        .send(userData2)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(409); // Conflict
 
-        var apiUser = serialize.newUser(user);
-        var apiUser2 = serialize.newUser(user2);
-
-        // post the first user
-        let userResponse = yield new Promise(function (resolve, reject) {
-          agent.post('/users')
-            .send(apiUser)
-            .set('Content-Type', 'application/vnd.api+json')
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(201)
-            .end(function (err, resp) {
-              if (err) return reject(err);
-              return resolve(resp);
-            });
-        });
-
-        // verify the first user
-        yield models.user.finalVerifyEmail(user.username);
-
-        // post the 2nd user and test
-        let user2Response = yield new Promise(function (resolve, reject) {
-          agent
-            .post('/users')
-            .send(apiUser2)
-            .set('Content-Type', 'application/vnd.api+json')
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(409) // Conflict
-            .end(function (err, resp) {
-              if (err) return reject(err);
-              return resolve(resp);
-            });
-        });
-
-
-        // testing on response body
-        user2Response.body.should.have.property('errors');
-      });
+      user2Response.body.should.have.property('errors');
     });
   });
 
