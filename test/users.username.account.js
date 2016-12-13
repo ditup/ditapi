@@ -4,8 +4,7 @@ process.env.NODE_ENV = 'test';
 
 let path = require('path'),
     supertest = require('supertest'),
-    should = require('should'),
-    co = require('co');
+    should = require('should');
 
 let app = require(path.resolve('./app')),
     models = require(path.resolve('./models')),
@@ -52,53 +51,56 @@ describe('/users/:username/account...', function () {
 
   describe('./email/verify/:code', function () {
 
-    afterEach(function () {
-      return co(function * () {
-        yield dbHandle.clear();
-      });
+    // empty the test database after every test
+    afterEach(async function () {
+      await dbHandle.clear();
     });
 
-    it('[correct code] should make the user\'s email verified', function () {
-      return co(function * () {
-        let out = yield models.user.create({
-          username: 'test',
-          password: 'asdfasdf',
-          email: 'test@example.com'
-        });
-        
-        yield new Promise(function (resolve, reject) {
-          agent
-            .get(`/users/test/account/email/verify/${out.emailVerifyCode}`)
-            .set('Content-Type', 'application/vnd.api+json')
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(200)
-            .end(function (err, res) {
-              if (err) return reject(err);
-              return resolve(res);
-            });
-        });
-
-        let user = yield models.user.read('test');
-
-        user.should.have.property('email', 'test@example.com');
-        user.should.have.property('account');
-        user.account.should.have.property('email', null);
-
-             /* 
-              function (err, res) {
-              if (err) return done(err);
-              try {
-                res.body.should.have.property('data');
-                res.body.data.should.have.property('id', user.username);
-                res.body.links.should.have.property('self', selfLink);
-              } catch (e) {
-                return done(e);
-              }
-          */
+    it('[correct code] should make the user\'s email verified', async function () {
+      // first we create a new user
+      let out = await models.user.create({
+        username: 'test',
+        password: 'asdfasdf',
+        email: 'test@example.com'
       });
+      
+      // we verify the email
+      let res = await agent
+        .get(`/users/test/account/email/verify/${out.emailVerifyCode}`)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(200);
+
+      // see whether the user's email is verified now
+      let user = await models.user.read('test');
+
+      user.should.have.property('email', 'test@example.com');
+      user.should.have.property('account');
+      user.account.should.have.property('email', null);
     });
 
-    it('[wrong code] should error');
+    it('[wrong code] should error', async function () {
+      // first we create a new user
+      let out = await models.user.create({
+        username: 'test',
+        password: 'asdfasdf',
+        email: 'test@example.com'
+      });
+
+      let badCode = 'aa2345';
+      
+      // we verify the email
+      let res = await agent
+        .get(`/users/test/account/email/verify/${badCode}`)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(400);
+
+      // see whether the user's email is verified now
+      let user = await models.user.read('test');
+
+      user.should.have.property('email', null);
+    });
     it('[expired code] should error');
     it('[reused code] should error');
   });

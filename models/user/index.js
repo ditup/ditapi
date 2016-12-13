@@ -9,17 +9,26 @@ var Model = require(path.resolve('./models/model')),
 
 class User extends Model {
 
+  // save a new user to a database
   static async create(user) {
+    // generate an email verification code
     let emailVerifyCode = await account.generateHexCode(32);
     user.emailVerifyCode = emailVerifyCode;
+
+    // generate a user object in a standard shape
     user = await schema(user);
-    await this.db.query('INSERT @user IN users', { user: user });
-    return { emailVerifyCode: emailVerifyCode };
+
+    // save the user into a database
+    await this.db.query('INSERT @user IN users', { user });
+
+    // return some information
+    return { emailVerifyCode };
   }
 
+  // read a user by username
   static async read(username) {
     let query = 'FOR u IN users FILTER u.username == @username RETURN u';
-    let params = { username: username };
+    let params = { username };
     let cursor = await this.db.query(query, params);
     let output = await cursor.all();
     return output[0];
@@ -30,7 +39,7 @@ class User extends Model {
     let query = `FOR u IN users FILTER u.username == @username
       UPDATE u WITH { profile: @profile } IN users
       RETURN NEW`;
-    let params = { username: username, profile: profile };
+    let params = { username, profile };
     let cursor = await this.db.query(query, params);
     let output = await cursor.all();
     return output[0];
@@ -41,7 +50,7 @@ class User extends Model {
       FOR u IN users FILTER u.username == @username
         COLLECT WITH COUNT INTO length
         RETURN length`;
-    let params = { username: username };
+    let params = { username };
     let cursor = await this.db.query(query, params);
     let count = await cursor.next();
 
@@ -59,7 +68,7 @@ class User extends Model {
 
   // authenticate user provided username password combination
   static async authenticate(username, password) {
-    // get information from database
+    // get information about the user from a database
     let query = `
       FOR u IN users FILTER u.username == @username
         RETURN {
@@ -68,7 +77,7 @@ class User extends Model {
           email: u.email,
           profile: u.profile
         }`;
-    let params = { username: username };
+    let params = { username };
     let cursor = await this.db.query(query, params);
     let output = await cursor.all();
 
@@ -79,11 +88,18 @@ class User extends Model {
 
     // change default values when authenticated
     switch (output.length) {
+      // when we found no user by the username, keep default values (not logged)
       case 0:
         break;
+      // when a user was found
       case 1:
+        // check whether the provided password matches the hashed password from db
         credentialsMatch = await account.compare(password, output[0].password);
+
+        // user is verified when her email is present (otherwise only emailTemporary)
         isVerified = Boolean(output[0].email);
+
+        // populate user's profile
         profile = _.pick(output[0].profile, ['givenName', 'familyName']);
         break;
       default:
@@ -122,8 +138,11 @@ class User extends Model {
     }
   }
 
+  // check whether the email verification code is correct
+  // if correct, update temporary email to email and resolve
+  // if incorrect, reject the promise
   static async verifyEmail(username, code) {
-    // read the data
+    // read the temporary email data
     let query = `
       FOR u IN users FILTER u.username == @username
         RETURN {
@@ -132,7 +151,7 @@ class User extends Model {
           codeExpire: u.account.email.codeExpire
         }
     `;
-    let params = { username: username }
+    let params = { username };
     let output = await (await this.db.query(query, params)).all();
     
     if(output.length === 0) throw new Error('User Not Found');
@@ -149,9 +168,11 @@ class User extends Model {
 
     if (codeMatches !== true) throw new Error('Code Is Not Correct');
     // if correct, put emailTemporary to email and erase all the rest
+    // update the database: move emailTemporary to email and clean the data
     await this.finalVerifyEmail(username);
   }
 
+  // finish email verification. move emailTemporary to email and clean
   static async finalVerifyEmail(username) {
     let query = `
       FOR u IN users FILTER u.username == @username
@@ -162,7 +183,7 @@ class User extends Model {
         }
         IN users
     `;
-    let params = { username: username };
+    let params = { username };
     await this.db.query(query, params);
   }
 
@@ -176,7 +197,7 @@ class User extends Model {
           LET us = MERGE(KEEP(u, 'username'), u.profile)
           LET tg = KEEP(v, 'tagname', 'description', 'created')
           RETURN MERGE(ut, { user: us }, { tag: tg })`;
-    let params = { username: username };
+    let params = { username };
     let cursor = await this.db.query(query, params);
     let output = await cursor.all();
     return output;

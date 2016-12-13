@@ -22,6 +22,14 @@ var app = express();
 
 app.set('env', process.env.NODE_ENV || 'development');
 
+// Cross Origin Resource Sharing
+app.use(function (req, res, next) {
+  res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE');
+  return next();
+});
+
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
 // here we deserialize JSON API requests
@@ -38,14 +46,6 @@ app.use(expressValidator({
 // we set Content-Type header of all requests to JSON API
 app.use(function (req, res, next) {
   res.contentType('application/vnd.api+json');
-  return next();
-});
-
-// Cross Origin Resource Sharing
-app.use(function (req, res, next) {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE');
   return next();
 });
 

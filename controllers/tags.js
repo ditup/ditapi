@@ -11,6 +11,7 @@ var path = require('path'),
  * Create a new tag
  *
  */
+// controller for POST /tags
 exports.postTags = async function (req, res, next) {
   try {
     // read the tagname

@@ -1,7 +1,6 @@
 'use strict';
 
 var path = require('path'),
-    co = require('co'),
     config = require(path.resolve('./config/config')),
     serialize = require(path.resolve('./serializers')).serialize,
     models = require(path.resolve('./models')),
@@ -50,12 +49,13 @@ exports.postUsers = async function (req, res, next) {
   }
 };
 
-exports.getUser = function (req, res, next) {
-  return co(function* () {
+exports.getUser = async function (req, res, next) {
+  try {
+    
     let auth = _.get(req, 'body.user', { logged: false });
 
     let username = req.params.username;
-    let user = yield models.user.read(username);
+    let user = await models.user.read(username);
 
     if (user) {
       // picking values to output from user and user.profile
@@ -85,8 +85,9 @@ exports.getUser = function (req, res, next) {
     } else {
       return next();
     }
-  })
-  .catch(next);
+  } catch (e) {
+    return next(e);
+  }
 };
 
 exports.patchUser = async function (req, res, next) {
@@ -106,18 +107,19 @@ exports.verifyEmail = async function (req, res, next) {
     return res.status(200).json({});
     
   } catch (e) {
+    e.status = 400;
     return next(e);
   }
 }
 
-exports.postUserTags = function (req, res, next) {
-  return co(function* () {
+exports.postUserTags = async function (req, res, next) {
+  try {
     // should be already validated
     let username = req.params.username;
     let tagname = req.body.tagname;
     let story = req.body.story;
 
-    let exists = yield models.userTag.exists(username, tagname);
+    let exists = await models.userTag.exists(username, tagname);
 
     if(exists !== false) {
       let e = new Error('userTag already exists');
@@ -125,7 +127,7 @@ exports.postUserTags = function (req, res, next) {
       throw e;
     }
 
-    let created = yield models.userTag.create({ username, tagname, story });
+    let created = await models.userTag.create({ username, tagname, story });
     if (!created) {
       return next(); // forwarding to 404 error
     }
@@ -136,22 +138,24 @@ exports.postUserTags = function (req, res, next) {
     var selfLink = `${config.url.all}/users/${username}/tags/${tagname}`;
     let resp = serialize.userTag(created);
     let meta = _.pick(created, ['created', 'story']);
-    _.assign(resp, { meta: meta });
+    _.assign(resp, { meta });
 
 
     return res.status(201)
       .set('Location', selfLink)
       .json(resp);
-  })
-  .catch(next);
+    
+  } catch (e) {
+    return next(e);
+  }
 };
 
-exports.getUserTags = function (req, res, next) {
-  return co(function* () {
+exports.getUserTags = async function (req, res, next) {
+  try {
     // should be already validated
     let username = req.params.username;
 
-    let userTags = yield models.user.readTags(username);
+    let userTags = await models.user.readTags(username);
 
     _.forEach(userTags, function (userTag) {
       _.assign(userTag, { id: userTag.tag.tagname });
@@ -161,16 +165,18 @@ exports.getUserTags = function (req, res, next) {
 
     return res.status(200)
       .json(serialized);
-  })
-  .catch(next);
+    
+  } catch (e) {
+    return next(e);
+  }
 };
 
-exports.getUserTag = function (req, res, next) {
-  return co(function* () {
+exports.getUserTag = async function (req, res, next) {
+  try {
     // should be already validated
     let { username, tagname } = req.params;
 
-    let userTag = yield models.userTag.read(username, tagname);
+    let userTag = await models.userTag.read(username, tagname);
 
     _.assign(userTag, { id: userTag.tag.tagname });
 
@@ -180,21 +186,23 @@ exports.getUserTag = function (req, res, next) {
 
     return res.status(200)
       .json(serialized);
-  })
-  .catch(next);
+  } catch (e) {
+    return next(e);
+  }
 };
 
-exports.deleteUserTag = function (req, res, next) {
-  return co(function* () {
+exports.deleteUserTag = async function (req, res, next) {
+  try {
     // should be already validated
     // and checked rights
     let { username, tagname } = req.params;
 
-    let isSuccess = yield models.userTag.delete(username, tagname);
+    let isSuccess = await models.userTag.delete(username, tagname);
 
     if (isSuccess !== true) return next(); // sending to 404
 
     return res.status(204).end();
-  })
-  .catch(next);
+  } catch (e) {
+    return next(e);
+  }
 };
