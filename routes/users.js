@@ -13,7 +13,7 @@ router.route('/')
 
 router.route('/:username')
   .get(validators.getUser, userController.getUser)
-  .patch(validators.patchUser, userController.patchUser, userController.getUser);
+  .patch(authorize.onlyLoggedMe, validators.patchUser, userController.patchUser, userController.getUser);
 
 router.route('/:username/tags')
   .post(authorize.onlyLoggedMe, validators.postUserTags, userController.postUserTags)

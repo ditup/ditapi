@@ -35,7 +35,7 @@ exports.postTags = async function (req, res, next) {
 
     
     let tagData = _.pick(req.body, ['tagname', 'description']);
-    _.assign(tagData, { creator: req.body.user.username });
+    _.assign(tagData, { creator: req.auth.username });
 
     let tag = await models.tag.create(tagData);
 

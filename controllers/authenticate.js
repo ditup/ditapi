@@ -32,7 +32,7 @@ module.exports = function (req, res, next) {
   passport.authenticate('basic', { session : false },
   function (err, user, info) {
     // add user info to body
-    req.body.user = user || { logged: false };
+    req.auth = user || { logged: false };
     next();
   })(req, res, next);
 };

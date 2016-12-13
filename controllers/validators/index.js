@@ -1,5 +1,7 @@
 'use strict';
 
+let _ = require('lodash');
+
 var rules = {
   user: {
     username: {
@@ -13,6 +15,24 @@ var rules = {
       notEmpty: true,
       isEmail: true,
       errorMessage: 'Invalid Email'
+    },
+    givenName: {
+      isLength: {
+        options: [{ max: 128 }]
+      }
+    },
+    familyName: {
+      isLength: {
+        options: [{ max: 128 }]
+      }
+    },
+    description: {
+      isLength: {
+        options: [{ max: 2048 }]
+      }
+    },
+    get id() {
+      return this.username
     }
   },
 
@@ -36,7 +56,7 @@ var rules = {
 };
 
 exports.postUsers = function (req, res, next) {
-  req.checkBody(rules.user);
+  req.checkBody(_.pick(rules.user, ['username', 'email']));
 
   // prepare and return errors
   var errors = req.validationErrors();
@@ -53,13 +73,11 @@ exports.postUsers = function (req, res, next) {
 };
 
 exports.getUser = function (req, res, next) {
-  req.checkParams({
-    username: rules.user.username
-  });
+  req.checkParams(_.pick(rules.user, ['username']));
 
   var errors = req.validationErrors();
 
-  var errorOutput = {errors: []};
+  var errorOutput = { errors: [] };
 
   if (errors) {
     for(let e of errors) {
@@ -72,6 +90,18 @@ exports.getUser = function (req, res, next) {
 };
 
 exports.patchUser = function (req, res, next) {
+  req.checkParams(_.pick(rules.user, ['username']));
+  req.checkBody(_.pick(rules.user, ['id', 'givenName', 'familyName', 'description']));
+  var errors = req.validationErrors();
+
+  var errorOutput = { errors: [] };
+  if (errors) {
+    for(let e of errors) {
+      errorOutput.errors.push({ meta: e });
+    }
+    return res.status(400).json(errorOutput);
+  }
+
   return next();
 };
 
@@ -80,7 +110,7 @@ exports.postTags = function (req, res, next) {
 
   var errors = req.validationErrors();
 
-  var errorOutput = {errors: []};
+  var errorOutput = { errors: [] };
   if (errors) {
     for(let e of errors) {
       errorOutput.errors.push({meta: e});
@@ -92,7 +122,7 @@ exports.postTags = function (req, res, next) {
 };
 
 exports.getTag = function (req, res, next) {
-  req.checkParams({ tagname: rules.tag.tagname });
+  req.checkParams(_.pick(rules.tag, ['tagname']));
 
   var errors = req.validationErrors();
 
@@ -104,9 +134,9 @@ exports.getTag = function (req, res, next) {
 
     return res.status(400).json(errorOutput);
   }
-  next();
+  return next();
 };
 
 exports.postUserTags = function (req, res, next) {
-  next();
+  return next();
 };

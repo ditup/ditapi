@@ -52,7 +52,7 @@ exports.postUsers = async function (req, res, next) {
 exports.getUser = async function (req, res, next) {
   try {
     
-    let auth = _.get(req, 'body.user', { logged: false });
+    let auth = _.get(req, 'auth', { logged: false });
 
     let username = req.params.username;
     let user = await models.user.read(username);
@@ -90,10 +90,32 @@ exports.getUser = async function (req, res, next) {
   }
 };
 
+// edit a user with PATCH request
+// presumption: data in body should already be valid and user should be logged in as herself
 exports.patchUser = async function (req, res, next) {
-  let receivedUser = req.body.user;
-  receivedUser.id = req.params.username;
-  let savedUser = await models.user.update(req.params.username, { givenName: req.body.givenName });
+  // check that user id in body equals username from url
+  if (req.body.id !== req.params.username) {
+    let e = new Error('username in url parameter and in body don\'t match');
+    e.status = 400;
+    return next(e);
+  }
+
+  // the list of allowed profile fields (subset of these needs to be provided)
+  let profileFields = ['givenName', 'familyName', 'description'];
+
+  // check that only profile fields are present in the request body
+  let unwantedParams = _.difference(Object.keys(req.body), _.union(profileFields, ['id']));
+  if (unwantedParams.length > 0) { // if any unwanted fields are present, error.
+    let e = new Error('The request body contains unexpected attributes');
+    e.status = 400;
+    return next(e);
+  }
+
+  // pick only the profile fields from the body of the request
+  let profile = _.pick(req.body, profileFields);
+
+  // update the profile with the new values
+  let savedUser = await models.user.update(req.params.username, profile);
   return next();
 };
 

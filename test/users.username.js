@@ -4,8 +4,8 @@ process.env.NODE_ENV = 'test';
 
 let supertest = require('supertest'),
     should = require('should'),
-    path = require('path'),
-    co = require('co');
+    _ = require('lodash'),
+    path = require('path');
 
 let app = require(path.resolve('./app')),
     serializers = require(path.resolve('./serializers')),
@@ -30,203 +30,138 @@ let dbData,
 
 describe('/users/:username', function () {
   describe('GET', function () {
-    beforeEach(function () {
-      return co(function * () {
-        let data = {
-          users: 3, // how many users to make
-          verifiedUsers: [0, 1] // which  users to make verified
-        }
-        // create data in database
-        dbData = yield dbHandle.fill(data);
+    beforeEach(async function () {
+      let data = {
+        users: 3, // how many users to make
+        verifiedUsers: [0, 1] // which  users to make verified
+      }
+      // create data in database
+      dbData = await dbHandle.fill(data);
 
-        existentUser = dbData.users[0];
-        loggedUser = dbData.users[1];
-        unverifiedUser = dbData.users[2];
-      });
-
+      existentUser = dbData.users[0];
+      loggedUser = dbData.users[1];
+      unverifiedUser = dbData.users[2];
     });
 
-    afterEach(function () {
-      return co(function * () {
-        yield dbHandle.clear();
-      });
+    afterEach(async function () {
+        await dbHandle.clear();
     });
 
     context('[user exists]', function () {
-      it('[logged] should read user`s profile', function () {
-        return co(function * () {
-          let response = yield new Promise(function (resolve, reject) {
-            agent
-              .get(`/users/${existentUser.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Basic '+
-                new Buffer(`${loggedUser.username}:${loggedUser.password}`)
-                  .toString('base64'))
-              .expect(200)
-              .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .end(function (err, res) {
-                if (err) return reject(err);
-                return resolve(res);
-              });
-          });
-          
-          let user = response.body;
-          user.should.have.property('data');
-          user.data.should.have.property('type', 'users');
-          user.data.should.have.property('id', existentUser.username);
-          user.data.should.have.property('attributes');
-          let fields = user.data.attributes;
-          fields.should.have.property('username', existentUser.username);
-          fields.should.have.property('givenName');
-          // TODO givenName, familyName, birthDate, profile, ...
-        });
+      it('[logged] should read user`s profile', async function () {
+        let response = await agent
+          .get(`/users/${existentUser.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+        
+        let user = response.body;
+        user.should.have.property('data');
+        user.data.should.have.property('type', 'users');
+        user.data.should.have.property('id', existentUser.username);
+        user.data.should.have.property('attributes');
+        let fields = user.data.attributes;
+        fields.should.have.property('username', existentUser.username);
+        fields.should.have.property('givenName');
+        // TODO givenName, familyName, birthDate, profile, ...
       });
 
-      it('[not logged] should read simplified profile', function () {
-        return co(function * () {
-          let response = yield new Promise(function (resolve, reject) {
-            agent
-              .get(`/users/${existentUser.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .expect(200)
-              .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .end(function (err, res) {
-                if (err) return reject(err);
-                return resolve(res);
-              });
-          });
-          
-          let user = response.body;
-          user.should.have.property('data');
-          user.data.should.have.property('type', 'users');
-          user.data.should.have.property('id', existentUser.username);
-          user.data.should.have.property('attributes');
+      it('[not logged] should read simplified profile', async function () {
+        let response = await agent
+          .get(`/users/${existentUser.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+        
+        let user = response.body;
+        user.should.have.property('data');
+        user.data.should.have.property('type', 'users');
+        user.data.should.have.property('id', existentUser.username);
+        user.data.should.have.property('attributes');
 
-          let fields = user.data.attributes;
-          fields.should.have.property('username', existentUser.username);
-          fields.should.not.have.property('givenName');
-        });
+        let fields = user.data.attributes;
+        fields.should.have.property('username', existentUser.username);
+        fields.should.not.have.property('givenName');
       });
 
-      it('[logged, not verified] should read simplified profile', function () {
-        return co(function * () {
-          let response = yield new Promise(function (resolve, reject) {
-            agent
-              .get(`/users/${existentUser.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Basic '+
-                new Buffer(`${unverifiedUser.username}:${unverifiedUser.password}`)
-                  .toString('base64'))
-              .expect(200)
-              .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .end(function (err, res) {
-                if (err) return reject(err);
-                return resolve(res);
-              });
-          });
-          
-          let user = response.body;
-          user.should.have.property('data');
-          user.data.should.have.property('type', 'users');
-          user.data.should.have.property('id', existentUser.username);
-          user.data.should.have.property('attributes');
+      it('[logged, not verified] should read simplified profile', async function () {
+        let response = await agent
+          .get(`/users/${existentUser.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(unverifiedUser.username, unverifiedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+        
+        let user = response.body;
+        user.should.have.property('data');
+        user.data.should.have.property('type', 'users');
+        user.data.should.have.property('id', existentUser.username);
+        user.data.should.have.property('attributes');
 
-          let fields = user.data.attributes;
-          fields.should.have.property('username', existentUser.username);
-          fields.should.not.have.property('givenName');
-        });
+        let fields = user.data.attributes;
+        fields.should.have.property('username', existentUser.username);
+        fields.should.not.have.property('givenName');
       });
 
-      it('[logged, unverified] should read her own profile full', function () {
-        return co(function * () {
-          let response = yield new Promise(function (resolve, reject) {
-            agent
-              .get(`/users/${unverifiedUser.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Basic '+
-                new Buffer(`${unverifiedUser.username}:${unverifiedUser.password}`)
-                  .toString('base64'))
-              .expect(200)
-              .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .end(function (err, res) {
-                if (err) return reject(err);
-                return resolve(res);
-              });
-          });
-          
-          let user = response.body;
-          user.should.have.property('data');
-          user.data.should.have.property('type', 'users');
-          user.data.should.have.property('id', unverifiedUser.username);
-          user.data.should.have.property('attributes');
+      it('[logged, unverified] should read her own profile full', async function () {
+        let response = await agent
+          .get(`/users/${unverifiedUser.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(unverifiedUser.username, unverifiedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+        
+        let user = response.body;
+        user.should.have.property('data');
+        user.data.should.have.property('type', 'users');
+        user.data.should.have.property('id', unverifiedUser.username);
+        user.data.should.have.property('attributes');
 
-          let fields = user.data.attributes;
-          fields.should.have.property('username', unverifiedUser.username);
-          fields.should.have.property('givenName');
-        });
+        let fields = user.data.attributes;
+        fields.should.have.property('username', unverifiedUser.username);
+        fields.should.have.property('givenName');
       });
     });
 
     context('[user doesn\'t exist]', function () {
-      it('should show 404', function () {
-        return co(function * () {
-          let response = yield new Promise(function (resolve, reject) {
-            agent
-              .get(`/users/${nonexistentUser.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Basic '+
-                new Buffer(`${loggedUser.username}:${loggedUser.password}`)
-                  .toString('base64'))
-              .expect(404)
-              .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .end(function (err, res) {
-                if (err) return reject(err);
-                return resolve(res);
-              });
-          });
-        });
+      it('should show 404', async function () {
+        let response = await agent
+          .get(`/users/${nonexistentUser.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(404)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
     });
 
     context('[username is invalid]', function () {
-      it('should show 400', function () {
-        return co(function * () {
-          let response = yield new Promise(function (resolve, reject) {
-            agent
-              .get(`/users/this--is-an-invalid--username`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .expect(400)
-              .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .end(function (err, res) {
-                if (err) return reject(err);
-                return resolve(res);
-              });
-          });
-        });
+      it('should show 400', async function () {
+        let response = await agent
+          .get(`/users/this--is-an-invalid--username`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
     });
   });
 
   describe('PATCH', function () {
-    let loggedUser;
+    let loggedUser, otherUser;
 
-    beforeEach(function () {
-      return co(function * () {
-        let data = {
-          users: 1, // how many users to make
-          verifiedUsers: [] // which  users to make verified
-        }
-        // create data in database
-        dbData = yield dbHandle.fill(data);
+    beforeEach(async function () {
+      let data = {
+        users: 2, // how many users to make
+        verifiedUsers: [0] // which  users to make verified
+      }
+      // create data in database
+      dbData = await dbHandle.fill(data);
 
-        loggedUser = dbData.users[0];
-      });
+      [loggedUser, otherUser] = dbData.users;
     });
 
-    afterEach(function () {
-      return co(function * () {
-        yield dbHandle.clear();
-      });
+    afterEach(async function () {
+      await dbHandle.clear();
     });
 
     context('logged in', function () {
@@ -257,20 +192,140 @@ describe('/users/:username', function () {
           should(dt.attributes).have.property('givenName', 'new-given-name');
         });
 
-        it('should save multiple profile fields');
-        it('should error when profile fields are mixed with settings or email');
-        it('should fail when not valid data provided');
+        it('should update multiple profile fields', async function () {
+          let attributes = {
+            givenName: 'new-given-name',
+            familyName: 'newFamily Name',
+            description: 'this is a description'
+          };
+
+          let res = await agent
+            .patch(`/users/${loggedUser.username}`)
+            .send({
+              data: {
+                type: 'users',
+                id: loggedUser.username,
+                attributes
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(200);
+
+          should(res.body).have.property('data');
+          let dt = res.body.data;
+          should(dt).have.property('id', loggedUser.username);
+          should(dt.attributes).have.property('username', loggedUser.username);
+          should(dt.attributes).have.property('givenName', attributes.givenName);
+          should(dt.attributes).have.property('familyName', attributes.familyName);
+          should(dt.attributes).have.property('description', attributes.description);
+        });
+
+        it('should error when profile fields are mixed with settings or email', async function () {
+          let attributes = {
+            givenName: 'new-given-name',
+            familyName: 'newFamily Name',
+            description: 'this is a description',
+            email: 'email@example.com'
+          };
+
+          let res = await agent
+            .patch(`/users/${loggedUser.username}`)
+            .send({
+              data: {
+                type: 'users',
+                id: loggedUser.username,
+                attributes
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+        });
+
+        it('should fail with 400 when not valid data in body provided', async function () {
+          let tooLongValue = _.repeat('.', 4000);
+          let attributes = {
+            givenName: tooLongValue,
+            familyName: tooLongValue,
+            description: tooLongValue
+          };
+
+          let res = await agent
+            .patch(`/users/${loggedUser.username}`)
+            .send({
+              data: {
+                type: 'users',
+                id: loggedUser.username,
+                attributes
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+        });
+
+        it('should fail with 400 when url username doesn\'t match the username in body.data.id', async function () {
+          let res = await agent
+            .patch(`/users/${loggedUser.username}`)
+            .send({
+              data: {
+                type: 'users',
+                id: otherUser.username,
+                attributes: {
+                  givenName: 'new-given-name'
+                }
+              }
+            })
+            .auth(loggedUser.username, loggedUser.password)
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+        });
       });
 
       context('the edited user is not the logged one', function () {
-        it('should error with 403 Not Authorized');
+        it('should error with 403 Not Authorized', async function () {
+          let res = await agent
+            .patch(`/users/${otherUser.username}`)
+            .send({
+              data: {
+                type: 'users',
+                id: otherUser.username,
+                attributes: {
+                  givenName: 'new-given-name'
+                }
+              }
+            })
+            .auth(loggedUser.username, loggedUser.password)
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(403);
+        });
       });
     });
 
     context('not logged in', function () {
-      it('should error with 403 Not Authorized');
+      it('should error with 403 Not Authorized', async function () {
+        let res = await agent
+          .patch(`/users/${otherUser.username}`)
+          .send({
+            data: {
+              type: 'users',
+              id: otherUser.username,
+              attributes: {
+                givenName: 'new-given-name'
+              }
+            }
+          })
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(403);
+      });
     });
-    it('should update user profile');
   });
 
   describe('DELETE', function () {
