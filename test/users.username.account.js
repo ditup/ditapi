@@ -63,7 +63,7 @@ describe('/users/:username/account...', function () {
         password: 'asdfasdf',
         email: 'test@example.com'
       });
-      
+
       // we verify the email
       let res = await agent
         .get(`/users/test/account/email/verify/${out.emailVerifyCode}`)
@@ -101,8 +101,30 @@ describe('/users/:username/account...', function () {
 
       user.should.have.property('email', null);
     });
+
     it('[expired code] should error');
-    it('[reused code] should error');
+
+    it('[reused code] should error', async function () {
+      // first we create a new user
+      let out = await models.user.create({
+        username: 'test',
+        password: 'asdfasdf',
+        email: 'test@example.com'
+      });
+
+      // we verify the email
+      let res = await agent
+        .get(`/users/test/account/email/verify/${out.emailVerifyCode}`)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(200);
+
+      let res2 = await agent
+        .get(`/users/test/account/email/verify/${out.emailVerifyCode}`)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(400);
+    });
   });
   
 });
