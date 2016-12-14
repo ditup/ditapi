@@ -1,10 +1,11 @@
 'use strict';
 
 // load module dependencies
-let express = require('express'),
+const express = require('express'),
     bodyParser = require('body-parser'),
     _ = require('lodash'),
     passport = require('passport'),
+    helmet = require('helmet'),
     expressValidator = require('express-validator');
 
 // load internal dependencies
@@ -29,6 +30,10 @@ app.use(function (req, res, next) {
   res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE');
   return next();
 });
+
+// Protect against some web vulnerabilities by setting some headers with Helmet
+// https://expressjs.com/en/advanced/best-practice-security.html
+app.use(helmet());
 
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 

@@ -319,6 +319,7 @@ describe('Tags of user', function () {
 
     describe('PATCH', function () {
       it(`update user's relation/story to the tag`);
+      it(`update user's rating of the tag (how important it is for her)`)
     });
 
     describe('DELETE', function () {
