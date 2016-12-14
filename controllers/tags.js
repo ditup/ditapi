@@ -88,3 +88,27 @@ exports.getTag = async function (req, res, next) {
     return next(e);
   }
 };
+
+exports.patchTag = async function (req, res, next) {
+  try {
+    // check that user id in body equals username from url
+    if (req.body.id !== req.params.tagname) {
+      let e = new Error('Tagname in url parameter and in body don\'t match');
+      e.status = 400;
+      throw e;
+    }
+
+    let updateData = {
+      description: req.body.description,
+      editor: req.auth.username,
+      time: Date.now()
+    }
+    // update the profile with the new values
+    let savedTag = await models.tag.update(req.params.tagname, updateData);
+    return next();
+    
+  } catch (e) {
+    /* handle error */
+    return next(e);
+  }
+}

@@ -31,24 +31,40 @@ class Tag extends Model {
     await this.db.query(queryCreator, paramsCreator);
   }
 
-  static read(tagname) {
-    return co.call(this, function* () {
-      let query = `
-        FOR t IN tags FILTER t.tagname == @tagname
-          FOR v, e, p
-            IN 0..1
-            OUTBOUND t
-            OUTBOUND tagCreator
-            RETURN KEEP(v, 'username', 'tagname', 'description', 'created')`;
-      let params = { tagname: tagname };
-      let out = yield (yield this.db.query(query, params)).all();
+  static async read(tagname) {
+    let query = `
+      FOR t IN tags FILTER t.tagname == @tagname
+        FOR v, e, p
+          IN 0..1
+          OUTBOUND t
+          OUTBOUND tagCreator
+          RETURN KEEP(v, 'username', 'tagname', 'description', 'created')`;
+    let params = { tagname: tagname };
+    let out = await (await this.db.query(query, params)).all();
 
-      let tag = _.pick(out[0], 'tagname', 'description', 'created');
-      let creator = _.pick(out[1], 'username');
-      _.assign(tag, { creator });
+    let tag = _.pick(out[0], 'tagname', 'description', 'created');
+    let creator = _.pick(out[1], 'username');
+    _.assign(tag, { creator });
 
-      return (out[0]) ? tag : null;
-    });
+    return (out[0]) ? tag : null;
+  }
+
+  static async update(tagname, { description, editor, time }) {
+    let query = `FOR t IN tags FILTER t.tagname == @tagname
+      UPDATE t WITH {
+        description: @description,
+        history: PUSH(t.history, {
+          description: @description,
+          editor: @editor,
+          time: @time
+        })
+      }
+      IN tags
+      RETURN NEW`;
+    let params = { tagname, description, editor, time };
+    let cursor = await this.db.query(query, params);
+    let output = await cursor.all();
+    return output[0];
   }
 
   static exists(tagname) {

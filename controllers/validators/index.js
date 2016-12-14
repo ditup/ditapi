@@ -51,6 +51,9 @@ var rules = {
       isLength: {
         options: [{ min: 0, max: 2048 }]
       }
+    },
+    get id() {
+      return this.tagname
     }
   }
 };
@@ -106,7 +109,7 @@ exports.patchUser = function (req, res, next) {
 };
 
 exports.postTags = function (req, res, next) {
-  req.checkBody(rules.tag);
+  req.checkBody(_.pick(rules.tag, ['tagname', 'description']));
 
   var errors = req.validationErrors();
 
@@ -134,6 +137,22 @@ exports.getTag = function (req, res, next) {
 
     return res.status(400).json(errorOutput);
   }
+  return next();
+};
+
+exports.patchTag = function (req, res, next) {
+  req.checkParams(_.pick(rules.tag, ['tagname']));
+  req.checkBody(_.pick(rules.tag, ['id', 'description']));
+  var errors = req.validationErrors();
+
+  var errorOutput = { errors: [] };
+  if (errors) {
+    for(let e of errors) {
+      errorOutput.errors.push({ meta: e });
+    }
+    return res.status(400).json(errorOutput);
+  }
+
   return next();
 };
 

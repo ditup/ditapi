@@ -13,6 +13,7 @@ router.route('/')
   .get(authorize.onlyLogged, tagController.getTags);
 
 router.route('/:tagname')
-  .get(validators.getTag, tagController.getTag);
+  .get(validators.getTag, tagController.getTag)
+  .patch(authorize.onlyLogged, validators.patchTag, tagController.patchTag, tagController.getTag);
 
 module.exports = router;

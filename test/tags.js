@@ -162,6 +162,8 @@ describe('/tags', function () {
 });
 
 describe('/tags/:tagname', function () {
+  let existentTag;
+
   // put pre-data into database
   beforeEach(async function () {
     let data = {
@@ -171,6 +173,7 @@ describe('/tags/:tagname', function () {
     }
     // create data in database
     dbData = await dbHandle.fill(data);
+    [existentTag] = dbData.tags;
 
     loggedUser = dbData.users[0];
   });
@@ -206,7 +209,6 @@ describe('/tags/:tagname', function () {
     it('show creator'); // as a json api relation
 
     it('[nonexistent tagname] should error 404', async function () {
-      let existentTag = dbData.tags[0];
       let response = await agent
         .get(`/tags/nonexistent-tag`)
         .set('Content-Type', 'application/vnd.api+json')
@@ -218,7 +220,6 @@ describe('/tags/:tagname', function () {
     });
 
     it('[invalid tagname] should error 400', async function () {
-      let existentTag = dbData.tags[0];
       let response = await agent
         .get(`/tags/invalid_tag`)
         .set('Content-Type', 'application/vnd.api+json')
@@ -231,9 +232,34 @@ describe('/tags/:tagname', function () {
   });
 
   describe('PATCH', function () {
-    it('update the tag (description, not tagname)');
-    it('keep history (vcdiff, zlib)');
-    // http://ericsink.com/entries/time_space_tradeoffs.html
+    context('logged in', function () {
+      it('[valid description] update the tag description', async function () {
+        let description = 'a new description of the tag';
+
+        let response = await agent
+          .patch(`/tags/${existentTag.tagname}`)
+          .send({
+            data: {
+              type: 'tags',
+              id: existentTag.tagname,
+              attributes: { description }
+            }
+          })
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        // check that the newly created tag is there
+        let tag = await models.tag.read(existentTag.tagname);
+
+        (typeof tag).should.equal('object');
+        tag.should.have.property('description', description);
+      });
+      
+      it('keep history (vcdiff, zlib)');
+      // http://ericsink.com/entries/time_space_tradeoffs.html
+    });
   });
 
   describe('DELETE', function () {
