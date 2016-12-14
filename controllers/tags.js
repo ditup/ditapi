@@ -52,6 +52,19 @@ exports.postTags = async function (req, res, next) {
   }
 };
 
+exports.getTags = async function (req, res, next) {
+  // get the pattern to search the tags by
+  let filterLike = _.get(req.query, 'filter.tagname.like');
+  try {
+
+    let foundTags = await models.tag.filter(filterLike);
+
+    return res.status(200).json(serialize.tag(foundTags));
+  } catch (e) {
+    return next(e);
+  }
+};
+
 // controller for GET /tags/:tagname
 exports.getTag = async function (req, res, next) {
   try {

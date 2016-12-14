@@ -11,7 +11,6 @@ let app = require(path.resolve('./app')),
     dbHandle = require(path.resolve('./test/handleDatabase')),
     config = require(path.resolve('./config/config'));
 
-let deserialize = serializers.deserialize;
 let serialize = serializers.serialize;
 
 let agent = supertest.agent(app);
@@ -30,9 +29,36 @@ describe('/tags', function () {
   describe('GET', function () {
     it('should show lists of tags');
 
-    context('?filter[tagname][like]=string', function () {
+    describe('/tags?filter[tagname][like]=string', function () {
+
+      // seed the database with users and some named tags to do filtering on
+      beforeEach(async function () {
+        let data = {
+          users: 3, // how many users to make
+          verifiedUsers: [0], // which  users to make verified
+          namedTags: ['named-tag-1', 'other-tag-0', 'named-tag-2']
+        }
+        // create data in database
+        dbData = await dbHandle.fill(data);
+
+        [loggedUser] = dbData.users;
+      });
+
       it('match tags with similar tagnames', async function () {
-        throw new Error('todo');
+        let response = await agent
+          .get(`/tags?filter[tagname][like]=named-tag`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        let foundTags = response.body;
+        foundTags.should.have.property('data');
+        foundTags.data.length.should.equal(2);
+        should(foundTags.data).containDeep([
+          { id: 'named-tag-1' },
+          { id: 'named-tag-2' }
+        ]);
       });
     });
   });
@@ -63,7 +89,7 @@ describe('/tags', function () {
       // create data in database
       dbData = await dbHandle.fill(data);
 
-      loggedUser = dbData.users[0];
+      [loggedUser] = dbData.users;
     });
 
     context('logged in', function () {

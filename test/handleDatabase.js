@@ -6,40 +6,39 @@ var path = require('path'),
 
 var models = require(path.resolve('./models'));
 
-exports.fill = function (data) {
-  return co(function * () {
-    let def = {
-      users: 0,
-      verifiedUsers: [],
-      tags: 0,
-      userTag: []
-    };
+exports.fill = async function (data) {
+  let def = {
+    users: 0,
+    verifiedUsers: [],
+    tags: 0,
+    namedTags: [],
+    userTag: []
+  };
 
-    data = _.defaults(data, def);
+  data = _.defaults(data, def);
 
-    let processed = processData(data);
+  let processed = processData(data);
 
-    for(let user of processed.users) {
-      yield models.user.create(_.pick(user, ['username', 'email', 'password']));
-      if (user.verified === true)
-        yield models.user.finalVerifyEmail(user.username);
-    }
+  for(let user of processed.users) {
+    await models.user.create(_.pick(user, ['username', 'email', 'password']));
+    if (user.verified === true)
+      await models.user.finalVerifyEmail(user.username);
+  }
 
-    for(let tag of processed.tags) {
-      let tagData = _.pick(tag, ['tagname', 'description']);
-      tagData.creator = processed.users[tag.creator];
-      yield models.tag.create(tagData);
-    }
+  for(let tag of processed.tags) {
+    let tagData = _.pick(tag, ['tagname', 'description']);
+    tagData.creator = processed.users[tag.creator];
+    await models.tag.create(tagData);
+  }
 
-    for(let userTag of processed.userTag) {
-      let username = userTag.user.username;
-      let tagname = userTag.tag.tagname;
-      let story = userTag.story || '';
-      yield models.userTag.create({ username, tagname, story });
-    }
+  for(let userTag of processed.userTag) {
+    let username = userTag.user.username;
+    let tagname = userTag.tag.tagname;
+    let story = userTag.story || '';
+    await models.userTag.create({ username, tagname, story });
+  }
 
-    return processed;
-  });
+  return processed;
 }
 
 exports.clear = function () {
@@ -60,7 +59,8 @@ function processData(data) {
     return resp;
   });
 
-  output.tags = _.map(_.range(data.tags), function (n) {
+  // create factory tags
+  let autoTags = _.map(_.range(data.tags), function (n) {
     let pickedUser = n % data.users;
     let resp = {
       tagname: `tag${n}`,
@@ -69,6 +69,19 @@ function processData(data) {
     };
     return resp;
   });
+
+  // create named tags
+  let namedTags = _.map(_.range(data.namedTags.length), function (n) {
+    let pickedUser = n % data.users;
+    let resp = {
+      tagname: data.namedTags[n],
+      description: `description of ${data.namedTags[n]}`,
+      creator: pickedUser
+    };
+    return resp;
+  });
+
+  output.tags = autoTags.concat(namedTags);
 
   output.userTag = _.map(data.userTag, function (vals) {
     let [userno, tagno, story] = vals;

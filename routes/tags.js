@@ -9,7 +9,8 @@ var validators = require(path.resolve('./controllers/validators'));
 let authorize = require(path.resolve('./controllers/authorize'));
 // post a new tag
 router.route('/')
-  .post(authorize.onlyLogged, validators.postTags, tagController.postTags);
+  .post(authorize.onlyLogged, validators.postTags, tagController.postTags)
+  .get(authorize.onlyLogged, tagController.getTags);
 
 router.route('/:tagname')
   .get(validators.getTag, tagController.getTag);

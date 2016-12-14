@@ -6,31 +6,29 @@ let Model = require(path.resolve('./models/model')),
     schema = require('./schema');
 
 class Tag extends Model {
-  static create({ tagname: tagname, description: description, creator: creator }) {
+  static async create({ tagname, description, creator }) {
     let tag = schema({ tagname, description });
-    return co.call(this, function* () {
-      let query = `INSERT @tag IN tags`;
-      let params = { tag: tag };
+    let query = `INSERT @tag IN tags`;
+    let params = { tag };
 
-      yield this.db.query(query, params);
+    await this.db.query(query, params);
 
-      let queryCreator = `
-        FOR u IN users FILTER u.username == @creator
-          FOR t IN tags FILTER t.tagname == @tagname
-            INSERT {
-              _from: t._id,
-              _to: u._id,
-              created: @created
-            } IN tagCreator
-            RETURN NEW`;
-      let paramsCreator = {
-        creator,
-        tagname,
-        created: Date.now()
-      };
+    let queryCreator = `
+      FOR u IN users FILTER u.username == @creator
+        FOR t IN tags FILTER t.tagname == @tagname
+          INSERT {
+            _from: t._id,
+            _to: u._id,
+            created: @created
+          } IN tagCreator
+          RETURN NEW`;
+    let paramsCreator = {
+      creator,
+      tagname,
+      created: Date.now()
+    };
 
-      yield this.db.query(queryCreator, paramsCreator);
-    });
+    await this.db.query(queryCreator, paramsCreator);
   }
 
   static read(tagname) {
@@ -73,6 +71,25 @@ class Tag extends Model {
           throw new Error('bad output');
       }
     });
+  }
+
+  // get tags which start with likeTagname string
+  static async filter(likeTagname) {
+    let query = `
+      FOR t IN tags FILTER t.tagname LIKE @likeTagname
+        RETURN KEEP(t, 'username', 'tagname', 'description', 'created')`;
+    // % serves as a placeholder for multiple characters in arangodb LIKE
+    // _ serves as a placeholder for a single character
+    let params = { likeTagname: `${likeTagname}%` };
+    let out = await (await this.db.query(query, params)).all();
+
+    let formatted = [];
+
+    for(let tag of out) {
+      formatted.push(_.pick(tag, ['tagname', 'description']));
+    }
+
+    return formatted;
   }
 }
 
