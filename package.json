@@ -5,7 +5,8 @@
   "scripts": {
     "start": "NODE_ENV=development node --harmony ./bin/www",
     "test": "NODE_ENV=test mocha --harmony ./test/",
-    "test:watch": "NODE_ENV=test mocha --harmony ./test/ --watch"
+    "test:watch": "NODE_ENV=test mocha --harmony ./test/ --watch",
+    "lint": "gulp eslint"
   },
   "dependencies": {
     "arangojs": "^5.0.3",
@@ -31,6 +32,7 @@
     "serve-favicon": "~2.3.0"
   },
   "devDependencies": {
+    "eslint": "^3.13.0",
     "gulp-eslint": "^3.0.1",
     "maildev": "^0.14.0",
     "mocha": "^3.1.2",

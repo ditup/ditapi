@@ -4,8 +4,7 @@ var path = require('path'),
     config = require(path.resolve('./config/config')),
     serialize = require(path.resolve('./serializers')).serialize,
     models = require(path.resolve('./models')),
-    _ = require('lodash'),
-    mailer = require(path.resolve('./services/mailer'));
+    _ = require('lodash');
 
 /**
  * Create a new tag
@@ -33,11 +32,12 @@ exports.postTags = async function (req, res, next) {
       });
     }
 
-    
+
     let tagData = _.pick(req.body, ['tagname', 'description']);
     _.assign(tagData, { creator: req.auth.username });
 
     let tag = await models.tag.create(tagData);
+    tag; // satisfy eslint & use this later
 
     // respond
     var selfLink = `${config.url.all}/tags/${tagname}`;
@@ -79,11 +79,11 @@ exports.getTag = async function (req, res, next) {
 
     _.assign(tag, { id: tagname });
     var selfLink = `${config.url.all}/tags/${tagname}`;
-    
+
     return res.status(200)
       .set('Location', selfLink)
       .json(serialize.tag(tag));
-    
+
   } catch (e) {
     return next(e);
   }
@@ -102,13 +102,13 @@ exports.patchTag = async function (req, res, next) {
       description: req.body.description,
       editor: req.auth.username,
       time: Date.now()
-    }
+    };
     // update the profile with the new values
-    let savedTag = await models.tag.update(req.params.tagname, updateData);
+    await models.tag.update(req.params.tagname, updateData);
     return next();
-    
+
   } catch (e) {
     /* handle error */
     return next(e);
   }
-}
+};

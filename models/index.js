@@ -1,7 +1,5 @@
 'use strict';
 
-let arangojs = require('arangojs');
-
 let model = require('./model'),
     tag = require('./tag'),
     user = require('./user'),

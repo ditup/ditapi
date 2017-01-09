@@ -1,7 +1,6 @@
-'use strict'
+'use strict';
 
 let co = require('co'),
-    _ = require('lodash'),
     path = require('path');
 
 let Model = require(path.resolve('./models/model')),
@@ -41,7 +40,7 @@ class UserTag extends Model {
       let params = { username, tagname, userTag };
       let cursor = yield this.db.query(query, params);
       let out = yield cursor.all();
-      
+
       if (out.length !== 1) return null;
       return out[0];
     });
@@ -64,10 +63,8 @@ class UserTag extends Model {
       switch (count) {
         case 0:
           return false;
-          break;
         case 1:
           return true;
-          break;
         default:
           throw new Error('bad output');
       }
@@ -91,10 +88,8 @@ class UserTag extends Model {
       switch (writes) {
         case 0:
           return false;
-          break;
         case 1:
           return true;
-          break;
         default:
           throw new Error('database corruption');
       }

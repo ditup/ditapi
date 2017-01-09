@@ -8,7 +8,7 @@ let Model = require(path.resolve('./models/model')),
 class Tag extends Model {
   static async create({ tagname, description, creator }) {
     let tag = schema({ tagname, description });
-    let query = `INSERT @tag IN tags`;
+    let query = 'INSERT @tag IN tags';
     let params = { tag };
 
     await this.db.query(query, params);
@@ -79,10 +79,8 @@ class Tag extends Model {
       switch (count) {
         case 0:
           return false;
-          break;
         case 1:
           return true;
-          break;
         default:
           throw new Error('bad output');
       }

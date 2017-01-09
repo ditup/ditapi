@@ -13,10 +13,10 @@ passport.use(new BasicStrategy(
     // full login
     let user = {
       logged: Boolean(auth.authenticated && auth.verified)
-    }
+    };
 
     // partial login (unverified)
-    if (auth.authenticated && ! auth.verified) 
+    if (auth.authenticated && ! auth.verified)
       user.loggedUnverified = true;
 
     // additional information
@@ -32,6 +32,7 @@ module.exports = function (req, res, next) {
   passport.authenticate('basic', { session : false },
   function (err, user, info) {
     // add user info to body
+    info; // satisfy eslint and maybe use it later
     req.auth = user || { logged: false };
     next();
   })(req, res, next);

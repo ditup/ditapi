@@ -1,8 +1,7 @@
 'use strict';
 
 var path = require('path'),
-    _ = require('lodash'),
-    co = require('co');
+    _ = require('lodash');
 
 var models = require(path.resolve('./models'));
 
@@ -39,7 +38,7 @@ exports.fill = async function (data) {
   }
 
   return processed;
-}
+};
 
 exports.clear = function () {
   return models.db.truncate();
@@ -95,7 +94,7 @@ function processData(data) {
         return output.users[userno];
       },
       story: story || '' };
-    
+
     output.users[userno].tags.push(tagno);
     return resp;
   });

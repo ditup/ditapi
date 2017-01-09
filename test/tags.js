@@ -8,8 +8,7 @@ let supertest = require('supertest'),
 let app = require(path.resolve('./app')),
     serializers = require(path.resolve('./serializers')),
     models = require(path.resolve('./models')),
-    dbHandle = require(path.resolve('./test/handleDatabase')),
-    config = require(path.resolve('./config/config'));
+    dbHandle = require(path.resolve('./test/handleDatabase'));
 
 let serialize = serializers.serialize;
 
@@ -37,7 +36,7 @@ describe('/tags', function () {
           users: 3, // how many users to make
           verifiedUsers: [0], // which  users to make verified
           namedTags: ['named-tag-1', 'other-tag-0', 'named-tag-2']
-        }
+        };
         // create data in database
         dbData = await dbHandle.fill(data);
 
@@ -46,7 +45,7 @@ describe('/tags', function () {
 
       it('match tags with similar tagnames', async function () {
         let response = await agent
-          .get(`/tags?filter[tagname][like]=named-tag`)
+          .get('/tags?filter[tagname][like]=named-tag')
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
           .expect(200)
@@ -85,7 +84,7 @@ describe('/tags', function () {
         users: 3, // how many users to make
         verifiedUsers: [0, 1], // which  users to make verified
         tags: 1
-      }
+      };
       // create data in database
       dbData = await dbHandle.fill(data);
 
@@ -94,8 +93,8 @@ describe('/tags', function () {
 
     context('logged in', function () {
       it('[good data] should create a tag and respond with 201', async function () {
-        let response = await agent
-            .post(`/tags`)
+        await agent
+            .post('/tags')
             .send(serializedNewTag)
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
@@ -113,8 +112,8 @@ describe('/tags', function () {
       });
 
       it('[invalid tagname] should error with 400', async function () {
-        let response = await agent
-          .post(`/tags`)
+        await agent
+          .post('/tags')
           .send(serializedInvalidTagname)
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
@@ -123,8 +122,8 @@ describe('/tags', function () {
       });
 
       it('[duplicate tagname] should error with 409', async function () {
-        let response = await agent
-          .post(`/tags`)
+        await agent
+          .post('/tags')
           .send(serialize.newTag(dbData.tags[0]))
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
@@ -134,8 +133,8 @@ describe('/tags', function () {
 
       it('[invalid description]', async function () {
         let longDescription = _.repeat('.', 2049);
-        let response = await agent
-          .post(`/tags`)
+        await agent
+          .post('/tags')
           .send(serialize.newTag({
             tagname: 'new-tag',
             description: longDescription
@@ -149,8 +148,8 @@ describe('/tags', function () {
 
     context('not logged in', function () {
       it('should say 403 Forbidden', async function () {
-        let response = await agent
-          .post(`/tags`)
+        await agent
+          .post('/tags')
           .send(serializedNewTag)
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, `${loggedUser.password}a`)
@@ -170,7 +169,7 @@ describe('/tags/:tagname', function () {
       users: 3, // how many users to make
       verifiedUsers: [0, 1], // which  users to make verified
       tags: 7
-    }
+    };
     // create data in database
     dbData = await dbHandle.fill(data);
     [existentTag] = dbData.tags;
@@ -210,18 +209,18 @@ describe('/tags/:tagname', function () {
 
     it('[nonexistent tagname] should error 404', async function () {
       let response = await agent
-        .get(`/tags/nonexistent-tag`)
+        .get('/tags/nonexistent-tag')
         .set('Content-Type', 'application/vnd.api+json')
         .auth(loggedUser.username, loggedUser.password)
         .expect(404)
-        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect('Content-Type', /^application\/vnd\.api\+json/);
 
       response.body.should.have.property('errors');
     });
 
     it('[invalid tagname] should error 400', async function () {
       let response = await agent
-        .get(`/tags/invalid_tag`)
+        .get('/tags/invalid_tag')
         .set('Content-Type', 'application/vnd.api+json')
         .auth(loggedUser.username, loggedUser.password)
         .expect(400)
@@ -236,7 +235,7 @@ describe('/tags/:tagname', function () {
       it('[valid description] update the tag description', async function () {
         let description = 'a new description of the tag';
 
-        let response = await agent
+        await agent
           .patch(`/tags/${existentTag.tagname}`)
           .send({
             data: {
@@ -256,7 +255,7 @@ describe('/tags/:tagname', function () {
         (typeof tag).should.equal('object');
         tag.should.have.property('description', description);
       });
-      
+
       it('keep history (vcdiff, zlib)');
       // http://ericsink.com/entries/time_space_tradeoffs.html
     });

@@ -40,11 +40,11 @@ describe('/users/:username/account...', function () {
 
   describe('./email', function () {
     describe('GET', function () {
-      it(`get user's  email`);
+      it('get user\'s  email');
     });
 
     describe('PUT', function () {
-      it(`change user's email`);
+      it('change user\'s email');
       it('send verification email');
     });
   });
@@ -65,7 +65,7 @@ describe('/users/:username/account...', function () {
       });
 
       // we verify the email
-      let res = await agent
+      await agent
         .get(`/users/test/account/email/verify/${out.emailVerifyCode}`)
         .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
@@ -74,23 +74,23 @@ describe('/users/:username/account...', function () {
       // see whether the user's email is verified now
       let user = await models.user.read('test');
 
-      user.should.have.property('email', 'test@example.com');
-      user.should.have.property('account');
-      user.account.should.have.property('email', null);
+      should(user).have.property('email', 'test@example.com');
+      should(user).have.property('account');
+      should(user.account).have.property('email', null);
     });
 
     it('[wrong code] should error', async function () {
       // first we create a new user
-      let out = await models.user.create({
+      await models.user.create({
         username: 'test',
         password: 'asdfasdf',
         email: 'test@example.com'
       });
 
       let badCode = 'aa2345';
-      
+
       // we verify the email
-      let res = await agent
+      await agent
         .get(`/users/test/account/email/verify/${badCode}`)
         .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
@@ -113,19 +113,19 @@ describe('/users/:username/account...', function () {
       });
 
       // we verify the email
-      let res = await agent
+      await agent
         .get(`/users/test/account/email/verify/${out.emailVerifyCode}`)
         .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(200);
 
-      let res2 = await agent
+      await agent
         .get(`/users/test/account/email/verify/${out.emailVerifyCode}`)
         .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(400);
     });
   });
-  
+
 });
 

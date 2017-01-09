@@ -43,7 +43,7 @@ exports.postUsers = async function (req, res, next) {
         id: req.body.username,
         username: req.body.username
       }));
-    
+
   } catch (e) {
     return next(e);
   }
@@ -51,7 +51,7 @@ exports.postUsers = async function (req, res, next) {
 
 exports.getUser = async function (req, res, next) {
   try {
-    
+
     let auth = _.get(req, 'auth', { logged: false });
 
     let username = req.params.username;
@@ -115,7 +115,7 @@ exports.patchUser = async function (req, res, next) {
   let profile = _.pick(req.body, profileFields);
 
   // update the profile with the new values
-  let savedUser = await models.user.update(req.params.username, profile);
+  await models.user.update(req.params.username, profile);
   return next();
 };
 
@@ -127,12 +127,12 @@ exports.verifyEmail = async function (req, res, next) {
     await models.user.verifyEmail(username, code);
 
     return res.status(200).json({});
-    
+
   } catch (e) {
     e.status = 400;
     return next(e);
   }
-}
+};
 
 exports.postUserTags = async function (req, res, next) {
   try {
@@ -166,7 +166,7 @@ exports.postUserTags = async function (req, res, next) {
     return res.status(201)
       .set('Location', selfLink)
       .json(resp);
-    
+
   } catch (e) {
     return next(e);
   }
@@ -187,7 +187,7 @@ exports.getUserTags = async function (req, res, next) {
 
     return res.status(200)
       .json(serialized);
-    
+
   } catch (e) {
     return next(e);
   }
@@ -203,6 +203,7 @@ exports.getUserTag = async function (req, res, next) {
     _.assign(userTag, { id: userTag.tag.tagname });
 
     // respond
+    // eslint-disable-next-line no-unused-vars
     var selfLink = `${config.url.all}/users/${username}/tags/${tagname}`;
     let serialized = serialize.userTag(userTag);
 

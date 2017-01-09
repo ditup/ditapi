@@ -29,4 +29,6 @@ before_script:
   - ./setup_arangodb_3.0.10.sh
   - cp ./config/secret/sample.js ./config/secret/test.js
   - ./bin/init-db-standalone
-after_script:
+script:
+  - npm run lint
+  - npm test

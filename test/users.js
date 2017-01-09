@@ -5,7 +5,6 @@ process.env.NODE_ENV = 'test';
 const supertest = require('supertest'),
       should = require('should'),
       path = require('path'),
-      co = require('co'),
       MailDev = require('maildev'),
       EventEmitter = require('events');
 
@@ -14,21 +13,17 @@ const mailEmitter = new MailEmitter();
 
 var app = require(path.resolve('./app')),
     models = require(path.resolve('./models')),
-    config = require(path.resolve('./config/config')),
-    dbHandle = require(path.resolve('./test/handleDatabase')),
-    mailer = require(path.resolve('./services/mailer'));
+    config = require(path.resolve('./config')),
+    dbHandle = require(path.resolve('./test/handleDatabase'));
 
 var agent = supertest.agent(app);
 
-var maildev, incomingMail;
-
-
 describe('/users', function () {
+  let maildev;
+
   // set mailer at the beginning
   before(function (done) {
-    maildev = new MailDev({
-      smtp: 1025
-    });
+    maildev = new MailDev(config.mailer);
 
     maildev.listen(function (err) {
       if (err) return done(err);
@@ -43,7 +38,7 @@ describe('/users', function () {
   before(function () {
     maildev.on('new', function (email) {
       mailEmitter.emit('mail', email);
-    }); 
+    });
   });
 
   // unset mailer at the end
@@ -91,10 +86,11 @@ describe('/users', function () {
           .expect('Location', selfLink)
           .expect(201);
 
-        res.body.should.have.property('data');
-        res.body.data.should.have.property('id', user.username);
-        res.body.links.should.have.property('self', selfLink);
-        res.body.data.attributes.should.have.property('username', user.username);
+        should(res.body).have.property('data');
+        const data = res.body.data;
+        should(data).have.property('id', user.username);
+        should(res.body.links).have.property('self', selfLink);
+        should(data.attributes).have.property('username', user.username);
       });
 
       it('should create a new user', async function () {
@@ -122,10 +118,12 @@ describe('/users', function () {
           .expect(201);
 
         // wait for the 'mail' event
-        await new Promise(function (resolve, reject) {
+        await new Promise(function (resolve) {
           mailEmitter.once('mail', function (email) {
             email.should.have.property('from');
+            email.from[0].should.have.property('address', 'info@ditup.org');
             email.should.have.property('to');
+            email.to[0].should.have.property('address', user.email);
             email.should.have.property('text');
             return resolve();
           });
@@ -148,7 +146,7 @@ describe('/users', function () {
           type: 'users',
           attributes: user
         }
-      }
+      };
 
       let res = await agent
         .post('/users')
@@ -242,7 +240,7 @@ describe('/users', function () {
 
 
       // post the first user
-      let userResponse = await agent.post('/users')
+      await agent.post('/users')
         .send(userData)
         .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)

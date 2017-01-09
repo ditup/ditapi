@@ -57,10 +57,8 @@ class User extends Model {
     switch (count) {
       case 0:
         return false;
-        break;
       case 1:
         return true;
-        break;
       default:
         throw new Error('bad output');
     }
@@ -106,14 +104,15 @@ class User extends Model {
         throw new Error('Database Error');
     }
 
-    if (credentialsMatch) profile.username = username;
-
     let user = {
       authenticated: credentialsMatch,
       verified: Boolean(isVerified && credentialsMatch)
     };
 
-    _.assign(user, profile);
+    if (credentialsMatch) {
+      profile.username = username;
+      _.assign(user, profile);
+    }
 
     return user;
   }
@@ -129,10 +128,8 @@ class User extends Model {
     switch (count) {
       case 0:
         return false;
-        break;
       case 1:
         return true;
-        break;
       default:
         throw new Error('bad output');
     }
@@ -153,7 +150,7 @@ class User extends Model {
     `;
     let params = { username };
     let output = await (await this.db.query(query, params)).all();
-    
+
     if(output.length === 0) throw new Error('User Not Found');
     if(output.length > 1) throw new Error('Database Corruption');
     let info = output[0];

@@ -2,19 +2,13 @@
 
 process.env.NODE_ENV = 'test';
 
-let supertest = require('supertest'),
-    should = require('should'),
-    _ = require('lodash'),
-    path = require('path');
+const supertest = require('supertest'),
+      should = require('should'),
+      _ = require('lodash'),
+      path = require('path');
 
 let app = require(path.resolve('./app')),
-    serializers = require(path.resolve('./serializers')),
-    models = require(path.resolve('./models')),
-    dbHandle = require(path.resolve('./test/handleDatabase')),
-    config = require(path.resolve('./config/config'));
-
-let deserialize = serializers.deserialize;
-let serialize = serializers.serialize;
+    dbHandle = require(path.resolve('./test/handleDatabase'));
 
 let agent = supertest.agent(app);
 
@@ -34,7 +28,7 @@ describe('/users/:username', function () {
       let data = {
         users: 3, // how many users to make
         verifiedUsers: [0, 1] // which  users to make verified
-      }
+      };
       // create data in database
       dbData = await dbHandle.fill(data);
 
@@ -44,7 +38,7 @@ describe('/users/:username', function () {
     });
 
     afterEach(async function () {
-        await dbHandle.clear();
+      await dbHandle.clear();
     });
 
     context('[user exists]', function () {
@@ -55,7 +49,7 @@ describe('/users/:username', function () {
           .auth(loggedUser.username, loggedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
-        
+
         let user = response.body;
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
@@ -73,7 +67,7 @@ describe('/users/:username', function () {
           .set('Content-Type', 'application/vnd.api+json')
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
-        
+
         let user = response.body;
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
@@ -92,7 +86,7 @@ describe('/users/:username', function () {
           .auth(unverifiedUser.username, unverifiedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
-        
+
         let user = response.body;
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
@@ -111,7 +105,7 @@ describe('/users/:username', function () {
           .auth(unverifiedUser.username, unverifiedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
-        
+
         let user = response.body;
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
@@ -126,7 +120,7 @@ describe('/users/:username', function () {
 
     context('[user doesn\'t exist]', function () {
       it('should show 404', async function () {
-        let response = await agent
+        await agent
           .get(`/users/${nonexistentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
@@ -137,8 +131,8 @@ describe('/users/:username', function () {
 
     context('[username is invalid]', function () {
       it('should show 400', async function () {
-        let response = await agent
-          .get(`/users/this--is-an-invalid--username`)
+        await agent
+          .get('/users/this--is-an-invalid--username')
           .set('Content-Type', 'application/vnd.api+json')
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -153,7 +147,7 @@ describe('/users/:username', function () {
       let data = {
         users: 2, // how many users to make
         verifiedUsers: [0] // which  users to make verified
-      }
+      };
       // create data in database
       dbData = await dbHandle.fill(data);
 
@@ -230,7 +224,7 @@ describe('/users/:username', function () {
             email: 'email@example.com'
           };
 
-          let res = await agent
+          await agent
             .patch(`/users/${loggedUser.username}`)
             .send({
               data: {
@@ -253,7 +247,7 @@ describe('/users/:username', function () {
             description: tooLongValue
           };
 
-          let res = await agent
+          await agent
             .patch(`/users/${loggedUser.username}`)
             .send({
               data: {
@@ -269,7 +263,7 @@ describe('/users/:username', function () {
         });
 
         it('should fail with 400 when url username doesn\'t match the username in body.data.id', async function () {
-          let res = await agent
+          await agent
             .patch(`/users/${loggedUser.username}`)
             .send({
               data: {
@@ -289,7 +283,7 @@ describe('/users/:username', function () {
 
       context('the edited user is not the logged one', function () {
         it('should error with 403 Not Authorized', async function () {
-          let res = await agent
+          await agent
             .patch(`/users/${otherUser.username}`)
             .send({
               data: {
@@ -310,7 +304,7 @@ describe('/users/:username', function () {
 
     context('not logged in', function () {
       it('should error with 403 Not Authorized', async function () {
-        let res = await agent
+        await agent
           .patch(`/users/${otherUser.username}`)
           .send({
             data: {

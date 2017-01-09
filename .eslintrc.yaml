@@ -1,12 +1,18 @@
 ---
   parserOptions:
-    ecmaVersion: 6
+    ecmaVersion: 8
   env:
     node: true
     mocha: true
+    es6: true
+  extends: 'eslint:recommended'
   rules:
     quotes: [2, 'single']
     semi: [2, 'always']
     no-fallthrough: 2
     no-redeclare: 2
     no-self-assign: 2
+    spaced-comment: 
+      - 2
+      - always
+    no-trailing-spaces: 2

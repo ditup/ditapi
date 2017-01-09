@@ -3,7 +3,7 @@
 // setup is now using Gulp. It works exactly how I expect it to and is WAY more concise.
 var gulp = require('gulp'),
     spawn = require('child_process').spawn,
-    exec = require('child_process').exec,
+    // exec = require('child_process').exec,
     eslint = require('gulp-eslint'),
     node,
     oauth;
@@ -44,7 +44,7 @@ gulp.task('default', function() {
   gulp.watch(['./app.js', './routes/**/*.js'], function() {
     gulp.run('server');
   });
-  
+
   // Need to watch for sass changes too? Just add another watch call!
   // no more messing around with grunt-concurrent or the like. Gulp is
   // async by default.
@@ -58,7 +58,7 @@ process.on('exit', function() {
 
 gulp.task('eslint', function() {
   return gulp.src(['./**/*.js', '!./node_modules/**']).pipe(eslint())
-  .pipe(eslint.format())
+  .pipe(eslint.format());
   // Brick on failure to be super strict
-  .pipe(eslint.failOnError());
+  // .pipe(eslint.failOnError());
 });

@@ -32,7 +32,7 @@ var rules = {
       }
     },
     get id() {
-      return this.username
+      return this.username;
     }
   },
 
@@ -53,7 +53,7 @@ var rules = {
       }
     },
     get id() {
-      return this.tagname
+      return this.tagname;
     }
   }
 };

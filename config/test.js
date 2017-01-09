@@ -10,7 +10,9 @@ module.exports = {
   },
   mailer: {
     host: '0.0.0.0',
-    port: 1025,
+    port: 1026,
+    smtp: 1026,
+    web: 1081,
     ignoreTLS: true
   }
 };

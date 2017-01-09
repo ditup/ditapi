@@ -1,10 +1,12 @@
 'use strict';
 
+/*
 let uniqueEdge = {
   type: 'hash',
   fields: ['_from', '_to'],
   unique: true
 };
+*/
 
 module.exports = {
   users: {
@@ -62,7 +64,7 @@ module.exports = {
   },
 };
 
-/*  
+/*
 {
   challengeCommentAuthor: {
     type: 'edge',

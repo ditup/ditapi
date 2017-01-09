@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 // true logged means correct auth data and email verified
 // true loggedUnverified means correct auth data and unverified email

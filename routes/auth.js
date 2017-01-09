@@ -1,11 +1,11 @@
 'use strict';
 
-var express = require('express');
+const express = require('express'),
+      path = require('path');
+
+const userController = require(path.resolve('./controllers/users'));
+
 var router = express.Router();
-var path = require('path');
-var userController = require(path.resolve('./controllers/users'));
-var validators = require(path.resolve('./controllers/validators')),
-    authorize = require(path.resolve('./controllers/authorize'));
 
 // basic authenticator
 router.route('/basic')

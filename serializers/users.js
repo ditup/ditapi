@@ -40,7 +40,7 @@ var userTagSerializer = new Serializer('tags', {
   topLevelLinks: {
     self: ({ user, tag }) => `${config.url.all}/users/${user.username}/relationships/tags/${tag.tagname}`,
     related: ({ user, tag }) => `${config.url.all}/users/${user.username}/tags/${tag.tagname}`
- 
+
   }
 });
 exports.userTag = function (data) {
