@@ -28,7 +28,7 @@ before_script:
   - sudo chmod 755 setup_arangodb_3.0.10.sh
   - ./setup_arangodb_3.0.10.sh
   - cp ./config/secret/sample.js ./config/secret/test.js
-  - ./bin/init-db-standalone
+  - npm run init-db-standalone
 script:
   - npm run lint
   - npm test

@@ -6,7 +6,8 @@
     "start": "NODE_ENV=development node --harmony ./bin/www",
     "test": "NODE_ENV=test mocha --harmony ./test/",
     "test:watch": "NODE_ENV=test mocha --harmony ./test/ --watch",
-    "lint": "gulp eslint"
+    "lint": "gulp eslint",
+    "init-db-standalone": "NODE_ENV=test node --harmony ./bin/init-db-standalone"
   },
   "dependencies": {
     "arangojs": "^5.0.3",
