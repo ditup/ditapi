@@ -3,7 +3,6 @@
 // load module dependencies
 const express = require('express'),
     bodyParser = require('body-parser'),
-    _ = require('lodash'),
     passport = require('passport'),
     helmet = require('helmet'),
     expressValidator = require('express-validator');
@@ -57,6 +56,7 @@ app.use(function (req, res, next) {
 // actual routes
 app.use('/users', require('./routes/users'));
 app.use('/tags', require('./routes/tags'));
+app.use('/auth', require('./routes/auth'));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -71,6 +71,7 @@ app.use(function(req, res, next) {
 // will print stacktrace
 if (app.get('env') === 'development' || app.get('env') === 'test') {
   app.use(function(err, req, res, next) {
+    next; // satisfy eslint
     if (!err.status) {
       console.error(err);
     }
@@ -88,6 +89,7 @@ if (app.get('env') === 'development' || app.get('env') === 'test') {
 // production error handler
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
+  next; // satisfy eslint
   res.status(err.status || 500)
     .json({
       errors: [
