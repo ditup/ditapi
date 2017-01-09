@@ -19,14 +19,14 @@ before_install:
   - sudo chmod -R 777 /var/cache/debconf
   - sudo echo arangodb3 arangodb3/password password somepwd | debconf-set-selections
   - sudo echo arangodb3 arangodb3/password_again password somepwd | debconf-set-selections
-  - wget https://www.arangodb.com/repositories/travisCI/ArangoDB-3.0.10.tar.gz -O /tmp/arangodb.tar.gz
-  - wget https://www.arangodb.com/repositories/travisCI/setup_arangodb_3.0.10.sh
+  - wget https://www.arangodb.com/repositories/travisCI/ArangoDB-3.1.7.tar.gz -O /tmp/arangodb.tar.gz
+  - wget https://www.arangodb.com/repositories/travisCI/setup_arangodb_3.1.7.sh -O ../../setup_arangodb.sh
 # - gem update --system
 before_script:
-  - tar -xf /tmp/arangodb.tar.gz
-  - export PATH=$PATH:$PWD/arangodb-3.0.10/bin/
-  - sudo chmod 755 setup_arangodb_3.0.10.sh
-  - ./setup_arangodb_3.0.10.sh
+  - tar -xf /tmp/arangodb.tar.gz -C ../..
+  - export PATH=$PATH:$PWD/../../arangodb-3.1.7/bin/
+  - sudo chmod 755 ../../setup_arangodb.sh
+  - ./../../setup_arangodb.sh
   - cp ./config/secret/sample.js ./config/secret/test.js
   - npm run init-db-standalone
 script:
