@@ -34,7 +34,8 @@ exports.fill = async function (data) {
     let username = userTag.user.username;
     let tagname = userTag.tag.tagname;
     let story = userTag.story || '';
-    await models.userTag.create({ username, tagname, story });
+    let relevance = userTag.relevance || 3;
+    await models.userTag.create({ username, tagname, story, relevance });
   }
 
   return processed;
@@ -82,9 +83,8 @@ function processData(data) {
 
   output.tags = autoTags.concat(namedTags);
 
-  output.userTag = _.map(data.userTag, function (vals) {
-    let [userno, tagno, story] = vals;
-    let resp = {
+  output.userTag = _.map(data.userTag, function ([userno, tagno, story, relevance]) {
+    const resp = {
       userno,
       tagno,
       get tag() {
@@ -93,7 +93,9 @@ function processData(data) {
       get user() {
         return output.users[userno];
       },
-      story: story || '' };
+      story: story || '',
+      relevance: relevance || 3
+    };
 
     output.users[userno].tags.push(tagno);
     return resp;

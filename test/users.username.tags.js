@@ -1,5 +1,7 @@
 'use strict';
 
+// @TODO MIGRATE TO USER-TAGS
+
 const supertest = require('supertest'),
       should = require('should'),
       path = require('path');
@@ -80,21 +82,22 @@ describe('Tags of user', function () {
       });
 
       beforeEach(function () {
-        loggedUser = dbData.users[0];
-        otherUser = dbData.users[1];
+        [loggedUser, otherUser] = dbData.users;
       });
 
       let newUserTag;
       beforeEach(function () {
         newUserTag = {
           tagname: dbData.tags[0].tagname,
-          story: 'here user can answer why she has that tag in her profile'
+          story: 'here user can answer why she has that tag in her profile',
+          relevance: 3
         };
       });
 
       context('logged in', function () {
         it('[self] add a tag to the user and respond 201', async function () {
-          let response = await agent
+
+          const response = await agent
             .post(`/users/${loggedUser.username}/tags`)
             .send(serialize.newUserTag(newUserTag))
             .set('Content-Type', 'application/vnd.api+json')
@@ -102,30 +105,36 @@ describe('Tags of user', function () {
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          let userTag = response.body;
+          const userTag = response.body;
           userTag.should.have.property('data');
           userTag.should.have.property('links');
-          userTag.should.have.property('meta');
+          // userTag.should.have.property('meta');
 
-          let data = userTag.data;
-          let links = userTag.links;
-          let meta = userTag.meta;
+          const data = userTag.data;
+          const links = userTag.links;
+          // let meta = userTag.meta;
 
-          data.should.have.property('type', 'tags');
-          data.should.have.property('id', newUserTag.tagname);
+          data.should.have.property('type', 'user-tags');
+          data.should.have.property('id',
+            `${loggedUser.username}--${newUserTag.tagname}`);
 
-          links.should.have.property('self', `${config.url.all}/users/${loggedUser.username}/relationships/tags/${newUserTag.tagname}`);
-          links.should.have.property('related', `${config.url.all}/users/${loggedUser.username}/tags/${newUserTag.tagname}`);
+          links.should.have.property('self', `${config.url.all}/users/${loggedUser.username}/tags/${newUserTag.tagname}`);
+          // links.should.have.property('related', `${config.url.all}/users/${loggedUser.username}/tags/${newUserTag.tagname}`);
 
-          meta.should.have.property('story', newUserTag.story);
-          meta.should.have.property('created');
-          meta.created.should.be.approximately(Date.now(), 1000);
+          data.should.have.property('attributes');
 
-          let userTagDb = await models.userTag.read(loggedUser.username,
+          const attributes = data.attributes;
+
+          attributes.should.have.property('story', newUserTag.story);
+          attributes.should.have.property('relevance', 3);
+
+          const userTagDb = await models.userTag.read(loggedUser.username,
             newUserTag.tagname);
-          userTagDb.should.have.property('story');
+          userTagDb.should.have.property('story', newUserTag.story);
+          // userTagDb.should.have.property('relevance', newUserTag.relevance);
           userTagDb.should.have.property('user');
           userTagDb.should.have.property('tag');
+          userTagDb.created.should.be.approximately(Date.now(), 1000);
         });
 
         it('[other user] error 403', async function () {
@@ -203,44 +212,43 @@ describe('Tags of user', function () {
         userTag: [
           [1, 0, 'story'],
           [1, 1, 'story'],
-          [1, 3, 'a story of relationship of taggedUser to relation3'],
+          [1, 3, 'a story of relationship of taggedUser to relation3', 2],
           [1, 4, 'story'],
           [1, 5, 'story']
         ]
       });
 
       beforeEach(function () {
-        loggedUser = dbData.users[0];
-        taggedUser = dbData.users[1];
+        [loggedUser, taggedUser] = dbData.users;
       });
 
       it('show tag with user\'s story to it', async function () {
-        let userTag = dbData.userTag[2];
+        const userTag = dbData.userTag[2];
 
-        let response = await agent
+        const response = await agent
           .get(`/users/${taggedUser.username}/tags/${userTag.tag.tagname}`)
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-        let respUserTag = response.body;
+        const respUserTag = response.body;
         respUserTag.should.have.property('data');
         respUserTag.should.have.property('links');
-        respUserTag.should.have.property('meta');
 
-        let data = respUserTag.data;
-        let links = respUserTag.links;
-        let meta = respUserTag.meta;
+        const data = respUserTag.data;
+        const links = respUserTag.links;
 
-        data.should.have.property('type', 'tags');
-        data.should.have.property('id', userTag.tag.tagname);
+        data.should.have.property('type', 'user-tags');
+        data.should.have.property('id',
+          `${taggedUser.username}--${userTag.tag.tagname}`);
 
-        links.should.have.property('self', `${config.url.all}/users/${userTag.user.username}/relationships/tags/${userTag.tag.tagname}`);
-        links.should.have.property('related', `${config.url.all}/users/${userTag.user.username}/tags/${userTag.tag.tagname}`);
+        links.should.have.property('self', `${config.url.all}/users/${userTag.user.username}/tags/${userTag.tag.tagname}`);
 
-        meta.should.have.property('story', userTag.story);
-        meta.should.have.property('created');
+        should(data).have.property('attributes');
+        const attributes = data.attributes;
+        should(attributes).have.property('story', userTag.story);
+        should(attributes).have.property('relevance', userTag.relevance);
       });
     });
 

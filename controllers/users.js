@@ -137,11 +137,12 @@ exports.verifyEmail = async function (req, res, next) {
 exports.postUserTags = async function (req, res, next) {
   try {
     // should be already validated
-    let username = req.params.username;
-    let tagname = req.body.tagname;
-    let story = req.body.story;
+    const username = req.params.username;
+    const tagname = req.body.tagname;
+    const story = req.body.story;
+    const relevance = req.body.relevance;
 
-    let exists = await models.userTag.exists(username, tagname);
+    const exists = await models.userTag.exists(username, tagname);
 
     if(exists !== false) {
       let e = new Error('userTag already exists');
@@ -149,19 +150,16 @@ exports.postUserTags = async function (req, res, next) {
       throw e;
     }
 
-    let created = await models.userTag.create({ username, tagname, story });
+    let created = await models.userTag.create({ username, tagname, story, relevance });
     if (!created) {
       return next(); // forwarding to 404 error
     }
 
-    _.assign(created, { id: created.tag.tagname });
+    _.assign(created, { id: `${created.user.username}--${created.tag.tagname}` });
 
     // respond
     var selfLink = `${config.url.all}/users/${username}/tags/${tagname}`;
     let resp = serialize.userTag(created);
-    let meta = _.pick(created, ['created', 'story']);
-    _.assign(resp, { meta });
-
 
     return res.status(201)
       .set('Location', selfLink)
@@ -196,15 +194,13 @@ exports.getUserTags = async function (req, res, next) {
 exports.getUserTag = async function (req, res, next) {
   try {
     // should be already validated
-    let { username, tagname } = req.params;
+    const { username, tagname } = req.params;
 
     let userTag = await models.userTag.read(username, tagname);
 
-    _.assign(userTag, { id: userTag.tag.tagname });
+    _.assign(userTag, { id: `${userTag.user.username}--${userTag.tag.tagname}` });
 
     // respond
-    // eslint-disable-next-line no-unused-vars
-    var selfLink = `${config.url.all}/users/${username}/tags/${tagname}`;
     let serialized = serialize.userTag(userTag);
 
     return res.status(200)
