@@ -177,10 +177,6 @@ exports.getUserTags = async function (req, res, next) {
 
     let userTags = await models.user.readTags(username);
 
-    _.forEach(userTags, function (userTag) {
-      _.assign(userTag, { id: userTag.tag.tagname });
-    });
-
     let serialized = serialize.userTags({ username, userTags });
 
     return res.status(200)
@@ -196,12 +192,10 @@ exports.getUserTag = async function (req, res, next) {
     // should be already validated
     const { username, tagname } = req.params;
 
-    let userTag = await models.userTag.read(username, tagname);
-
-    _.assign(userTag, { id: `${userTag.user.username}--${userTag.tag.tagname}` });
+    const userTag = await models.userTag.read(username, tagname);
 
     // respond
-    let serialized = serialize.userTag(userTag);
+    const serialized = serialize.userTag(userTag);
 
     return res.status(200)
       .json(serialized);

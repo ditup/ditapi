@@ -40,17 +40,31 @@ var userTagSerializer = new Serializer('user-tags', {
   }
 });
 exports.userTag = function (data) {
+  data.id = `${data.user.username}--${data.tag.tagname}`;
+  data.username = data.user.username;
+  data.tagname = data.tag.tagname;
+
   return userTagSerializer.serialize(data);
 };
 
 // serialize userTags
-var userTagsSerializer = new Serializer('tags', {});
+var userTagsSerializer = new Serializer('user-tags', {
+  attributes: ['username', 'tagname', 'story', 'relevance']
+});
 exports.userTags = function ({ username, userTags }) {
+
+  for (let userTag of userTags) {
+    const username = userTag.user.username;
+    const tagname = userTag.tag.tagname;
+    userTag.id = `${username}--${tagname}`;
+    userTag.username = username;
+    userTag.tagname = tagname;
+  }
+
   let serialized = userTagsSerializer.serialize(userTags);
 
   serialized.links = {
-    self: `${config.url.all}/users/${username}/relationships/tags`,
-    related: `${config.url.all}/users/${username}/tags`
+    self: `${config.url.all}/users/${username}/tags`
   };
 
   return serialized;

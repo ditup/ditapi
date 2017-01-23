@@ -190,9 +190,10 @@ class User extends Model {
         FOR v, e IN 1
           OUTBOUND u
           userTag
-          LET ut = KEEP(e, 'story', 'created')
+          LET ut = KEEP(e, 'story', 'relevance')
           LET us = MERGE(KEEP(u, 'username'), u.profile)
           LET tg = KEEP(v, 'tagname', 'description', 'created')
+          SORT ut.relevance DESC, tg.tagname ASC
           RETURN MERGE(ut, { user: us }, { tag: tg })`;
     let params = { username };
     let cursor = await this.db.query(query, params);

@@ -42,31 +42,52 @@ describe('Tags of user', function () {
         verifiedUsers: [0, 1], // which  users to make verified
         tags: 8,
         userTag: [
-          [1, 0, 'story'],
-          [1, 1, 'story'],
-          [1, 3, 'story'],
-          [1, 4, 'story'],
-          [1, 5, 'story'],
+          [1, 0, 'story', 3],
+          [1, 1, 'story', 1],
+          [1, 3, 'story', 2],
+          [1, 4, 'story', 5],
+          [1, 5, 'story', 5],
         ]
       });
 
       beforeEach(function () {
-        loggedUser = dbData.users[0];
-        taggedUser = dbData.users[1];
+        [loggedUser, taggedUser] = dbData.users;
       });
 
       it('list of user\'s tags', // (may include user's story about the tag)
         async function () {
-          let response = await agent
+          const response = await agent
             .get(`/users/${taggedUser.username}/tags`)
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          let userTags = response.body;
+          const userTags = response.body;
+
+          should(userTags).have.propertyByPath('links', 'self')
+            .eql(`${config.url.all}/users/${taggedUser.username}/tags`);
+
           userTags.should.have.property('data');
-          userTags.data.length.should.equal(5);
+          should(userTags.data).have.length(5);
+
+          const [firstTag] = userTags.data;
+
+          const expectedTagname = dbData.userTag[3].tag.tagname;
+
+          should(firstTag).have.property('type', 'user-tags');
+          should(firstTag).have.property('attributes');
+          should(firstTag).have.property('id',
+            `${taggedUser.username}--${expectedTagname}`);
+
+          const attrs = firstTag.attributes;
+
+          should(attrs).have.properties({
+            story: 'story',
+            relevance: 5,
+            username: taggedUser.username,
+            tagname: expectedTagname
+          });
         }
       );
     });
@@ -249,6 +270,8 @@ describe('Tags of user', function () {
         const attributes = data.attributes;
         should(attributes).have.property('story', userTag.story);
         should(attributes).have.property('relevance', userTag.relevance);
+        should(attributes).have.property('username', userTag.user.username);
+        should(attributes).have.property('tagname', userTag.tag.tagname);
       });
     });
 
