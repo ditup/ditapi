@@ -24,7 +24,22 @@ app.set('env', process.env.NODE_ENV || 'development');
 
 // Cross Origin Resource Sharing
 app.use(function (req, res, next) {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:4200');
+  // a list of allowed CORS Origins
+  // TODO move to a config
+  const originWhitelist = [
+    'http://localhost:4200',
+    'http://dev.ditup.org:4200',
+    'https://dev.ditup.org:4200',
+    'http://dev.ditup.org',
+    'https://dev.ditup.org'
+  ];
+
+  // check whether the request origin is present in whitelist
+  const origin = (originWhitelist.includes(req.headers.origin))
+    ? req.headers.origin
+    : 'none';
+
+  res.header('Access-Control-Allow-Origin', origin);
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE');
   return next();
