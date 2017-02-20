@@ -159,3 +159,8 @@ exports.patchTag = function (req, res, next) {
 exports.postUserTags = function (req, res, next) {
   return next();
 };
+
+exports.patchUserTag = function (req, res, next) {
+  // TODO
+  return next();
+};

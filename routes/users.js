@@ -21,6 +21,7 @@ router.route('/:username/tags')
 
 router.route('/:username/tags/:tagname')
   .get(userController.getUserTag)
+  .patch(authorize.onlyLoggedMe, validators.patchUserTag, userController.patchUserTag, userController.getUserTag)
   .delete(authorize.onlyLoggedMe, userController.deleteUserTag);
 
 router.route('/:username/account/email/verify/:code')

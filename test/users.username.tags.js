@@ -276,8 +276,52 @@ describe('Tags of user', function () {
     });
 
     describe('PATCH', function () {
+      let loggedUser;
+
+      beforeEachPopulate({
+        users: 1, // how many users to make
+        verifiedUsers: [0], // which  users to make verified
+        tags: 1,
+        userTag: [
+          [0, 0, 'story', 3],
+        ]
+      });
+
+      beforeEach(function () {
+        [loggedUser] = dbData.users;
+      });
+
+      it('TODO invalid data');
       it('update user\'s relation/story to the tag');
-      it('update user\'s rating of the tag (how important it is for her)');
+      it('[relevance] update relevance of the tag for user', async function () {
+        const userTag = dbData.userTag[0];
+
+        const patchData = {
+          data: {
+            type: 'user-tags',
+            id: `${loggedUser.username}--${userTag.tag.tagname}`,
+            attributes: {
+              relevance: 2
+            }
+          }
+        };
+
+        const response = await agent
+          .patch(`/users/${loggedUser.username}/tags/${userTag.tag.tagname}`)
+          .send(patchData)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        const respUserTag = response.body;
+
+        should(respUserTag).have.propertyByPath('data', 'attributes', 'relevance').equal(2);
+
+        const userTagDb = await models.userTag.read(loggedUser.username,
+          userTag.tag.tagname);
+        should(userTagDb).have.property('relevance', 2);
+      });
     });
 
     describe('DELETE', function () {

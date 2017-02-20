@@ -1,6 +1,7 @@
 'use strict';
 
-const path = require('path');
+const path = require('path'),
+      _ = require('lodash');
 
 const Model = require(path.resolve('./models/model')),
       schema = require('./schema');
@@ -39,6 +40,22 @@ class UserTag extends Model {
 
     if (out.length !== 1) return null;
     return out[0];
+  }
+
+  static async update(username, tagname, newData) {
+    let newUserTagData = _.pick(newData, ['relevance']);
+    let query = `
+      FOR u IN users FILTER u.username == @username
+        FOR v, e IN 1
+          OUTBOUND u
+          userTag
+          FILTER v.tagname == @tagname
+          UPDATE e WITH @newUserTagData IN userTag
+          RETURN NEW`;
+    let params = { username, tagname, newUserTagData };
+    let cursor = await this.db.query(query, params);
+    let output = await cursor.all();
+    return output[0];
   }
 
   static async exists(username, tagname) {
