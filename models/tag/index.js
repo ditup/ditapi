@@ -94,7 +94,7 @@ class Tag extends Model {
         RETURN KEEP(t, 'username', 'tagname', 'description', 'created')`;
     // % serves as a placeholder for multiple characters in arangodb LIKE
     // _ serves as a placeholder for a single character
-    let params = { likeTagname: `${likeTagname}%` };
+    let params = { likeTagname: `%${likeTagname}%` };
     let out = await (await this.db.query(query, params)).all();
 
     let formatted = [];
