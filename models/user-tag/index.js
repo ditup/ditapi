@@ -43,7 +43,7 @@ class UserTag extends Model {
   }
 
   static async update(username, tagname, newData) {
-    let newUserTagData = _.pick(newData, ['relevance']);
+    let newUserTagData = _.pick(newData, ['relevance', 'story']);
     let query = `
       FOR u IN users FILTER u.username == @username
         FOR v, e IN 1

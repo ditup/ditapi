@@ -292,7 +292,36 @@ describe('Tags of user', function () {
       });
 
       it('TODO invalid data');
-      it('update user\'s relation/story to the tag');
+      it('[story] update user\'s story of a tag', async function () {
+        const userTag = dbData.userTag[0];
+
+        const patchData = {
+          data: {
+            type: 'user-tags',
+            id: `${loggedUser.username}--${userTag.tag.tagname}`,
+            attributes: {
+              story: 'a new story'
+            }
+          }
+        };
+
+        const response = await agent
+          .patch(`/users/${loggedUser.username}/tags/${userTag.tag.tagname}`)
+          .send(patchData)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        const respUserTag = response.body;
+
+        should(respUserTag).have.propertyByPath('data', 'attributes', 'story').equal('a new story');
+
+        const userTagDb = await models.userTag.read(loggedUser.username,
+          userTag.tag.tagname);
+        should(userTagDb).have.property('story', 'a new story');
+      });
+
       it('[relevance] update relevance of the tag for user', async function () {
         const userTag = dbData.userTag[0];
 
