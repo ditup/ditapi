@@ -121,15 +121,10 @@ describe('Tags of user', function () {
           id: 'tag4',
           attributes: {
             description: dbData.tags[4].description
-          }
-          /* TODO
-           *
-          ,
+          },
           links: {
             self: `${config.url.all}/tags/tag4`
           }
-
-          */
         }]);
 
       });
