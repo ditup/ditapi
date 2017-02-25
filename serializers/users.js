@@ -49,7 +49,12 @@ exports.userTag = function (data) {
 
 // serialize userTags
 var userTagsSerializer = new Serializer('user-tags', {
-  attributes: ['username', 'tagname', 'story', 'relevance']
+  attributes: ['username', 'tagname', 'story', 'relevance', 'tag'],
+  tag: {
+    ref: 'tagname',
+    attributes: ['description']
+  }
+
 });
 exports.userTags = function ({ username, userTags }) {
 

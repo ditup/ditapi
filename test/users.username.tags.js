@@ -88,8 +88,52 @@ describe('Tags of user', function () {
             username: taggedUser.username,
             tagname: expectedTagname
           });
+
         }
       );
+
+      it('should include the tags themselves as relationships', async function () {
+        const response = await agent
+          .get(`/users/${taggedUser.username}/tags`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        const userTags = response.body;
+        const [firstTag] = userTags.data;
+
+        should(firstTag).have.propertyByPath('relationships', 'tag');
+
+        const tag = firstTag.relationships.tag;
+
+        should(tag).have.property('data').deepEqual({
+          type: 'tags',
+          id: 'tag4'
+        });
+
+        // should(tag).have.property('links');
+
+        should(userTags).have.property('included');
+
+        should(userTags.included).containDeep([{
+          type: 'tags',
+          id: 'tag4',
+          attributes: {
+            description: dbData.tags[4].description
+          }
+          /* TODO
+           *
+          ,
+          links: {
+            self: `${config.url.all}/tags/tag4`
+          }
+
+          */
+        }]);
+
+      });
+
     });
 
     describe('POST', function () {
