@@ -1,11 +1,13 @@
 'use strict';
 
-var path = require('path'),
-    config = require(path.resolve('./config/config')),
-    serialize = require(path.resolve('./serializers')).serialize,
-    models = require(path.resolve('./models')),
-    _ = require('lodash'),
-    mailer = require(path.resolve('./services/mailer'));
+const path = require('path'),
+      crypto = require('crypto'),
+      config = require(path.resolve('./config/config')),
+      Identicon = require('identicon.js'),
+      serialize = require(path.resolve('./serializers')).serialize,
+      models = require(path.resolve('./models')),
+      _ = require('lodash'),
+      mailer = require(path.resolve('./services/mailer'));
 
 exports.postUsers = async function (req, res, next) {
   try {
@@ -244,3 +246,38 @@ exports.deleteUserTag = async function (req, res, next) {
     return next(e);
   }
 };
+
+async function getAvatar(req, res, next) {
+  const { username } = req.params;
+
+  const usernameExists = await models.user.exists(username);
+
+  if (usernameExists !== true) {
+    return next();
+  }
+
+  return res.status(200).json({
+    data: {
+      type: 'user-avatars',
+      id: username,
+      attributes: {
+        format: 'png',
+        base64: identicon(username)
+      }
+    }
+  });
+}
+
+function identicon(username) {
+  const hash = crypto.createHash('sha256').update(username).digest('hex');
+
+  const options = {
+    size: 512,
+    format: 'png'
+  };
+
+  // create a base64 encoded png
+  return new Identicon(hash, options).toString();
+}
+
+exports.getAvatar = getAvatar;

@@ -27,4 +27,7 @@ router.route('/:username/tags/:tagname')
 router.route('/:username/account/email/verify/:code')
   .get(userController.verifyEmail); // TODO validate the username & code
 
+router.route('/:username/avatar')
+  .get(authorize.onlyLogged, userController.getAvatar);
+
 module.exports = router;
