@@ -52,7 +52,7 @@ var userTagsSerializer = new Serializer('user-tags', {
   attributes: ['username', 'tagname', 'story', 'relevance', 'tag'],
   tag: {
     ref: 'tagname',
-    attributes: ['description'],
+    attributes: ['tagname', 'description'],
     includedLinks: {
       self: ({ tagname }) => `${config.url.all}/tags/${tagname}`
     },

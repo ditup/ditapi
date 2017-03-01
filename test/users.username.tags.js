@@ -120,6 +120,7 @@ describe('Tags of user', function () {
           type: 'tags',
           id: 'tag4',
           attributes: {
+            tagname: dbData.tags[4].tagname,
             description: dbData.tags[4].description
           },
           links: {
