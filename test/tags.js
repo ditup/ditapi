@@ -1,18 +1,19 @@
 'use strict';
 
-let supertest = require('supertest'),
-    should = require('should'),
-    path = require('path'),
-    _ = require('lodash');
+const supertest = require('supertest'),
+      should = require('should'),
+      path = require('path'),
+      _ = require('lodash');
 
-let app = require(path.resolve('./app')),
-    serializers = require(path.resolve('./serializers')),
-    models = require(path.resolve('./models')),
-    dbHandle = require(path.resolve('./test/handleDatabase'));
+const app = require(path.resolve('./app')),
+      serializers = require(path.resolve('./serializers')),
+      models = require(path.resolve('./models')),
+      tagJobs = require(path.resolve('./jobs/tags')),
+      dbHandle = require(path.resolve('./test/handleDatabase'));
 
-let serialize = serializers.serialize;
+const serialize = serializers.serialize;
 
-let agent = supertest.agent(app);
+const agent = supertest.agent(app);
 
 let dbData,
     loggedUser;
@@ -261,7 +262,39 @@ describe('/tags/:tagname', function () {
     });
   });
 
-  describe('DELETE', function () {
-    it('should delete the tag (when sufficient rights)');
+});
+
+describe('Deleting unused tags.', function () {
+
+  beforeEach(async function () {
+    const data = {
+      users: 1, // how many users to make
+      verifiedUsers: [0], // which  users to make verified
+      tags: 5,
+      userTag: [
+        [0, 1],
+        [0, 2]
+      ]
+    };
+
+    // create data in database
+    dbData = await dbHandle.fill(data);
+  });
+
+  // clear database after every test
+  afterEach(async function () {
+    await dbHandle.clear();
+  });
+
+  it('Unused tags should be deleted regularly with a cron-like job.', async function () {
+    // before we should have 5 tags
+    const countBefore = await models.tag.count();
+    should(countBefore).equal(5);
+
+    await tagJobs.deleteAbandoned();
+
+    // after running the job function we should have 2 tags left
+    const countAfter = await models.tag.count();
+    should(countAfter).equal(2);
   });
 });

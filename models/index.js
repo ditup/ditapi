@@ -1,12 +1,12 @@
 'use strict';
 
-let model = require('./model'),
-    tag = require('./tag'),
-    user = require('./user'),
-    userTag = require('./user-tag');
+const model = require('./model'),
+      tag = require('./tag'),
+      user = require('./user'),
+      userTag = require('./user-tag');
 
 
-let models = {
+const models = {
   connect: function (params) {
     model.connect(params);
   },

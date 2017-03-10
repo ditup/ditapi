@@ -8,11 +8,11 @@ const express = require('express'),
     expressValidator = require('express-validator');
 
 // load internal dependencies
-let models = require('./models'),
-    config = require('./config'),
-    authenticate = require('./controllers/authenticate'),
-    deserialize = require('./controllers/deserialize'),
-    customValidators = require('./controllers/validators/custom');
+const models = require('./models'),
+      config = require('./config'),
+      authenticate = require('./controllers/authenticate'),
+      deserialize = require('./controllers/deserialize'),
+      customValidators = require('./controllers/validators/custom');
 
 
 // configure the database for all the models

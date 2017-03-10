@@ -1,19 +1,25 @@
-let path = require('path'),
-    _ = require('lodash'),
-    co = require('co');
+const path = require('path'),
+      _ = require('lodash');
 
-let Model = require(path.resolve('./models/model')),
-    schema = require('./schema');
+const Model = require(path.resolve('./models/model')),
+      schema = require('./schema');
 
 class Tag extends Model {
+
+  /**
+   * create a new tag
+   *
+   */
   static async create({ tagname, description, creator }) {
-    let tag = schema({ tagname, description });
-    let query = 'INSERT @tag IN tags';
-    let params = { tag };
+    // create the tag
+    const tag = schema({ tagname, description });
+    const query = 'INSERT @tag IN tags';
+    const params = { tag };
 
     await this.db.query(query, params);
 
-    let queryCreator = `
+    // create link to tag creator
+    const queryCreator = `
       FOR u IN users FILTER u.username == @creator
         FOR t IN tags FILTER t.tagname == @tagname
           INSERT {
@@ -22,7 +28,7 @@ class Tag extends Model {
             created: @created
           } IN tagCreator
           RETURN NEW`;
-    let paramsCreator = {
+    const paramsCreator = {
       creator,
       tagname,
       created: Date.now()
@@ -32,25 +38,25 @@ class Tag extends Model {
   }
 
   static async read(tagname) {
-    let query = `
+    const query = `
       FOR t IN tags FILTER t.tagname == @tagname
         FOR v, e, p
           IN 0..1
           OUTBOUND t
           OUTBOUND tagCreator
           RETURN KEEP(v, 'username', 'tagname', 'description', 'created')`;
-    let params = { tagname: tagname };
-    let out = await (await this.db.query(query, params)).all();
+    const params = { tagname };
+    const out = await (await this.db.query(query, params)).all();
 
-    let tag = _.pick(out[0], 'tagname', 'description', 'created');
-    let creator = _.pick(out[1], 'username');
+    const tag = _.pick(out[0], 'tagname', 'description', 'created');
+    const creator = _.pick(out[1], 'username');
     _.assign(tag, { creator });
 
     return (out[0]) ? tag : null;
   }
 
   static async update(tagname, { description, editor, time }) {
-    let query = `FOR t IN tags FILTER t.tagname == @tagname
+    const query = `FOR t IN tags FILTER t.tagname == @tagname
       UPDATE t WITH {
         description: @description,
         history: PUSH(t.history, {
@@ -61,49 +67,80 @@ class Tag extends Model {
       }
       IN tags
       RETURN NEW`;
-    let params = { tagname, description, editor, time };
-    let cursor = await this.db.query(query, params);
-    let output = await cursor.all();
+    const params = { tagname, description, editor, time };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
     return output[0];
   }
 
-  static exists(tagname) {
-    return co.call(this, function * () {
-      let query = `
-        FOR t IN tags FILTER t.tagname == @tagname
-          COLLECT WITH COUNT INTO length
-          RETURN length`;
-      let params = { tagname: tagname };
-      let count = yield (yield this.db.query(query, params)).next();
+  static async exists(tagname) {
+    const query = `
+      FOR t IN tags FILTER t.tagname == @tagname
+        COLLECT WITH COUNT INTO length
+        RETURN length`;
+    const params = { tagname };
+    const count = await (await this.db.query(query, params)).next();
 
-      switch (count) {
-        case 0:
-          return false;
-        case 1:
-          return true;
-        default:
-          throw new Error('bad output');
-      }
-    });
+    switch (count) {
+      case 0:
+        return false;
+      case 1:
+        return true;
+      default:
+        throw new Error('bad output');
+    }
   }
 
   // get tags which start with likeTagname string
   static async filter(likeTagname) {
-    let query = `
+    const query = `
       FOR t IN tags FILTER t.tagname LIKE @likeTagname
         RETURN KEEP(t, 'username', 'tagname', 'description', 'created')`;
     // % serves as a placeholder for multiple characters in arangodb LIKE
     // _ serves as a placeholder for a single character
-    let params = { likeTagname: `%${likeTagname}%` };
-    let out = await (await this.db.query(query, params)).all();
+    const params = { likeTagname: `%${likeTagname}%` };
+    const out = await (await this.db.query(query, params)).all();
 
-    let formatted = [];
+    const formatted = [];
 
-    for(let tag of out) {
+    for(const tag of out) {
       formatted.push(_.pick(tag, ['tagname', 'description']));
     }
 
     return formatted;
+  }
+
+  /**
+   * delete all tags which have no userTag edges
+   *
+   *
+   */
+  static async deleteAbandoned() {
+    const query = `
+      FOR t IN tags
+        LET e=(FOR e IN userTag
+            FILTER e._to == t._id
+            RETURN e)
+        FILTER LENGTH(e) < 1
+        REMOVE t IN tags RETURN KEEP(OLD, 'tagname')`;
+    // % serves as a placeholder for multiple characters in arangodb LIKE
+    // _ serves as a placeholder for a single character
+    const out = await (await this.db.query(query)).all();
+
+    return out;
+  }
+
+  /**
+   * counts all tags
+   */
+  static async count() {
+    const query = `
+      FOR t IN tags
+        COLLECT WITH COUNT INTO length
+        RETURN length`;
+    const count = await (await this.db.query(query)).next();
+
+    return count;
   }
 }
 
