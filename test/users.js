@@ -11,12 +11,12 @@ const supertest = require('supertest'),
 class MailEmitter extends EventEmitter {}
 const mailEmitter = new MailEmitter();
 
-var app = require(path.resolve('./app')),
-    models = require(path.resolve('./models')),
-    config = require(path.resolve('./config')),
-    dbHandle = require(path.resolve('./test/handleDatabase'));
+const app = require(path.resolve('./app')),
+      models = require(path.resolve('./models')),
+      config = require(path.resolve('./config')),
+      dbHandle = require(path.resolve('./test/handleDatabase'));
 
-var agent = supertest.agent(app);
+const agent = supertest.agent(app);
 
 describe('/users', function () {
   let maildev;
@@ -60,14 +60,14 @@ describe('/users', function () {
     context('good data', function () {
 
       // valid user data
-      let user = {
+      const user = {
         username: 'test',
         password: 'asdfasdf',
         email: 'test@example.com'
       };
 
       // valid user data to POST as JSON API
-      let userData = {
+      const userData = {
         data: {
           type: 'users',
           attributes: user
@@ -75,11 +75,11 @@ describe('/users', function () {
       };
 
       // link to the created user
-      let selfLink = `${config.url.all}/users/${user.username}`;
+      const selfLink = `${config.url.all}/users/${user.username}`;
 
       it('should respond properly', async function () {
 
-        let res = await agent
+        const res = await agent
           .post('/users')
           .send(userData)
           .set('Content-Type', 'application/vnd.api+json')
@@ -97,7 +97,7 @@ describe('/users', function () {
       it('should create a new user', async function () {
 
         // POST a new user
-        let res = await agent
+        const res = await agent
           .post('/users')
           .send(userData)
           .set('Content-Type', 'application/vnd.api+json')
@@ -135,21 +135,21 @@ describe('/users', function () {
     it('[bad username] should respond with error', async function () {
 
       // user data with invalid username
-      let user = {
+      const user = {
         username: 'test*',
         password: 'asdfasdf',
         email: 'test@example.com'
       };
 
       // the above in JSON API format
-      let userData = {
+      const userData = {
         data: {
           type: 'users',
           attributes: user
         }
       };
 
-      let res = await agent
+      const res = await agent
         .post('/users')
         .send(userData)
         .set('Content-Type', 'application/vnd.api+json')
@@ -161,7 +161,7 @@ describe('/users', function () {
     });
 
     it('[existing username] should respond with error', async function () {
-      var userData = {
+      const userData = {
         data: {
           type: 'users',
           attributes: {
@@ -179,7 +179,7 @@ describe('/users', function () {
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(201);
 
-      let res = await agent
+      const res = await agent
         .post('/users')
         .send(userData)
         .set('Content-Type', 'application/vnd.api+json')
@@ -190,7 +190,7 @@ describe('/users', function () {
     });
 
     it('[bad email] should respond with error', async function () {
-      let userData = {
+      const userData = {
         data: {
           type: 'users',
           attributes: {
@@ -201,7 +201,7 @@ describe('/users', function () {
         }
       };
 
-      let res = await agent
+      const res = await agent
         .post('/users')
         .send(userData)
         .set('Content-Type', 'application/vnd.api+json')
@@ -212,13 +212,13 @@ describe('/users', function () {
     });
 
     it('[existent email] should respond with error', async function () {
-      let user = {
+      const user = {
         username: 'test',
         password: 'asdfasdf',
         email: 'test@example.com'
       };
 
-      let userData = {
+      const userData = {
         data: {
           type: 'users',
           attributes: user
@@ -226,13 +226,13 @@ describe('/users', function () {
       };
 
       // the second user has the same email as the user
-      let user2 = {
+      const user2 = {
         username: 'test2',
         password: 'asdfasdf',
         email: 'test@example.com' // the same email
       };
 
-      let userData2 = {
+      const userData2 = {
         data: {
           type: 'users',
           attributes: user2
@@ -251,7 +251,7 @@ describe('/users', function () {
       await models.user.finalVerifyEmail(user.username);
 
       // post the 2nd user and test
-      let user2Response = await agent
+      const user2Response = await agent
         .post('/users')
         .send(userData2)
         .set('Content-Type', 'application/vnd.api+json')

@@ -1,11 +1,12 @@
 // NOTE: I previously suggested doing this through Grunt, but had plenty of problems with
 // my set up. Grunt did some weird things with scope, and I ended up using nodemon. This
 // setup is now using Gulp. It works exactly how I expect it to and is WAY more concise.
-var gulp = require('gulp'),
-    spawn = require('child_process').spawn,
-    // exec = require('child_process').exec,
-    eslint = require('gulp-eslint'),
-    node,
+const gulp = require('gulp'),
+      spawn = require('child_process').spawn,
+      // exec = require('child_process').exec,
+      eslint = require('gulp-eslint');
+
+let node,
     oauth;
 
 /**
@@ -58,7 +59,13 @@ process.on('exit', function() {
 
 gulp.task('eslint', function() {
   return gulp.src(['./**/*.js', '!./node_modules/**']).pipe(eslint())
-  .pipe(eslint.format());
+    .pipe(eslint.format());
   // Brick on failure to be super strict
   // .pipe(eslint.failOnError());
+});
+
+gulp.task('eslint:fix', function() {
+  return gulp.src(['./**/*.js', '!./node_modules/**'])
+    .pipe(eslint({ fix: true }))
+    .pipe(eslint.format());
 });

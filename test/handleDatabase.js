@@ -1,12 +1,12 @@
 'use strict';
 
-var path = require('path'),
-    _ = require('lodash');
+const path = require('path'),
+      _ = require('lodash');
 
-var models = require(path.resolve('./models'));
+const models = require(path.resolve('./models'));
 
 exports.fill = async function (data) {
-  let def = {
+  const def = {
     users: 0,
     verifiedUsers: [],
     tags: 0,
@@ -16,25 +16,25 @@ exports.fill = async function (data) {
 
   data = _.defaults(data, def);
 
-  let processed = processData(data);
+  const processed = processData(data);
 
-  for(let user of processed.users) {
+  for(const user of processed.users) {
     await models.user.create(_.pick(user, ['username', 'email', 'password']));
     if (user.verified === true)
       await models.user.finalVerifyEmail(user.username);
   }
 
-  for(let tag of processed.tags) {
-    let tagData = _.pick(tag, ['tagname', 'description']);
+  for(const tag of processed.tags) {
+    const tagData = _.pick(tag, ['tagname', 'description']);
     tagData.creator = processed.users[tag.creator];
     await models.tag.create(tagData);
   }
 
-  for(let userTag of processed.userTag) {
-    let username = userTag.user.username;
-    let tagname = userTag.tag.tagname;
-    let story = userTag.story || '';
-    let relevance = userTag.relevance || 3;
+  for(const userTag of processed.userTag) {
+    const username = userTag.user.username;
+    const tagname = userTag.tag.tagname;
+    const story = userTag.story || '';
+    const relevance = userTag.relevance || 3;
     await models.userTag.create({ username, tagname, story, relevance });
   }
 
@@ -46,10 +46,10 @@ exports.clear = function () {
 };
 
 function processData(data) {
-  let output = {};
+  const output = {};
 
   output.users = _.map(_.range(data.users), function (n) {
-    let resp = {
+    const resp = {
       username: `user${n}`,
       password: 'asdfasdf',
       email: `user${n}@example.com`,
@@ -60,9 +60,9 @@ function processData(data) {
   });
 
   // create factory tags
-  let autoTags = _.map(_.range(data.tags), function (n) {
-    let pickedUser = n % data.users;
-    let resp = {
+  const autoTags = _.map(_.range(data.tags), function (n) {
+    const pickedUser = n % data.users;
+    const resp = {
       tagname: `tag${n}`,
       description: `description of tag${n}`,
       creator: pickedUser
@@ -71,9 +71,9 @@ function processData(data) {
   });
 
   // create named tags
-  let namedTags = _.map(_.range(data.namedTags.length), function (n) {
-    let pickedUser = n % data.users;
-    let resp = {
+  const namedTags = _.map(_.range(data.namedTags.length), function (n) {
+    const pickedUser = n % data.users;
+    const resp = {
       tagname: data.namedTags[n],
       description: `description of ${data.namedTags[n]}`,
       creator: pickedUser

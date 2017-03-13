@@ -7,25 +7,26 @@ const supertest = require('supertest'),
       _ = require('lodash'),
       path = require('path');
 
-let app = require(path.resolve('./app')),
-    dbHandle = require(path.resolve('./test/handleDatabase'));
+const app = require(path.resolve('./app')),
+      dbHandle = require(path.resolve('./test/handleDatabase'));
 
-let agent = supertest.agent(app);
+const agent = supertest.agent(app);
 
 let dbData,
     existentUser,
     loggedUser,
-    unverifiedUser,
-    nonexistentUser = {
-      username: 'nonexistent-user',
-      email: 'nonexistent-email@example.com',
-    };
+    unverifiedUser;
+
+const nonexistentUser = {
+  username: 'nonexistent-user',
+  email: 'nonexistent-email@example.com',
+};
 
 
 describe('/users/:username', function () {
   describe('GET', function () {
     beforeEach(async function () {
-      let data = {
+      const data = {
         users: 3, // how many users to make
         verifiedUsers: [0, 1] // which  users to make verified
       };
@@ -43,76 +44,76 @@ describe('/users/:username', function () {
 
     context('[user exists]', function () {
       it('[logged] should read user`s profile', async function () {
-        let response = await agent
+        const response = await agent
           .get(`/users/${existentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-        let user = response.body;
+        const user = response.body;
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
         user.data.should.have.property('id', existentUser.username);
         user.data.should.have.property('attributes');
-        let fields = user.data.attributes;
+        const fields = user.data.attributes;
         fields.should.have.property('username', existentUser.username);
         fields.should.have.property('givenName');
         // TODO givenName, familyName, birthDate, profile, ...
       });
 
       it('[not logged] should read simplified profile', async function () {
-        let response = await agent
+        const response = await agent
           .get(`/users/${existentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-        let user = response.body;
+        const user = response.body;
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
         user.data.should.have.property('id', existentUser.username);
         user.data.should.have.property('attributes');
 
-        let fields = user.data.attributes;
+        const fields = user.data.attributes;
         fields.should.have.property('username', existentUser.username);
         fields.should.not.have.property('givenName');
       });
 
       it('[logged, not verified] should read simplified profile', async function () {
-        let response = await agent
+        const response = await agent
           .get(`/users/${existentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
           .auth(unverifiedUser.username, unverifiedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-        let user = response.body;
+        const user = response.body;
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
         user.data.should.have.property('id', existentUser.username);
         user.data.should.have.property('attributes');
 
-        let fields = user.data.attributes;
+        const fields = user.data.attributes;
         fields.should.have.property('username', existentUser.username);
         fields.should.not.have.property('givenName');
       });
 
       it('[logged, unverified] should read her own profile full', async function () {
-        let response = await agent
+        const response = await agent
           .get(`/users/${unverifiedUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
           .auth(unverifiedUser.username, unverifiedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-        let user = response.body;
+        const user = response.body;
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
         user.data.should.have.property('id', unverifiedUser.username);
         user.data.should.have.property('attributes');
 
-        let fields = user.data.attributes;
+        const fields = user.data.attributes;
         fields.should.have.property('username', unverifiedUser.username);
         fields.should.have.property('givenName');
       });
@@ -144,7 +145,7 @@ describe('/users/:username', function () {
     let loggedUser, otherUser;
 
     beforeEach(async function () {
-      let data = {
+      const data = {
         users: 2, // how many users to make
         verifiedUsers: [0] // which  users to make verified
       };
@@ -163,7 +164,7 @@ describe('/users/:username', function () {
         // profile fields are givenName, familyName, description, birthday
         //
         it('should update 1 profile field', async function () {
-          let res = await agent
+          const res = await agent
             .patch(`/users/${loggedUser.username}`)
             .send({
               data: {
@@ -180,20 +181,20 @@ describe('/users/:username', function () {
             .expect(200);
 
           should(res.body).have.property('data');
-          let dt = res.body.data;
+          const dt = res.body.data;
           should(dt).have.property('id', loggedUser.username);
           should(dt.attributes).have.property('username', loggedUser.username);
           should(dt.attributes).have.property('givenName', 'new-given-name');
         });
 
         it('should update multiple profile fields', async function () {
-          let attributes = {
+          const attributes = {
             givenName: 'new-given-name',
             familyName: 'newFamily Name',
             description: 'this is a description'
           };
 
-          let res = await agent
+          const res = await agent
             .patch(`/users/${loggedUser.username}`)
             .send({
               data: {
@@ -208,7 +209,7 @@ describe('/users/:username', function () {
             .expect(200);
 
           should(res.body).have.property('data');
-          let dt = res.body.data;
+          const dt = res.body.data;
           should(dt).have.property('id', loggedUser.username);
           should(dt.attributes).have.property('username', loggedUser.username);
           should(dt.attributes).have.property('givenName', attributes.givenName);
@@ -217,7 +218,7 @@ describe('/users/:username', function () {
         });
 
         it('should error when profile fields are mixed with settings or email', async function () {
-          let attributes = {
+          const attributes = {
             givenName: 'new-given-name',
             familyName: 'newFamily Name',
             description: 'this is a description',
@@ -240,8 +241,8 @@ describe('/users/:username', function () {
         });
 
         it('should fail with 400 when not valid data in body provided', async function () {
-          let tooLongValue = _.repeat('.', 4000);
-          let attributes = {
+          const tooLongValue = _.repeat('.', 4000);
+          const attributes = {
             givenName: tooLongValue,
             familyName: tooLongValue,
             description: tooLongValue

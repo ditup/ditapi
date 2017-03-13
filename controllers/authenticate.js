@@ -1,17 +1,17 @@
 'use strict';
 
-let passport = require('passport'),
-    _ = require('lodash'),
-    path = require('path'),
-    models = require(path.resolve('./models')),
-    BasicStrategy = require('passport-http').BasicStrategy;
+const passport = require('passport'),
+      _ = require('lodash'),
+      path = require('path'),
+      models = require(path.resolve('./models')),
+      BasicStrategy = require('passport-http').BasicStrategy;
 
 passport.use(new BasicStrategy(
   async function(username, password, done) {
-    let auth = await models.user.authenticate(username, password);
+    const auth = await models.user.authenticate(username, password);
 
     // full login
-    let user = {
+    const user = {
       logged: Boolean(auth.authenticated && auth.verified)
     };
 

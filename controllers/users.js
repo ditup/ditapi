@@ -11,12 +11,12 @@ const path = require('path'),
 
 exports.postUsers = async function (req, res, next) {
   try {
-    let { username, email } = req.body;
+    const { username, email } = req.body;
 
     // check the uniqueness of username and email (among verified email addresses)
-    let usernameExists = await models.user.exists(username);
+    const usernameExists = await models.user.exists(username);
 
-    let emailExists = await models.user.emailExists(email);
+    const emailExists = await models.user.emailExists(email);
 
     if (usernameExists || emailExists) {
       return res.status(409).json({ errors: { meta: '' } });
@@ -24,7 +24,7 @@ exports.postUsers = async function (req, res, next) {
 
     // validating the data should be already done
     // save users
-    let user = await models.user.create({
+    const user = await models.user.create({
       username: req.body.username,
       password: req.body.password,
       email: req.body.email
@@ -38,7 +38,7 @@ exports.postUsers = async function (req, res, next) {
     });
 
     // respond
-    var selfLink = `${config.url.all}/users/${username}`;
+    const selfLink = `${config.url.all}/users/${username}`;
     return res.status(201)
       .set('Location', selfLink)
       .json(serialize.user({
@@ -102,20 +102,20 @@ exports.getUsers = async function (req, res, next) {
 exports.getUser = async function (req, res, next) {
   try {
 
-    let auth = _.get(req, 'auth', { logged: false });
+    const auth = _.get(req, 'auth', { logged: false });
 
-    let username = req.params.username;
-    let user = await models.user.read(username);
+    const username = req.params.username;
+    const user = await models.user.read(username);
 
     if (user) {
       // picking values to output from user and user.profile
-      let filteredUser = _.pick(user, ['username']);
+      const filteredUser = _.pick(user, ['username']);
 
       // profile detail is for logged users only (or from loggedUnverified self)
-      let isLogged = auth.logged === true;
-      let isSelf = auth.username === username;
+      const isLogged = auth.logged === true;
+      const isSelf = auth.username === username;
 
-      let isLoggedUnverifiedSelf = !auth.logged &&
+      const isLoggedUnverifiedSelf = !auth.logged &&
         auth.loggedUnverified === true && isSelf;
 
       if (isLogged || isLoggedUnverifiedSelf) {
@@ -129,7 +129,7 @@ exports.getUser = async function (req, res, next) {
 
       filteredUser.id = filteredUser.username;
 
-      let serializedUser = serialize.user(filteredUser);
+      const serializedUser = serialize.user(filteredUser);
 
       return res.status(200).json(serializedUser);
     } else {
@@ -145,24 +145,24 @@ exports.getUser = async function (req, res, next) {
 exports.patchUser = async function (req, res, next) {
   // check that user id in body equals username from url
   if (req.body.id !== req.params.username) {
-    let e = new Error('username in url parameter and in body don\'t match');
+    const e = new Error('username in url parameter and in body don\'t match');
     e.status = 400;
     return next(e);
   }
 
   // the list of allowed profile fields (subset of these needs to be provided)
-  let profileFields = ['givenName', 'familyName', 'description'];
+  const profileFields = ['givenName', 'familyName', 'description'];
 
   // check that only profile fields are present in the request body
-  let unwantedParams = _.difference(Object.keys(req.body), _.union(profileFields, ['id']));
+  const unwantedParams = _.difference(Object.keys(req.body), _.union(profileFields, ['id']));
   if (unwantedParams.length > 0) { // if any unwanted fields are present, error.
-    let e = new Error('The request body contains unexpected attributes');
+    const e = new Error('The request body contains unexpected attributes');
     e.status = 400;
     return next(e);
   }
 
   // pick only the profile fields from the body of the request
-  let profile = _.pick(req.body, profileFields);
+  const profile = _.pick(req.body, profileFields);
 
   // update the profile with the new values
   await models.user.update(req.params.username, profile);
@@ -171,8 +171,8 @@ exports.patchUser = async function (req, res, next) {
 
 exports.verifyEmail = async function (req, res, next) {
   try {
-    let username = req.params.username;
-    let code = req.params.code;
+    const username = req.params.username;
+    const code = req.params.code;
 
     await models.user.verifyEmail(username, code);
 
@@ -195,12 +195,12 @@ exports.postUserTags = async function (req, res, next) {
     const exists = await models.userTag.exists(username, tagname);
 
     if(exists !== false) {
-      let e = new Error('userTag already exists');
+      const e = new Error('userTag already exists');
       e.status = 409;
       throw e;
     }
 
-    let created = await models.userTag.create({ username, tagname, story, relevance });
+    const created = await models.userTag.create({ username, tagname, story, relevance });
     if (!created) {
       return next(); // forwarding to 404 error
     }
@@ -208,8 +208,8 @@ exports.postUserTags = async function (req, res, next) {
     _.assign(created, { id: `${created.user.username}--${created.tag.tagname}` });
 
     // respond
-    var selfLink = `${config.url.all}/users/${username}/tags/${tagname}`;
-    let resp = serialize.userTag(created);
+    const selfLink = `${config.url.all}/users/${username}/tags/${tagname}`;
+    const resp = serialize.userTag(created);
 
     return res.status(201)
       .set('Location', selfLink)
@@ -223,11 +223,11 @@ exports.postUserTags = async function (req, res, next) {
 exports.getUserTags = async function (req, res, next) {
   try {
     // should be already validated
-    let username = req.params.username;
+    const username = req.params.username;
 
-    let userTags = await models.user.readTags(username);
+    const userTags = await models.user.readTags(username);
 
-    let serialized = serialize.userTags({ username, userTags });
+    const serialized = serialize.userTags({ username, userTags });
 
     return res.status(200)
       .json(serialized);
@@ -261,10 +261,10 @@ exports.patchUserTag = async function (req, res, next) {
   // TODO check that username--tagname matches params
 
   // the list of allowed user-tag fields (subset of these needs to be provided)
-  let userTagFields = ['relevance', 'story'];
+  const userTagFields = ['relevance', 'story'];
 
   // check that only user-tag fields are present in the request body
-  let unwantedParams = _.difference(Object.keys(req.body), _.union(userTagFields, ['id']));
+  const unwantedParams = _.difference(Object.keys(req.body), _.union(userTagFields, ['id']));
   if (unwantedParams.length > 0) { // if any unwanted fields are present, error.
     const e = new Error('The request body contains unexpected attributes');
     e.status = 400;
@@ -283,9 +283,9 @@ exports.deleteUserTag = async function (req, res, next) {
   try {
     // should be already validated
     // and checked rights
-    let { username, tagname } = req.params;
+    const { username, tagname } = req.params;
 
-    let isSuccess = await models.userTag.delete(username, tagname);
+    const isSuccess = await models.userTag.delete(username, tagname);
 
     if (isSuccess !== true) return next(); // sending to 404
 

@@ -1,13 +1,13 @@
 'use strict';
 
-var path = require('path'),
-    nodemailer = require('nodemailer'),
-    smtpTransport = require('nodemailer-smtp-transport'),
-    EmailTemplate = require('email-templates').EmailTemplate;
+const path = require('path'),
+      nodemailer = require('nodemailer'),
+      smtpTransport = require('nodemailer-smtp-transport'),
+      EmailTemplate = require('email-templates').EmailTemplate;
 
-var config = require(path.resolve('./config'));
+const config = require(path.resolve('./config'));
 
-var dataNotProvided = new Error('data not provided');
+const dataNotProvided = new Error('data not provided');
 
 exports.general = async function ({ email, from, subject, html, text }) {
   let transport;
@@ -16,7 +16,7 @@ exports.general = async function ({ email, from, subject, html, text }) {
 
     transport = nodemailer.createTransport(smtpTransport(config.mailer));
 
-    var emailOptions = {
+    const emailOptions = {
       from: from ? `<${from}>` : 'info@ditup.org <info@ditup.org>',
       to: `<${email}>`,
       subject: subject,
@@ -24,7 +24,7 @@ exports.general = async function ({ email, from, subject, html, text }) {
       text: text
     };
 
-    var info = await new Promise(function (resolve, reject) {
+    const info = await new Promise(function (resolve, reject) {
       transport.sendMail(emailOptions, function (err, response) {
         if(err) return reject(err);
         return resolve(response);
@@ -42,15 +42,15 @@ exports.general = async function ({ email, from, subject, html, text }) {
 };
 
 exports.verifyEmail = async function ({ email, url, username }) {
-  let hasParameters = Boolean(email && url && username);
+  const hasParameters = Boolean(email && url && username);
   if(!hasParameters) throw dataNotProvided;
 
-  let verify =
+  const verify =
     new EmailTemplate(path.join(__dirname, 'templates', 'verify-email'));
 
-  let { html, text } = await verify.render({ username, url });
+  const { html, text } = await verify.render({ username, url });
 
-  var toSend = {
+  const toSend = {
     email,
     subject: 'email verification for ditup.org',
     html,

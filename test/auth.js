@@ -9,19 +9,19 @@ const path = require('path'),
 const app = require(path.resolve('./app')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
-var agent = supertest.agent(app);
+const agent = supertest.agent(app);
 
 describe('/auth', function () {
   let dbData;
   let verifiedUser;
   let unverifiedUser;
-  let nonexistentUser = {
+  const nonexistentUser = {
     username: 'nonexistent',
     password: 'nonexistent'
   };
 
   beforeEach(async function () {
-    let data = {
+    const data = {
       users: 2, // how many users to make
       verifiedUsers: [0] // which  users to make verified
     };
@@ -80,19 +80,19 @@ describe('/auth', function () {
       });
 
       it('the body should contain data of the authenticated user', async function () {
-        let response = await agent
+        const response = await agent
           .get('/auth/basic')
           .set('Content-Type', 'application/vnd.api+json')
           .auth(verifiedUser.username, verifiedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-        let user = response.body;
+        const user = response.body;
         should(user).have.property('data');
         should(user.data).have.property('type', 'users');
         user.data.should.have.property('id', verifiedUser.username);
         user.data.should.have.property('attributes');
-        let fields = user.data.attributes;
+        const fields = user.data.attributes;
         should(fields).have.property('username', verifiedUser.username);
         should(fields).have.property('givenName');
         should(fields).have.property('familyName');
@@ -100,14 +100,14 @@ describe('/auth', function () {
 
       context('the user has unverified email', function () {
         it('email in attributes should be null', async function () {
-          let response = await agent
+          const response = await agent
             .get('/auth/basic')
             .set('Content-Type', 'application/vnd.api+json')
             .auth(unverifiedUser.username, unverifiedUser.password)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          let user = response.body;
+          const user = response.body;
           user.should.have.property('data');
           user.data.should.have.property('attributes');
           user.data.attributes.should.have.property('email', null);
@@ -115,14 +115,14 @@ describe('/auth', function () {
       });
       context('the user has verified email', function () {
         it('should contain the verified email in attributes', async function () {
-          let response = await agent
+          const response = await agent
             .get('/auth/basic')
             .set('Content-Type', 'application/vnd.api+json')
             .auth(verifiedUser.username, verifiedUser.password)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          let user = response.body;
+          const user = response.body;
           user.should.have.property('data');
           user.data.should.have.property('attributes');
           user.data.attributes.should.have.property('email', verifiedUser.email);

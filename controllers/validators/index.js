@@ -1,8 +1,8 @@
 'use strict';
 
-let _ = require('lodash');
+const _ = require('lodash');
 
-var rules = {
+const rules = {
   user: {
     username: {
       notEmpty: true,
@@ -62,11 +62,11 @@ exports.postUsers = function (req, res, next) {
   req.checkBody(_.pick(rules.user, ['username', 'email']));
 
   // prepare and return errors
-  var errors = req.validationErrors();
+  const errors = req.validationErrors();
 
-  var errorOutput = { errors: [] };
+  const errorOutput = { errors: [] };
   if (errors) {
-    for(let e of errors) {
+    for(const e of errors) {
       errorOutput.errors.push({ meta: e });
     }
     return res.status(400).json(errorOutput);
@@ -85,12 +85,12 @@ exports.getUsers = function (req, res, next) {
 exports.getUser = function (req, res, next) {
   req.checkParams(_.pick(rules.user, ['username']));
 
-  var errors = req.validationErrors();
+  const errors = req.validationErrors();
 
-  var errorOutput = { errors: [] };
+  const errorOutput = { errors: [] };
 
   if (errors) {
-    for(let e of errors) {
+    for(const e of errors) {
       errorOutput.errors.push({meta: e});
     }
     return res.status(400).json(errorOutput);
@@ -102,11 +102,11 @@ exports.getUser = function (req, res, next) {
 exports.patchUser = function (req, res, next) {
   req.checkParams(_.pick(rules.user, ['username']));
   req.checkBody(_.pick(rules.user, ['id', 'givenName', 'familyName', 'description']));
-  var errors = req.validationErrors();
+  const errors = req.validationErrors();
 
-  var errorOutput = { errors: [] };
+  const errorOutput = { errors: [] };
   if (errors) {
-    for(let e of errors) {
+    for(const e of errors) {
       errorOutput.errors.push({ meta: e });
     }
     return res.status(400).json(errorOutput);
@@ -118,11 +118,11 @@ exports.patchUser = function (req, res, next) {
 exports.postTags = function (req, res, next) {
   req.checkBody(_.pick(rules.tag, ['tagname', 'description']));
 
-  var errors = req.validationErrors();
+  const errors = req.validationErrors();
 
-  var errorOutput = { errors: [] };
+  const errorOutput = { errors: [] };
   if (errors) {
-    for(let e of errors) {
+    for(const e of errors) {
       errorOutput.errors.push({meta: e});
     }
     return res.status(400).json(errorOutput);
@@ -134,11 +134,11 @@ exports.postTags = function (req, res, next) {
 exports.getTag = function (req, res, next) {
   req.checkParams(_.pick(rules.tag, ['tagname']));
 
-  var errors = req.validationErrors();
+  const errors = req.validationErrors();
 
-  var errorOutput = {errors: []};
+  const errorOutput = {errors: []};
   if (errors) {
-    for(let e of errors) {
+    for(const e of errors) {
       errorOutput.errors.push({meta: e});
     }
 
@@ -150,11 +150,11 @@ exports.getTag = function (req, res, next) {
 exports.patchTag = function (req, res, next) {
   req.checkParams(_.pick(rules.tag, ['tagname']));
   req.checkBody(_.pick(rules.tag, ['id', 'description']));
-  var errors = req.validationErrors();
+  const errors = req.validationErrors();
 
-  var errorOutput = { errors: [] };
+  const errorOutput = { errors: [] };
   if (errors) {
-    for(let e of errors) {
+    for(const e of errors) {
       errorOutput.errors.push({ meta: e });
     }
     return res.status(400).json(errorOutput);

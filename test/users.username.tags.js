@@ -6,15 +6,15 @@ const supertest = require('supertest'),
       should = require('should'),
       path = require('path');
 
-let app = require(path.resolve('./app')),
-    serializers = require(path.resolve('./serializers')),
-    models = require(path.resolve('./models')),
-    dbHandle = require(path.resolve('./test/handleDatabase')),
-    config = require(path.resolve('./config/config'));
+const app = require(path.resolve('./app')),
+      serializers = require(path.resolve('./serializers')),
+      models = require(path.resolve('./models')),
+      dbHandle = require(path.resolve('./test/handleDatabase')),
+      config = require(path.resolve('./config/config'));
 
-let serialize = serializers.serialize;
+const serialize = serializers.serialize;
 
-let agent = supertest.agent(app);
+const agent = supertest.agent(app);
 
 describe('Tags of user', function () {
   let dbData,
@@ -199,7 +199,7 @@ describe('Tags of user', function () {
         });
 
         it('[other user] error 403', async function () {
-          let response = await agent
+          const response = await agent
             .post(`/users/${otherUser.username}/tags`)
             .send(serialize.newUserTag(newUserTag))
             .set('Content-Type', 'application/vnd.api+json')
@@ -207,12 +207,12 @@ describe('Tags of user', function () {
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          let output = response.body;
+          const output = response.body;
           output.should.have.property('errors');
         });
 
         it('[duplicate relation] error 409', async function () {
-          let response = await agent
+          const response = await agent
             .post(`/users/${loggedUser.username}/tags`)
             .send(serialize.newUserTag({
               tagname: dbData.tags[loggedUser.tags[0]].tagname,
@@ -223,12 +223,12 @@ describe('Tags of user', function () {
             .expect(409)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          let output = response.body;
+          const output = response.body;
           output.should.have.property('errors');
         });
 
         it('[nonexistent tagname] error 404', async function () {
-          let response = await agent
+          const response = await agent
             .post(`/users/${loggedUser.username}/tags`)
             .send(serialize.newUserTag({
               tagname: 'nonexistent-tag',
@@ -239,7 +239,7 @@ describe('Tags of user', function () {
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          let output = response.body;
+          const output = response.body;
           output.should.have.property('errors');
         });
 
@@ -248,14 +248,14 @@ describe('Tags of user', function () {
 
       context('not logged in', function () {
         it('errors 403', async function () {
-          let response = await agent
+          const response = await agent
             .post(`/users/${loggedUser.username}/tags`)
             .send(serialize.newUserTag(newUserTag))
             .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          let output = response.body;
+          const output = response.body;
           output.should.have.property('errors');
         });
       });
@@ -409,11 +409,11 @@ describe('Tags of user', function () {
       });
 
       it('[user has tag] delete tag from user, respond with 204', async function () {
-        let userTag = dbData.userTag[2];
-        let user = userTag.user;
-        let tag = userTag.tag;
+        const userTag = dbData.userTag[2];
+        const user = userTag.user;
+        const tag = userTag.tag;
 
-        let response = await agent
+        const response = await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)
           .set('Content-Type', 'application/vnd.api+json')
           .auth(user.username, user.password)
@@ -422,13 +422,13 @@ describe('Tags of user', function () {
 
         should(Boolean(response.body)).equal(false);
 
-        let userTagExists = await models.userTag.exists(user.username, tag.tagname);
+        const userTagExists = await models.userTag.exists(user.username, tag.tagname);
         (userTagExists).should.equal(false);
       });
 
       it('[user doesn\'t have the tag] fail with 404', async function () {
-        let user = dbData.users[0];
-        let tag = dbData.tags[0];
+        const user = dbData.users[0];
+        const tag = dbData.tags[0];
         await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)
           .set('Content-Type', 'application/vnd.api+json')
@@ -438,10 +438,10 @@ describe('Tags of user', function () {
       });
 
       it('[not me] fail with 403', async function () {
-        let userTag = dbData.userTag[2];
-        let user = userTag.user;
-        let tag = userTag.tag;
-        let otherUser = dbData.users[2];
+        const userTag = dbData.userTag[2];
+        const user = userTag.user;
+        const tag = userTag.tag;
+        const otherUser = dbData.users[2];
 
         await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)

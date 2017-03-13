@@ -5,16 +5,16 @@ const path = require('path'),
 const Serializer = require('jsonapi-serializer').Serializer;
 const config = require(path.resolve('./config/config'));
 
-var newUserSerializer = new Serializer('users', {
+const newUserSerializer = new Serializer('users', {
   attributes: ['username', 'password', 'email']
 });
 exports.newUser = function (data) {
-  var output = newUserSerializer.serialize(data);
+  const output = newUserSerializer.serialize(data);
   delete output.data.id;
   return output;
 };
 
-var userSerializer = new Serializer('users', {
+const userSerializer = new Serializer('users', {
   attributes: ['givenName', 'familyName', 'username', 'description', 'email'],
   keyForAttribute: 'camelCase',
   topLevelLinks: {
@@ -26,7 +26,7 @@ exports.user = function (data) {
 };
 
 // serialize new userTag
-var newUserTagSerializer = new Serializer('user-tags', {
+const newUserTagSerializer = new Serializer('user-tags', {
   attributes: ['username', 'tagname', 'story', 'relevance']
 });
 exports.newUserTag = function (data) {
@@ -34,7 +34,7 @@ exports.newUserTag = function (data) {
 };
 
 // serialize userTag
-var userTagSerializer = new Serializer('user-tags', {
+const userTagSerializer = new Serializer('user-tags', {
   attributes: ['username', 'tagname', 'story', 'relevance'],
   topLevelLinks: {
     self: ({ user, tag }) => `${config.url.all}/users/${user.username}/tags/${tag.tagname}`
@@ -63,7 +63,7 @@ const userTagsSerializer = new Serializer('user-tags', {
 });
 exports.userTags = function ({ username, userTags }) {
 
-  for (let userTag of userTags) {
+  for (const userTag of userTags) {
     const username = userTag.user.username;
     const tagname = userTag.tag.tagname;
     userTag.id = `${username}--${tagname}`;
@@ -71,7 +71,7 @@ exports.userTags = function ({ username, userTags }) {
     userTag.tagname = tagname;
   }
 
-  let serialized = userTagsSerializer.serialize(userTags);
+  const serialized = userTagsSerializer.serialize(userTags);
 
   serialized.links = {
     self: `${config.url.all}/users/${username}/tags`

@@ -5,7 +5,7 @@ const express = require('express'),
 
 const userController = require(path.resolve('./controllers/users'));
 
-var router = express.Router();
+const router = express.Router();
 
 // basic authenticator
 router.route('/basic')

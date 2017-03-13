@@ -33,7 +33,7 @@ describe('/tags', function () {
 
       // seed the database with users and some named tags to do filtering on
       beforeEach(async function () {
-        let data = {
+        const data = {
           users: 3, // how many users to make
           verifiedUsers: [0], // which  users to make verified
           namedTags: ['named-tag-1', 'other-tag-0', 'named-tag-2']
@@ -45,14 +45,14 @@ describe('/tags', function () {
       });
 
       it('match tags with similar tagnames', async function () {
-        let response = await agent
+        const response = await agent
           .get('/tags?filter[tagname][like]=named-tag')
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-        let foundTags = response.body;
+        const foundTags = response.body;
         foundTags.should.have.property('data');
         foundTags.data.length.should.equal(2);
         should(foundTags.data).containDeep([
@@ -65,23 +65,23 @@ describe('/tags', function () {
 
   describe('POST', function () {
 
-    let newTag = {
+    const newTag = {
       tagname: 'test-tag',
       description: 'this is a tag description!'
     };
 
-    let serializedNewTag = serialize.newTag(newTag);
+    const serializedNewTag = serialize.newTag(newTag);
 
-    let invalidTagname = {
+    const invalidTagname = {
       tagname: 'test--tag',
       description: 'this is a tag description!'
     };
 
-    let serializedInvalidTagname = serialize.newTag(invalidTagname);
+    const serializedInvalidTagname = serialize.newTag(invalidTagname);
 
     // put pre-data into database
     beforeEach(async function () {
-      let data = {
+      const data = {
         users: 3, // how many users to make
         verifiedUsers: [0, 1], // which  users to make verified
         tags: 1
@@ -103,7 +103,7 @@ describe('/tags', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         // check that the newly created tag is there
-        let tag = await models.tag.read(newTag.tagname);
+        const tag = await models.tag.read(newTag.tagname);
 
         (typeof tag).should.equal('object');
         tag.should.have.property('tagname', newTag.tagname);
@@ -133,7 +133,7 @@ describe('/tags', function () {
       });
 
       it('[invalid description]', async function () {
-        let longDescription = _.repeat('.', 2049);
+        const longDescription = _.repeat('.', 2049);
         await agent
           .post('/tags')
           .send(serialize.newTag({
@@ -166,7 +166,7 @@ describe('/tags/:tagname', function () {
 
   // put pre-data into database
   beforeEach(async function () {
-    let data = {
+    const data = {
       users: 3, // how many users to make
       verifiedUsers: [0, 1], // which  users to make verified
       tags: 7
@@ -185,21 +185,21 @@ describe('/tags/:tagname', function () {
 
   describe('GET', function () {
     it('should show the tag', async function () {
-      let existentTag = dbData.tags[0];
-      let response = await agent
+      const existentTag = dbData.tags[0];
+      const response = await agent
         .get(`/tags/${existentTag.tagname}`)
         .set('Content-Type', 'application/vnd.api+json')
         .auth(loggedUser.username, loggedUser.password)
         .expect(200)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-      let tag = response.body;
+      const tag = response.body;
 
       tag.should.have.property('data');
       tag.data.should.have.property('id', existentTag.tagname);
       tag.data.should.have.property('attributes');
 
-      let attrs = tag.data.attributes;
+      const attrs = tag.data.attributes;
       attrs.should.have.property('tagname', existentTag.tagname);
       attrs.should.have.property('description', existentTag.description);
 
@@ -209,7 +209,7 @@ describe('/tags/:tagname', function () {
     it('show creator'); // as a json api relation
 
     it('[nonexistent tagname] should error 404', async function () {
-      let response = await agent
+      const response = await agent
         .get('/tags/nonexistent-tag')
         .set('Content-Type', 'application/vnd.api+json')
         .auth(loggedUser.username, loggedUser.password)
@@ -220,7 +220,7 @@ describe('/tags/:tagname', function () {
     });
 
     it('[invalid tagname] should error 400', async function () {
-      let response = await agent
+      const response = await agent
         .get('/tags/invalid_tag')
         .set('Content-Type', 'application/vnd.api+json')
         .auth(loggedUser.username, loggedUser.password)
@@ -234,7 +234,7 @@ describe('/tags/:tagname', function () {
   describe('PATCH', function () {
     context('logged in', function () {
       it('[valid description] update the tag description', async function () {
-        let description = 'a new description of the tag';
+        const description = 'a new description of the tag';
 
         await agent
           .patch(`/tags/${existentTag.tagname}`)
@@ -251,7 +251,7 @@ describe('/tags/:tagname', function () {
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         // check that the newly created tag is there
-        let tag = await models.tag.read(existentTag.tagname);
+        const tag = await models.tag.read(existentTag.tagname);
 
         (typeof tag).should.equal('object');
         tag.should.have.property('description', description);

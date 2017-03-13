@@ -1,18 +1,18 @@
 'use strict';
 
-var _ = require('lodash'),
-    path = require('path');
+const _ = require('lodash'),
+      path = require('path');
 
-var Model = require(path.resolve('./models/model')),
-    account = require('./account'),
-    schema = require('./schema');
+const Model = require(path.resolve('./models/model')),
+      account = require('./account'),
+      schema = require('./schema');
 
 class User extends Model {
 
   // save a new user to a database
   static async create(user) {
     // generate an email verification code
-    let emailVerifyCode = await account.generateHexCode(32);
+    const emailVerifyCode = await account.generateHexCode(32);
     user.emailVerifyCode = emailVerifyCode;
 
     // generate a user object in a standard shape
@@ -27,32 +27,32 @@ class User extends Model {
 
   // read a user by username
   static async read(username) {
-    let query = 'FOR u IN users FILTER u.username == @username RETURN u';
-    let params = { username };
-    let cursor = await this.db.query(query, params);
-    let output = await cursor.all();
+    const query = 'FOR u IN users FILTER u.username == @username RETURN u';
+    const params = { username };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
     return output[0];
   }
 
   static async update(username, newData) {
-    let profile = _.pick(newData, ['givenName', 'familyName', 'description']);
-    let query = `FOR u IN users FILTER u.username == @username
+    const profile = _.pick(newData, ['givenName', 'familyName', 'description']);
+    const query = `FOR u IN users FILTER u.username == @username
       UPDATE u WITH { profile: @profile } IN users
       RETURN NEW`;
-    let params = { username, profile };
-    let cursor = await this.db.query(query, params);
-    let output = await cursor.all();
+    const params = { username, profile };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
     return output[0];
   }
 
   static async exists(username) {
-    let query = `
+    const query = `
       FOR u IN users FILTER u.username == @username
         COLLECT WITH COUNT INTO length
         RETURN length`;
-    let params = { username };
-    let cursor = await this.db.query(query, params);
-    let count = await cursor.next();
+    const params = { username };
+    const cursor = await this.db.query(query, params);
+    const count = await cursor.next();
 
     switch (count) {
       case 0:
@@ -67,7 +67,7 @@ class User extends Model {
   // authenticate user provided username password combination
   static async authenticate(username, password) {
     // get information about the user from a database
-    let query = `
+    const query = `
       FOR u IN users FILTER u.username == @username
         RETURN {
           username: u.username,
@@ -75,9 +75,9 @@ class User extends Model {
           email: u.email,
           profile: u.profile
         }`;
-    let params = { username };
-    let cursor = await this.db.query(query, params);
-    let output = await cursor.all();
+    const params = { username };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
 
     // default not authenticated values
     let credentialsMatch = false,
@@ -104,7 +104,7 @@ class User extends Model {
         throw new Error('Database Error');
     }
 
-    let user = {
+    const user = {
       authenticated: credentialsMatch,
       verified: Boolean(isVerified && credentialsMatch)
     };
@@ -118,12 +118,12 @@ class User extends Model {
   }
 
   static async emailExists(email) {
-    let query = `
+    const query = `
       FOR u IN users FILTER u.email == @email
         COLLECT WITH COUNT INTO length
         RETURN length`;
-    let params = { email: email };
-    let count = await (await this.db.query(query, params)).next();
+    const params = { email: email };
+    const count = await (await this.db.query(query, params)).next();
 
     switch (count) {
       case 0:
@@ -140,7 +140,7 @@ class User extends Model {
   // if incorrect, reject the promise
   static async verifyEmail(username, code) {
     // read the temporary email data
-    let query = `
+    const query = `
       FOR u IN users FILTER u.username == @username
         RETURN {
           email: u.account.email.temporary,
@@ -148,20 +148,20 @@ class User extends Model {
           codeExpire: u.account.email.codeExpire
         }
     `;
-    let params = { username };
-    let output = await (await this.db.query(query, params)).all();
+    const params = { username };
+    const output = await (await this.db.query(query, params)).all();
 
     if(output.length === 0) throw new Error('User Not Found');
     if(output.length > 1) throw new Error('Database Corruption');
-    let info = output[0];
-    let isAlreadyVerified = !(info.email && info.code && info.codeExpire);
+    const info = output[0];
+    const isAlreadyVerified = !(info.email && info.code && info.codeExpire);
     if (isAlreadyVerified) throw new Error('User is already verified');
 
     // check the codes, time limit
-    let isCodeExpired = Date.now() > info.codeExpire;
+    const isCodeExpired = Date.now() > info.codeExpire;
     if (isCodeExpired) throw new Error('Code Is Expired');
 
-    let codeMatches = await account.compare(code, info.code);
+    const codeMatches = await account.compare(code, info.code);
 
     if (codeMatches !== true) throw new Error('Code Is Not Correct');
     // if correct, put emailTemporary to email and erase all the rest
@@ -171,7 +171,7 @@ class User extends Model {
 
   // finish email verification. move emailTemporary to email and clean
   static async finalVerifyEmail(username) {
-    let query = `
+    const query = `
       FOR u IN users FILTER u.username == @username
         UPDATE {
           _key: u._key,
@@ -180,12 +180,12 @@ class User extends Model {
         }
         IN users
     `;
-    let params = { username };
+    const params = { username };
     await this.db.query(query, params);
   }
 
   static async readTags(username) {
-    let query = `
+    const query = `
       FOR u IN users FILTER u.username == @username
         FOR v, e IN 1
           OUTBOUND u
@@ -195,9 +195,9 @@ class User extends Model {
           LET tg = KEEP(v, 'tagname', 'description', 'created')
           SORT ut.relevance DESC, tg.tagname ASC
           RETURN MERGE(ut, { user: us }, { tag: tg })`;
-    let params = { username };
-    let cursor = await this.db.query(query, params);
-    let output = await cursor.all();
+    const params = { username };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
     return output;
   }
 

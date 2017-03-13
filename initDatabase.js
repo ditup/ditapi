@@ -11,7 +11,7 @@ module.exports = async function ({ db, dbUser, dbPasswd, dbName, collections }) 
 
   if (dbUser === 'root') throw new Error('Don\'t use root. Change your config.');
 
-  let cursor = await db.query('FOR u IN _users FILTER u.user == @username REMOVE u IN _users', { username: dbUser });
+  const cursor = await db.query('FOR u IN _users FILTER u.user == @username REMOVE u IN _users', { username: dbUser });
 
   if (cursor.extra.stats.writesExecuted === 1) {
     console.log(`recreating user ${dbUser}`); // eslint-disable-line no-console
@@ -24,7 +24,7 @@ module.exports = async function ({ db, dbUser, dbPasswd, dbName, collections }) 
 
   db.useDatabase(dbName);
 
-  for(let cnm in collections) {
+  for(const cnm in collections) {
     // creating the collection
     let col;
     if(collections[cnm].type === 'document') {
@@ -42,29 +42,29 @@ module.exports = async function ({ db, dbUser, dbPasswd, dbName, collections }) 
     // unique hash index
     collections[cnm].indexes = collections[cnm].indexes || [];
 
-    for(let index of collections[cnm].indexes){
+    for(const index of collections[cnm].indexes){
       await col.createIndex(index);
     }
   }
 
 
   // ************* graph ************* //
-  let graph = db.graph('ditup_graph');
+  const graph = db.graph('ditup_graph');
 
   // populating graph properties from collections
-  let graphProperties = (function () {
+  const graphProperties = (function () {
 
     // the object to return
-    let properties = {
+    const properties = {
       edgeDefinitions: [],
       orphanCollections: []
     };
 
     // keeping track of documents which are used as vertexes
-    let nonOrphans = [];
+    const nonOrphans = [];
 
-    for(let cnm in collections) {
-      let collection = collections[cnm];
+    for(const cnm in collections) {
+      const collection = collections[cnm];
 
       if(collection.type === 'edge') {
         // adding the edge to the edgeDefinitions
@@ -75,10 +75,10 @@ module.exports = async function ({ db, dbUser, dbPasswd, dbName, collections }) 
         });
 
         // keeping track of documents used as vertexes
-        for(let vertex of collection.from){
+        for (const vertex of collection.from){
           if(nonOrphans.indexOf(vertex) === -1) nonOrphans.push(vertex);
         }
-        for(let vertex of collection.to){
+        for(const vertex of collection.to){
           if(nonOrphans.indexOf(vertex) === -1) nonOrphans.push(vertex);
         }
         // END
@@ -86,8 +86,8 @@ module.exports = async function ({ db, dbUser, dbPasswd, dbName, collections }) 
     }
 
     // populating the orphanCollections (the documents not yet used as vertexes)
-    for(let cnm in collections) {
-      let collection = collections[cnm];
+    for(const cnm in collections) {
+      const collection = collections[cnm];
 
       // check whether a document is an orphan
       if(collection.type === 'document' && nonOrphans.indexOf(cnm) === -1) {
@@ -98,7 +98,7 @@ module.exports = async function ({ db, dbUser, dbPasswd, dbName, collections }) 
     return properties;
   })();
 
-  let graphInfo = await graph.create(graphProperties);
+  const graphInfo = await graph.create(graphProperties);
   console.log(graphInfo); // eslint-disable-line no-console
   // ************ END graph *************** //
 };

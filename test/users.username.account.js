@@ -2,15 +2,15 @@
 
 process.env.NODE_ENV = 'test';
 
-let path = require('path'),
-    supertest = require('supertest'),
-    should = require('should');
+const path = require('path'),
+      supertest = require('supertest'),
+      should = require('should');
 
-let app = require(path.resolve('./app')),
-    models = require(path.resolve('./models')),
-    dbHandle = require(path.resolve('./test/handleDatabase'));
+const app = require(path.resolve('./app')),
+      models = require(path.resolve('./models')),
+      dbHandle = require(path.resolve('./test/handleDatabase'));
 
-var agent = supertest.agent(app);
+const agent = supertest.agent(app);
 
 describe('/users/:username/account...', function () {
   describe('./', function () {
@@ -58,7 +58,7 @@ describe('/users/:username/account...', function () {
 
     it('[correct code] should make the user\'s email verified', async function () {
       // first we create a new user
-      let out = await models.user.create({
+      const out = await models.user.create({
         username: 'test',
         password: 'asdfasdf',
         email: 'test@example.com'
@@ -72,7 +72,7 @@ describe('/users/:username/account...', function () {
         .expect(200);
 
       // see whether the user's email is verified now
-      let user = await models.user.read('test');
+      const user = await models.user.read('test');
 
       should(user).have.property('email', 'test@example.com');
       should(user).have.property('account');
@@ -87,7 +87,7 @@ describe('/users/:username/account...', function () {
         email: 'test@example.com'
       });
 
-      let badCode = 'aa2345';
+      const badCode = 'aa2345';
 
       // we verify the email
       await agent
@@ -97,7 +97,7 @@ describe('/users/:username/account...', function () {
         .expect(400);
 
       // see whether the user's email is verified now
-      let user = await models.user.read('test');
+      const user = await models.user.read('test');
 
       user.should.have.property('email', null);
     });
@@ -106,7 +106,7 @@ describe('/users/:username/account...', function () {
 
     it('[reused code] should error', async function () {
       // first we create a new user
-      let out = await models.user.create({
+      const out = await models.user.create({
         username: 'test',
         password: 'asdfasdf',
         email: 'test@example.com'

@@ -43,8 +43,8 @@ class UserTag extends Model {
   }
 
   static async update(username, tagname, newData) {
-    let newUserTagData = _.pick(newData, ['relevance', 'story']);
-    let query = `
+    const newUserTagData = _.pick(newData, ['relevance', 'story']);
+    const query = `
       FOR u IN users FILTER u.username == @username
         FOR v, e IN 1
           OUTBOUND u
@@ -52,9 +52,9 @@ class UserTag extends Model {
           FILTER v.tagname == @tagname
           UPDATE e WITH @newUserTagData IN userTag
           RETURN NEW`;
-    let params = { username, tagname, newUserTagData };
-    let cursor = await this.db.query(query, params);
-    let output = await cursor.all();
+    const params = { username, tagname, newUserTagData };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
     return output[0];
   }
 

@@ -15,8 +15,8 @@ exports.onlyLogged = function (req, res, next) {
 
 // Authorize only logged user who requests herself in /users/:username
 exports.onlyLoggedMe = function (req, res, next) {
-  let isLogged = req.auth.logged === true;
-  let isMe = req.auth.username === req.params.username;
+  const isLogged = req.auth.logged === true;
+  const isMe = req.auth.username === req.params.username;
   if (isLogged && isMe === true) return next();
 
   return res.status(403).json({ errors: ['Not Authorized'] });

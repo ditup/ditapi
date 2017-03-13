@@ -1,21 +1,21 @@
 'use strict';
 
 
-let _ = require('lodash');
-let Deserializer = require('jsonapi-serializer').Deserializer;
+const _ = require('lodash');
+const Deserializer = require('jsonapi-serializer').Deserializer;
 
-let users = require('./users'),
-    tags = require('./tags');
+const users = require('./users'),
+      tags = require('./tags');
 
 // _.assign(module.exports, users);
-let serialize = {};
+const serialize = {};
 _.assign(serialize, tags, users);
 
 exports.serialize = serialize;
 
 
 // deserializing
-let deserialize = new Deserializer({
+const deserialize = new Deserializer({
   keyForAttribute: 'camelCase'
 }).deserialize;
 
@@ -26,7 +26,7 @@ exports.deserialize = function (req, res, next) {
 
     req.body = {};
 
-    for(let key in resp) {
+    for(const key in resp) {
       req.body[key] = resp[key];
     }
     return next();

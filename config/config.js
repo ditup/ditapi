@@ -1,10 +1,10 @@
 'use strict';
 
-var path = require('path'),
-    _ = require('lodash');
+const path = require('path'),
+      _ = require('lodash');
 
-var config = require(path.resolve('./config/default'));
-var secret;
+let config = require(path.resolve('./config/default'));
+let secret;
 
 switch (process.env.NODE_ENV) {
   case 'test':

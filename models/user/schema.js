@@ -3,8 +3,8 @@
 const account = require('./account');
 
 module.exports = async function (user) {
-  let password = await account.hash(user.password);
-  let code = await account.hash(user.emailVerifyCode);
+  const password = await account.hash(user.password);
+  const code = await account.hash(user.emailVerifyCode);
 
   return {
     username: user.username,

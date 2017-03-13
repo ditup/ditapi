@@ -1,6 +1,6 @@
 'use strict';
 
-let arangojs = require('arangojs');
+const arangojs = require('arangojs');
 
 class Model {
   static get db() {
