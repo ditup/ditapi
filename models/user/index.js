@@ -200,6 +200,33 @@ class User extends Model {
     let output = await cursor.all();
     return output;
   }
+
+  // TODO optionally filter out unverified users
+  static async readUsersByTags(tagnames) {
+    const query = `
+      // find users by tags
+      //
+      // find the tags
+      FOR t IN tags FILTER t.tagname IN @tagnames
+        // find users linked to tags by userTag
+        // (User)-[UserTag]->(Tag)
+        FOR u,ut IN 1 ANY t
+          INBOUND userTag
+          // sort tags by relevance for the user
+          SORT ut.relevance DESC
+          // put similar users together
+          COLLECT user=u INTO asdf KEEP t, ut
+          // sort the users by the sum of relevances of found tags
+          LET relevanceSum = SUM(asdf[*].ut.relevance)
+          SORT relevanceSum DESC
+          RETURN { user, relevanceSum, tags: asdf[*].t, userTags: asdf[*].ut }
+    `;
+    const params = { tagnames };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
+
+    return output;
+  }
 }
 
 module.exports = User;

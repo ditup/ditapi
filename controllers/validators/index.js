@@ -75,6 +75,13 @@ exports.postUsers = function (req, res, next) {
   return next();
 };
 
+exports.getUsers = function (req, res, next) {
+  // parse the query like ?filter[tag]=tag1,tag2,tag3
+  req.query.filter.tag = req.query.filter.tag.split(/,\s?/);
+  // TODO validate the tagnames in req.query.filter.tag
+  return next();
+};
+
 exports.getUser = function (req, res, next) {
   req.checkParams(_.pick(rules.user, ['username']));
 

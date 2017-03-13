@@ -9,7 +9,8 @@ var validators = require(path.resolve('./controllers/validators')),
 
 // post a new user
 router.route('/')
-  .post(validators.postUsers, userController.postUsers);
+  .post(validators.postUsers, userController.postUsers)
+  .get(authorize.onlyLogged, validators.getUsers, userController.getUsers);
 
 router.route('/:username')
   .get(validators.getUser, userController.getUser)

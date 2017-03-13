@@ -1,6 +1,7 @@
 'use strict';
 
-const path = require('path');
+const path = require('path'),
+      _ = require('lodash');
 const Serializer = require('jsonapi-serializer').Serializer;
 const config = require(path.resolve('./config/config'));
 
@@ -48,7 +49,7 @@ exports.userTag = function (data) {
 };
 
 // serialize userTags
-var userTagsSerializer = new Serializer('user-tags', {
+const userTagsSerializer = new Serializer('user-tags', {
   attributes: ['username', 'tagname', 'story', 'relevance', 'tag'],
   tag: {
     ref: 'tagname',
@@ -75,6 +76,51 @@ exports.userTags = function ({ username, userTags }) {
   serialized.links = {
     self: `${config.url.all}/users/${username}/tags`
   };
+
+  return serialized;
+};
+
+const usersByTagsSerializer = new Serializer('users', {
+  attributes: ['givenName', 'familyName', 'username', 'description', 'tags'],
+  keyForAttribute: 'camelCase',
+  typeForAttribute(attribute) {
+    if (attribute === 'tags') {
+      return 'user-tags';
+    }
+  },
+  id: 'username',
+  // include user-tags which were found
+  tags: {
+    ref: 'id',
+    attributes: ['username', 'tagname', 'story', 'relevance', 'tag'],
+    includedLinks: {
+      self: (data, { username, tagname }) => `${config.url.all}/users/${username}/tags/${tagname}`
+    },
+    relationshipLinks: {
+      self: ({ username }) => `${config.url.all}/users/${username}/relationships/tags`,
+      related: ({ username }) => `${config.url.all}/users/${username}/tags`
+    },
+    tag: {
+      ref: 'tagname',
+      attributes: ['tagname', 'description'],
+      includedLinks: {
+        self: (data, { tagname }) => `${config.url.all}/tags/${tagname}`
+      }
+    }
+  }
+});
+exports.usersByTags = function (users) {
+  _.each(users, user => {
+    user.tags = _.map(user.userTags, userTag => {
+
+      userTag.id = `${user.username}--${userTag.tag.tagname}`;
+      userTag.username = user.username;
+      userTag.tagname = userTag.tag.tagname;
+      return userTag;
+    });
+    delete user.userTags;
+  });
+  const serialized = usersByTagsSerializer.serialize(users);
 
   return serialized;
 };
