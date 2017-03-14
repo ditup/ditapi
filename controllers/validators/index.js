@@ -77,8 +77,16 @@ exports.postUsers = function (req, res, next) {
 
 exports.getUsers = function (req, res, next) {
   // parse the query like ?filter[tag]=tag1,tag2,tag3
-  req.query.filter.tag = req.query.filter.tag.split(/,\s?/);
+
+  if (_.has(req, 'query.filter.tag')) {
+    req.query.filter.tag = req.query.filter.tag.split(/,\s?/);
+  }
   // TODO validate the tagnames in req.query.filter.tag
+  if (_.has(req, 'query.filter.byMyTags')) {
+    const filter = req.query.filter;
+    filter.byMyTags = (filter.byMyTags === 'true') ? true : false;
+  }
+
   return next();
 };
 

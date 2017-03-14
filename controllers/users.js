@@ -58,7 +58,7 @@ exports.getUsers = async function (req, res, next) {
      * When query filter[tag]='tag1','tag0'
      * get users who have the provided tags
      */
-    if (req.query.filter.tag) {
+    if (_.has(req, 'query.filter.tag')) {
 
       // get array of tagnames from query (?filter[tag]=tag1,tag2)
       const tags = req.query.filter.tag;
@@ -87,6 +87,38 @@ exports.getUsers = async function (req, res, next) {
       const serializedUsers = serialize.usersByTags(usersByTags);
 
       // respond
+      return res.status(200).json(serializedUsers);
+
+    } else if (_.has(req, 'query.filter.byMyTags') && req.query.filter.byMyTags === true) {
+      /*
+       * Search users who are related to me by tags
+       *
+       *
+       */
+      const auth = _.get(req, 'auth', { logged: false });
+      const me = auth.username;
+
+      const users = await models.user.readUsersByMyTags(me);
+
+      // remap users to a proper format for serializing
+      const remappedUsers = _.map(users, (ubt) => {
+        // user
+        const user = {
+          id: ubt.user.username,
+          username: ubt.user.username
+        };
+        _.assign(user, _.pick(ubt.user.profile, ['givenName', 'familyName', 'description']));
+        // user-tags
+        user.userTags = _.map(ubt.userTags, function (userTag, i) {
+          // tag relationship of user-tags
+          userTag.tag = ubt.tags[i];
+          return userTag;
+        });
+        return user;
+      });
+
+      const serializedUsers = serialize.usersByMyTags(remappedUsers);
+
       return res.status(200).json(serializedUsers);
 
     } else {

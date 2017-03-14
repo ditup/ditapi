@@ -227,6 +227,34 @@ class User extends Model {
 
     return output;
   }
+
+  /**
+   * Find users related by common tags to @username
+   * @param {string} username
+   * @returns {Promise<Objec>}
+   *
+   */
+  static async readUsersByMyTags(username) {
+    const query = `
+      FOR u IN users FILTER u.username==@username
+        FOR v,e,p IN 2 OUTBOUND u
+          ANY userTag
+          LET relevanceWeight=SQRT(p.edges[0].relevance*p.edges[1].relevance)
+          LET tag=p.vertices[1]
+          LET utag=e
+          LET finalUser=v
+          SORT relevanceWeight DESC
+          COLLECT user=finalUser INTO asdf KEEP relevanceWeight, tag, utag
+          LET weightSum = SUM(asdf[*].relevanceWeight)
+          SORT weightSum DESC
+          RETURN { user, relevance: weightSum, tags: asdf[*].tag, userTags: asdf[*].utag }
+    `;
+    const params = { username };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
+
+    return output;
+  }
 }
 
 module.exports = User;

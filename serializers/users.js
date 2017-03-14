@@ -124,3 +124,48 @@ exports.usersByTags = function (users) {
 
   return serialized;
 };
+
+const usersByMyTagsSerializer = new Serializer('users', {
+  attributes: ['givenName', 'familyName', 'username', 'description', 'tags'],
+  keyForAttribute: 'camelCase',
+  typeForAttribute(attribute) {
+    if (attribute === 'tags') {
+      return 'user-tags';
+    }
+  },
+  id: 'username',
+  // include user-tags which were found
+  tags: {
+    ref: 'id',
+    attributes: ['username', 'tagname', 'story', 'relevance', 'tag'],
+    includedLinks: {
+      self: (data, { username, tagname }) => `${config.url.all}/users/${username}/tags/${tagname}`
+    },
+    relationshipLinks: {
+      self: ({ username }) => `${config.url.all}/users/${username}/relationships/tags`,
+      related: ({ username }) => `${config.url.all}/users/${username}/tags`
+    },
+    tag: {
+      ref: 'tagname',
+      attributes: ['tagname', 'description'],
+      includedLinks: {
+        self: (data, { tagname }) => `${config.url.all}/tags/${tagname}`
+      }
+    }
+  }
+});
+exports.usersByMyTags = function (users) {
+  _.each(users, user => {
+    user.tags = _.map(user.userTags, userTag => {
+
+      userTag.id = `${user.username}--${userTag.tag.tagname}`;
+      userTag.username = user.username;
+      userTag.tagname = userTag.tag.tagname;
+      return userTag;
+    });
+    delete user.userTags;
+  });
+  const serialized = usersByMyTagsSerializer.serialize(users);
+
+  return serialized;
+};
