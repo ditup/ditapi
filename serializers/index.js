@@ -5,18 +5,25 @@ const _ = require('lodash');
 const Deserializer = require('jsonapi-serializer').Deserializer;
 
 const users = require('./users'),
-      tags = require('./tags');
-
+      tags = require('./tags'),
+      messages = require('./messages');
 // _.assign(module.exports, users);
 const serialize = {};
-_.assign(serialize, tags, users);
+_.assign(serialize, tags, users, messages);
 
 exports.serialize = serialize;
 
 
 // deserializing
 const deserialize = new Deserializer({
-  keyForAttribute: 'camelCase'
+  keyForAttribute: 'camelCase',
+  users: {
+    valueForRelationship: function (relationship) {
+      return {
+        username: relationship.id
+      };
+    }
+  }
 }).deserialize;
 
 // express middleware for deserializing the data in body
@@ -24,11 +31,10 @@ exports.deserialize = function (req, res, next) {
   deserialize(req.body, function (err, resp) {
     if (err) return next(err); // TODO
 
-    req.body = {};
+    req.rawBody = req.body;
 
-    for(const key in resp) {
-      req.body[key] = resp[key];
-    }
+    req.body = resp;
+
     return next();
   });
 };

@@ -3,7 +3,8 @@
 const model = require('./model'),
       tag = require('./tag'),
       user = require('./user'),
-      userTag = require('./user-tag');
+      userTag = require('./user-tag'),
+      message = require('./message');
 
 
 const models = {
@@ -19,6 +20,7 @@ const models = {
 models.user = user;
 models.tag = tag;
 models.userTag = userTag;
+models.message = message;
 models.model = model;
 
 

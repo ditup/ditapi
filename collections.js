@@ -50,6 +50,13 @@ module.exports = {
     ]
   },
 
+  messages: {
+    type: 'edge',
+    from: ['users'],
+    to: ['users'],
+    indexes: []
+  },
+
   tagCreator: {
     type: 'edge',
     from: ['tags'],
