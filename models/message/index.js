@@ -43,6 +43,58 @@ class Message extends Model {
     return out[0];
   }
 
+  /**
+   * Read messages between two provided users
+   * @param {string} username1 - username of one user
+   * @param {string} username2 - username of other user
+   * @returns {Promise<Message[]>} - array of the found messages
+   *
+   * TODO pagination
+   */
+  static async readThread(username1, username2) {
+    if (username1 === username2)
+      throw new Error('Usernames must be different #aoiuw9');
+
+    const query = `
+      LET user1 = (FOR u IN users FILTER u.username == @username1 RETURN u)[0]
+      LET user2 = (FOR u IN users FILTER u.username == @username2 RETURN u)[0]
+
+      LET thread = (
+        FOR msg IN messages FILTER
+          (msg._from == user1._id AND msg._to == user2._id) OR
+          (msg._to == user1._id AND msg._from == user2._id)
+
+          LET from_ = (msg._from == user1._id) ? user1 : user2
+          LET to_ = (msg._to == user1._id) ? user1 : user2
+          LET from = MERGE(KEEP(from_, 'username'), from_.profile)
+          LET to = MERGE(KEEP(to_, 'username'), to_.profile)
+
+          LET message = MERGE(KEEP(msg, 'body', 'created'), { id: msg._key})
+          SORT message.created DESC
+          RETURN MERGE(message, { from }, { to })
+      )
+      RETURN {
+        thread: thread,
+        user1: user1,
+        user2: user2
+      }
+      `;
+    const params = { username1, username2 };
+    const cursor = await this.db.query(query, params);
+    const { user1, user2, thread } = (await cursor.all())[0];
+
+    // if one of the users doesn't exist, throw 404 error
+    const usersExist = Boolean(user1) && Boolean(user2);
+    if (!usersExist) {
+      const nonexistent = (!user1) ? username1 : username2;
+      const e = new Error(`User ${nonexistent} doesn't exist.`);
+      e.status = 404;
+      throw e;
+    }
+
+    return thread;
+  }
+
 }
 
 module.exports = Message;

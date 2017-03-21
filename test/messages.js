@@ -252,19 +252,19 @@ describe('/messages', function () {
   // fetch threads
   // fetch messages in a single thread
   describe('GET', function () {
+    let thirdUser;
 
     beforeEachPopulate({
       users: 4, // how many users to make
       verifiedUsers: [0, 1, 2], // which  users to make verified
       messages: [
         [0, 1], [1, 0], [0, 1], [0, 1], [1, 0],
-        [0, 2], [2, 0],
         [1, 2], [1, 2]
       ]
     });
 
     beforeEach(function () {
-      [loggedUser, otherUser] = dbData.users;
+      [loggedUser, otherUser, thirdUser] = dbData.users;
     });
 
     context('logged in', function () {
@@ -275,14 +275,72 @@ describe('/messages', function () {
       });
 
       describe('/messages?filter[with]=:username', function () {
-        it('show messages with user :username', function () {});
-        it('allow pagination');
+        context('existent user', function () {
+          it('show messages with user :username from newest to oldest', async function () {
+            const response = await agent
+              .get(`/messages?filter[with]=${otherUser.username}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.propertyByPath('data');
+            should(response.body).have.propertyByPath('links', 'self')
+              .eql(`${config.url.all}/messages?filter[with]=${otherUser.username}`);
+
+            const messages = response.body.data;
+
+            should(messages).have.length(5);
+
+            const [msg0, msg1] = messages;
+
+            testMessage(msg0, dbData.messages[4], dbData.users[1], dbData.users[0]);
+            testMessage(msg1, dbData.messages[3], dbData.users[0], dbData.users[1]);
+          });
+
+          it('[no messages] show 0 messages', async function () {
+            const response = await agent
+              .get(`/messages?filter[with]=${thirdUser.username}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.propertyByPath('data');
+            should(response.body).have.propertyByPath('links', 'self')
+              .eql(`${config.url.all}/messages?filter[with]=${thirdUser.username}`);
+
+            const messages = response.body.data;
+
+            should(messages).have.length(0);
+          });
+
+          it('allow pagination');
+        });
+
+        context('nonexistent user', function () {
+          it('respond with 404', async function () {
+            await agent
+              .get(`/messages?filter[with]=${nonexistentUser.username}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+        });
+
       });
 
     });
 
     context('not logged in', function () {
-      it('respond with 403');
+      it('respond with 403', async function () {
+        await agent
+          .get(`/messages?filter[with]=${nonexistentUser.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(403)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
     });
   });
 
@@ -290,10 +348,31 @@ describe('/messages', function () {
 
 describe('/messages/:id', function () {
   describe('PATCH', function () {
-    it('TODO edit the message if  i\'m a sender');
+    it('edit the message body if i\'m a sender');
+
+    it('update message.read to true if i\'m a receiver');
   });
 
   describe('DELETE', function () {
     it('TODO delete the message if and only if i\'m a sender');
   });
 });
+
+function testMessage(msg, data, from, to) {
+  should(msg).have.property('type', 'messages');
+  should(msg).have.property('id', data.id);
+  should(msg).have.property('attributes').deepEqual({
+    body: data.body,
+    created: data.created
+  });
+  should(msg).have.propertyByPath('relationships', 'from', 'data')
+    .deepEqual({
+      type: 'users',
+      id: from.username
+    });
+  should(msg).have.propertyByPath('relationships', 'to', 'data')
+    .deepEqual({
+      type: 'users',
+      id: to.username
+    });
+}
