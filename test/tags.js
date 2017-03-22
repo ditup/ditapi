@@ -108,8 +108,6 @@ describe('/tags', function () {
 
         (typeof tag).should.equal('object');
         tag.should.have.property('tagname', newTag.tagname);
-        tag.should.have.property('creator');
-        tag.creator.should.have.property('username', loggedUser.username);
       });
 
       it('[invalid tagname] should error with 400', async function () {
@@ -187,10 +185,7 @@ describe('/tags/:tagname', function () {
       const attrs = tag.data.attributes;
       attrs.should.have.property('tagname', existentTag.tagname);
 
-      // TODO figure out JSON API creator & contributors...
     });
-
-    it('show creator'); // as a json api relation
 
     it('[nonexistent tagname] should error 404', async function () {
       const response = await agent

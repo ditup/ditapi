@@ -13,44 +13,23 @@ class Tag extends Model {
   static async create({ tagname, creator }) {
     // create the tag
     const tag = schema({ tagname });
-    const query = 'INSERT @tag IN tags';
-    const params = { tag };
+    const query = `
+      FOR u IN users FILTER u.username == @creator
+        INSERT MERGE(@tag, { creator: u }) IN tags
+          RETURN NEW`;
+    const params = { tag, creator };
 
     await this.db.query(query, params);
-
-    // create link to tag creator
-    const queryCreator = `
-      FOR u IN users FILTER u.username == @creator
-        FOR t IN tags FILTER t.tagname == @tagname
-          INSERT {
-            _from: t._id,
-            _to: u._id,
-            created: @created
-          } IN tagCreator
-          RETURN NEW`;
-    const paramsCreator = {
-      creator,
-      tagname,
-      created: Date.now()
-    };
-
-    await this.db.query(queryCreator, paramsCreator);
   }
 
   static async read(tagname) {
     const query = `
       FOR t IN tags FILTER t.tagname == @tagname
-        FOR v, e, p
-          IN 0..1
-          OUTBOUND t
-          OUTBOUND tagCreator
-          RETURN KEEP(v, 'username', 'tagname', 'created')`;
+        RETURN KEEP(t, 'tagname', 'created')`;
     const params = { tagname };
     const out = await (await this.db.query(query, params)).all();
 
     const tag = _.pick(out[0], 'tagname', 'created');
-    const creator = _.pick(out[1], 'username');
-    _.assign(tag, { creator });
 
     return (out[0]) ? tag : null;
   }

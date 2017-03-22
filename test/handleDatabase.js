@@ -33,7 +33,7 @@ exports.fill = async function (data) {
 
   for(const tag of processed.tags) {
     const tagData = _.pick(tag, ['tagname']);
-    tagData.creator = processed.users[tag.creator];
+    tagData.creator = processed.users[tag.creator].username;
     await models.tag.create(tagData);
   }
 

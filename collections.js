@@ -55,20 +55,7 @@ module.exports = {
     from: ['users'],
     to: ['users'],
     indexes: []
-  },
-
-  tagCreator: {
-    type: 'edge',
-    from: ['tags'],
-    to: ['users'],
-    indexes: [
-      {
-        type: 'hash',
-        fields: ['_from'],  // if multiple creators possible
-        unique: true
-      }
-    ]
-  },
+  }
 };
 
 /*
