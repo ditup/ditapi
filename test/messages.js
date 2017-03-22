@@ -203,6 +203,8 @@ describe('/messages', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
 
+        it('[message too long] respond with 400');
+
         it('sender is receiver', async () => {
           // invalidate the message
           validMessage.data.relationships.to.data.id = loggedUser.username;
