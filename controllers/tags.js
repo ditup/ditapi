@@ -33,7 +33,7 @@ exports.postTags = async function (req, res, next) {
     }
 
 
-    const tagData = _.pick(req.body, ['tagname', 'description']);
+    const tagData = _.pick(req.body, ['tagname']);
     _.assign(tagData, { creator: req.auth.username });
 
     const tag = await models.tag.create(tagData);
@@ -85,30 +85,6 @@ exports.getTag = async function (req, res, next) {
       .json(serialize.tag(tag));
 
   } catch (e) {
-    return next(e);
-  }
-};
-
-exports.patchTag = async function (req, res, next) {
-  try {
-    // check that user id in body equals username from url
-    if (req.body.id !== req.params.tagname) {
-      const e = new Error('Tagname in url parameter and in body don\'t match');
-      e.status = 400;
-      throw e;
-    }
-
-    const updateData = {
-      description: req.body.description,
-      editor: req.auth.username,
-      time: Date.now()
-    };
-    // update the profile with the new values
-    await models.tag.update(req.params.tagname, updateData);
-    return next();
-
-  } catch (e) {
-    /* handle error */
     return next(e);
   }
 };

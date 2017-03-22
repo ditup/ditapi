@@ -32,7 +32,7 @@ exports.fill = async function (data) {
   }
 
   for(const tag of processed.tags) {
-    const tagData = _.pick(tag, ['tagname', 'description']);
+    const tagData = _.pick(tag, ['tagname']);
     tagData.creator = processed.users[tag.creator];
     await models.tag.create(tagData);
   }
@@ -94,7 +94,6 @@ function processData(data) {
     const pickedUser = n % data.users;
     const resp = {
       tagname: `tag${n}`,
-      description: `description of tag${n}`,
       creator: pickedUser
     };
     return resp;
@@ -105,7 +104,6 @@ function processData(data) {
     const pickedUser = n % data.users;
     const resp = {
       tagname: data.namedTags[n],
-      description: `description of ${data.namedTags[n]}`,
       creator: pickedUser
     };
     return resp;

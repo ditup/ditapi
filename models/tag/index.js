@@ -10,9 +10,9 @@ class Tag extends Model {
    * create a new tag
    *
    */
-  static async create({ tagname, description, creator }) {
+  static async create({ tagname, creator }) {
     // create the tag
-    const tag = schema({ tagname, description });
+    const tag = schema({ tagname });
     const query = 'INSERT @tag IN tags';
     const params = { tag };
 
@@ -44,33 +44,15 @@ class Tag extends Model {
           IN 0..1
           OUTBOUND t
           OUTBOUND tagCreator
-          RETURN KEEP(v, 'username', 'tagname', 'description', 'created')`;
+          RETURN KEEP(v, 'username', 'tagname', 'created')`;
     const params = { tagname };
     const out = await (await this.db.query(query, params)).all();
 
-    const tag = _.pick(out[0], 'tagname', 'description', 'created');
+    const tag = _.pick(out[0], 'tagname', 'created');
     const creator = _.pick(out[1], 'username');
     _.assign(tag, { creator });
 
     return (out[0]) ? tag : null;
-  }
-
-  static async update(tagname, { description, editor, time }) {
-    const query = `FOR t IN tags FILTER t.tagname == @tagname
-      UPDATE t WITH {
-        description: @description,
-        history: PUSH(t.history, {
-          description: @description,
-          editor: @editor,
-          time: @time
-        })
-      }
-      IN tags
-      RETURN NEW`;
-    const params = { tagname, description, editor, time };
-    const cursor = await this.db.query(query, params);
-    const output = await cursor.all();
-    return output[0];
   }
 
   static async exists(tagname) {
@@ -95,7 +77,7 @@ class Tag extends Model {
   static async filter(likeTagname) {
     const query = `
       FOR t IN tags FILTER t.tagname LIKE @likeTagname
-        RETURN KEEP(t, 'username', 'tagname', 'description', 'created')`;
+        RETURN KEEP(t, 'username', 'tagname', 'created')`;
     // % serves as a placeholder for multiple characters in arangodb LIKE
     // _ serves as a placeholder for a single character
     const params = { likeTagname: `%${likeTagname}%` };
@@ -104,7 +86,7 @@ class Tag extends Model {
     const formatted = [];
 
     for(const tag of out) {
-      formatted.push(_.pick(tag, ['tagname', 'description']));
+      formatted.push(_.pick(tag, ['tagname']));
     }
 
     return formatted;

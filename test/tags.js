@@ -2,8 +2,7 @@
 
 const supertest = require('supertest'),
       should = require('should'),
-      path = require('path'),
-      _ = require('lodash');
+      path = require('path');
 
 const app = require(path.resolve('./app')),
       serializers = require(path.resolve('./serializers')),
@@ -60,21 +59,23 @@ describe('/tags', function () {
           { id: 'named-tag-2' }
         ]);
       });
+
+      it('don\'t match tags in the middle of a word, but match after hyphen');
+      // i.e. name matches name, namespace, named, namel, first-name, tag-name
+      // doesn't match tagname, username, firstname
     });
   });
 
   describe('POST', function () {
 
     const newTag = {
-      tagname: 'test-tag',
-      description: 'this is a tag description!'
+      tagname: 'test-tag'
     };
 
     const serializedNewTag = serialize.newTag(newTag);
 
     const invalidTagname = {
-      tagname: 'test--tag',
-      description: 'this is a tag description!'
+      tagname: 'test--tag'
     };
 
     const serializedInvalidTagname = serialize.newTag(invalidTagname);
@@ -107,7 +108,6 @@ describe('/tags', function () {
 
         (typeof tag).should.equal('object');
         tag.should.have.property('tagname', newTag.tagname);
-        tag.should.have.property('description', newTag.description);
         tag.should.have.property('creator');
         tag.creator.should.have.property('username', loggedUser.username);
       });
@@ -129,20 +129,6 @@ describe('/tags', function () {
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
           .expect(409)
-          .expect('Content-Type', /^application\/vnd\.api\+json/);
-      });
-
-      it('[invalid description]', async function () {
-        const longDescription = _.repeat('.', 2049);
-        await agent
-          .post('/tags')
-          .send(serialize.newTag({
-            tagname: 'new-tag',
-            description: longDescription
-          }))
-          .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
-          .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
     });
@@ -185,7 +171,6 @@ describe('/tags/:tagname', function () {
 
   describe('GET', function () {
     it('should show the tag', async function () {
-      const existentTag = dbData.tags[0];
       const response = await agent
         .get(`/tags/${existentTag.tagname}`)
         .set('Content-Type', 'application/vnd.api+json')
@@ -201,7 +186,6 @@ describe('/tags/:tagname', function () {
 
       const attrs = tag.data.attributes;
       attrs.should.have.property('tagname', existentTag.tagname);
-      attrs.should.have.property('description', existentTag.description);
 
       // TODO figure out JSON API creator & contributors...
     });
@@ -230,38 +214,6 @@ describe('/tags/:tagname', function () {
       response.body.should.have.property('errors');
     });
   });
-
-  describe('PATCH', function () {
-    context('logged in', function () {
-      it('[valid description] update the tag description', async function () {
-        const description = 'a new description of the tag';
-
-        await agent
-          .patch(`/tags/${existentTag.tagname}`)
-          .send({
-            data: {
-              type: 'tags',
-              id: existentTag.tagname,
-              attributes: { description }
-            }
-          })
-          .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
-          .expect(200)
-          .expect('Content-Type', /^application\/vnd\.api\+json/);
-
-        // check that the newly created tag is there
-        const tag = await models.tag.read(existentTag.tagname);
-
-        (typeof tag).should.equal('object');
-        tag.should.have.property('description', description);
-      });
-
-      it('keep history (vcdiff, zlib)');
-      // http://ericsink.com/entries/time_space_tradeoffs.html
-    });
-  });
-
 });
 
 describe('Deleting unused tags.', function () {

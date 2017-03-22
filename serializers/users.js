@@ -53,7 +53,7 @@ const userTagsSerializer = new Serializer('user-tags', {
   attributes: ['username', 'tagname', 'story', 'relevance', 'tag'],
   tag: {
     ref: 'tagname',
-    attributes: ['tagname', 'description'],
+    attributes: ['tagname'],
     includedLinks: {
       self: ({ tagname }) => `${config.url.all}/tags/${tagname}`
     },
@@ -102,7 +102,7 @@ const usersByTagsSerializer = new Serializer('users', {
     },
     tag: {
       ref: 'tagname',
-      attributes: ['tagname', 'description'],
+      attributes: ['tagname'],
       includedLinks: {
         self: (data, { tagname }) => `${config.url.all}/tags/${tagname}`
       }
@@ -147,7 +147,7 @@ const usersByMyTagsSerializer = new Serializer('users', {
     },
     tag: {
       ref: 'tagname',
-      attributes: ['tagname', 'description'],
+      attributes: ['tagname'],
       includedLinks: {
         self: (data, { tagname }) => `${config.url.all}/tags/${tagname}`
       }

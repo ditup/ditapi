@@ -5,7 +5,7 @@ const Serializer = require('jsonapi-serializer').Serializer;
 const config = require(path.resolve('./config/config'));
 
 const newTagSerializer = new Serializer('tags', {
-  attributes: ['tagname', 'description']
+  attributes: ['tagname']
 });
 exports.newTag = function (data) {
   const output = newTagSerializer.serialize(data);
@@ -15,7 +15,7 @@ exports.newTag = function (data) {
 
 const tagSerializer = new Serializer('tags', {
   id: 'tagname',
-  attributes: ['tagname', 'description'],
+  attributes: ['tagname'],
   keyForAttribute: 'camelCase',
   topLevelLinks: {
     self: (data) => `${config.url.all}/tags/${data.id}`

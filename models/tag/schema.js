@@ -1,19 +1,10 @@
 'use strict';
 
-module.exports = function ({ tagname, description}) {
-  description = description || '';
+module.exports = function ({ tagname }) {
 
   return {
     tagname,
-    description,
     created: Date.now(),
-    history: [
-      {
-        description,
-        time: Date.now(),
-        editor: null
-      }
-    ]
   };
 };
 

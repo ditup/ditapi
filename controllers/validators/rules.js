@@ -44,11 +44,6 @@ const tag = {
     },
     errorMessage: 'Invalid Tagname (2-64 characters; only a-z, -, i.e. tag-name; but not -tag-name, tag--name, tagname-)'
   },
-  description: {
-    isLength: {
-      options: [{ min: 0, max: 2048 }]
-    }
-  },
   get id() {
     return this.tagname;
   }

@@ -103,22 +103,6 @@ exports.getTag = function (req, res, next) {
   return next();
 };
 
-exports.patchTag = function (req, res, next) {
-  req.checkParams(_.pick(rules.tag, ['tagname']));
-  req.checkBody(_.pick(rules.tag, ['id', 'description']));
-  const errors = req.validationErrors();
-
-  const errorOutput = { errors: [] };
-  if (errors) {
-    for(const e of errors) {
-      errorOutput.errors.push({ meta: e });
-    }
-    return res.status(400).json(errorOutput);
-  }
-
-  return next();
-};
-
 exports.postUserTags = function (req, res, next) {
   return next();
 };
