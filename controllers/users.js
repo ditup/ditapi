@@ -121,6 +121,11 @@ exports.getUsers = async function (req, res, next) {
 
       return res.status(200).json(serializedUsers);
 
+    } else if (_.has(req, 'query.filter.location')) {
+
+      console.log(req.query.filter.location);
+
+      res.status(200).json();
     } else {
       // not found
       return next();
@@ -141,7 +146,7 @@ exports.getUser = async function (req, res, next) {
 
     if (user) {
       // picking values to output from user and user.profile
-      const filteredUser = _.pick(user, ['username']);
+      const filteredUser = _.pick(user, ['username', 'location', 'locationUpdated']);
 
       // profile detail is for logged users only (or from loggedUnverified self)
       const isLogged = auth.logged === true;
@@ -157,6 +162,7 @@ exports.getUser = async function (req, res, next) {
       // show email in self profile
       if (isSelf) {
         filteredUser.email = user.email;
+        filteredUser.preciseLocation = user.preciseLocation;
       }
 
       filteredUser.id = filteredUser.username;
@@ -186,7 +192,7 @@ exports.patchUser = async function (req, res, next) {
   const profileFields = ['givenName', 'familyName', 'description'];
 
   // check that only profile fields are present in the request body
-  const unwantedParams = _.difference(Object.keys(req.body), _.union(profileFields, ['id']));
+  const unwantedParams = _.difference(Object.keys(req.body), _.union(profileFields, ['id', 'location']));
   if (unwantedParams.length > 0) { // if any unwanted fields are present, error.
     const e = new Error('The request body contains unexpected attributes');
     e.status = 400;
@@ -195,6 +201,11 @@ exports.patchUser = async function (req, res, next) {
 
   // pick only the profile fields from the body of the request
   const profile = _.pick(req.body, profileFields);
+
+  // update the location if provided
+  if (req.body.hasOwnProperty('location')) {
+    await models.user.updateLocation(req.params.username, req.body.location);
+  }
 
   // update the profile with the new values
   await models.user.update(req.params.username, profile);

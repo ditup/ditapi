@@ -5,6 +5,7 @@ const _ = require('lodash'),
 
 const Model = require(path.resolve('./models/model')),
       account = require('./account'),
+      helpers = require('./helpers'),
       schema = require('./schema');
 
 class User extends Model {
@@ -40,6 +41,26 @@ class User extends Model {
       UPDATE u WITH { profile: @profile } IN users
       RETURN NEW`;
     const params = { username, profile };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
+    return output[0];
+  }
+
+  static async updateLocation(username, rawLocation) {
+
+    const preciseLocation = rawLocation || null;
+    const location = (preciseLocation === null)
+      ? null
+      : helpers.randomizeLocation(preciseLocation);
+
+    const query = `FOR u IN users FILTER u.username == @username
+      UPDATE u WITH { location: @location, preciseLocation: @preciseLocation, locationUpdated: @locationUpdated } IN users
+      RETURN NEW`;
+    const params = {
+      username,
+      location,
+      preciseLocation,
+      locationUpdated: Date.now() };
     const cursor = await this.db.query(query, params);
     const output = await cursor.all();
     return output[0];

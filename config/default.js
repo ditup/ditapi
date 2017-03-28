@@ -18,5 +18,9 @@ module.exports = {
   security: {
     // iterations for pbkdf2 hashing of passwords
     iterations: 10000
+  },
+  randomLocationOffset: {
+    min: 1000,
+    max: 2000
   }
 };

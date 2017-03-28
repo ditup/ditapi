@@ -15,6 +15,7 @@ exports.fill = async function (data) {
   const def = {
     users: 0,
     verifiedUsers: [],
+    userLocations: {},
     tags: 0,
     namedTags: [],
     userTag: [],
@@ -27,8 +28,14 @@ exports.fill = async function (data) {
 
   for(const user of processed.users) {
     await models.user.create(_.pick(user, ['username', 'email', 'password']));
+
+    // verify emails of verified users
     if (user.verified === true)
       await models.user.finalVerifyEmail(user.username);
+
+    if (user.hasOwnProperty.location) {
+      await models.user.updateLocation(user.username, user.location);
+    }
   }
 
   for(const tag of processed.tags) {
@@ -85,7 +92,12 @@ function processData(data) {
         return _.map(this._messages, message => output.messages[message]);
       }
     };
-    if(data.verifiedUsers.indexOf(n) > -1) resp.verified = true;
+    if (data.verifiedUsers.indexOf(n) > -1) resp.verified = true;
+
+    if (data.userLocations.hasOwnProperty(n)) {
+      resp.location = data.userLocations[n];
+    }
+
     return resp;
   });
 
