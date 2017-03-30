@@ -19,7 +19,8 @@ const userSerializer = new Serializer('users', {
   keyForAttribute: 'camelCase',
   topLevelLinks: {
     self: ({ id }) => `${config.url.all}/users/${id}`
-  }
+  },
+  id: 'username'
 });
 exports.user = function (data) {
   return userSerializer.serialize(data);

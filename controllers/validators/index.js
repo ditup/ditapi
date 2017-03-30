@@ -39,7 +39,7 @@ exports.getUsers = function (req, res, next) {
   if (_.has(req, 'query.filter.location')) {
 
     const rawLocation = req.query.filter.location.split(',');
-    
+
     if (rawLocation.length !== 4) throw new Error('invalid amount of parameters for location provided (TODO to error 400)');
 
     // parse location to numbers

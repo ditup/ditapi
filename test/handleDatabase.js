@@ -33,7 +33,7 @@ exports.fill = async function (data) {
     if (user.verified === true)
       await models.user.finalVerifyEmail(user.username);
 
-    if (user.hasOwnProperty.location) {
+    if (user.hasOwnProperty('location')) {
       await models.user.updateLocation(user.username, user.location);
     }
   }

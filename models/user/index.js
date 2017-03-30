@@ -276,6 +276,29 @@ class User extends Model {
 
     return output;
   }
+
+  /**
+   * Find users who have their location within rectangle given by two points (location1 and location2, each in format [latitude: number, longitude: number])
+   *
+   *
+   */
+  static async readUsersWithinRectangle(location1, location2) {
+    const query = `
+      FOR u IN WITHIN_RECTANGLE(users, @location1[0], @location1[1], @location2[0], @location2[1])
+      RETURN KEEP(u, 'location', 'username', 'profile')
+    `;
+    const params = { location1, location2 };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
+
+    // flatten the users' profile
+    _.each(output, (user) => {
+      _.assign(user, _.pick(user.profile, ['givenName', 'familyName', 'description']));
+      delete user.profile;
+    });
+
+    return output;
+  }
 }
 
 module.exports = User;

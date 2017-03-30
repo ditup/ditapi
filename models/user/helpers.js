@@ -16,12 +16,12 @@ function fuzzyOffset(minimum, maximum) {
   // Please note that Math.random() is not cryptographically secure.
   // For this purpose it's probably ok, but can be improved i.e. with node crypto module.
   if (maximum < minimum) throw new Error('maximum must be greater than minimum');
-  var difference = maximum - minimum;
-  var randomDistance = Math.floor(difference * Math.random() + minimum); // Distance will be from interval [minimum, maximum)
-  var randomDirection = 2 * Math.PI * Math.random(); // Random direction is from interval [0, 2*PI) radians
+  const difference = maximum - minimum;
+  const randomDistance = Math.floor(difference * Math.random() + minimum); // Distance will be from interval [minimum, maximum)
+  const randomDirection = 2 * Math.PI * Math.random(); // Random direction is from interval [0, 2*PI) radians
 
-  var horizontal = randomDistance * Math.cos(randomDirection);
-  var vertical = randomDistance * Math.sin(randomDirection);
+  const horizontal = randomDistance * Math.cos(randomDirection);
+  const vertical = randomDistance * Math.sin(randomDirection);
 
   return [horizontal, vertical]; // The order doesn't matter here
 }
@@ -31,27 +31,27 @@ function fuzzyOffset(minimum, maximum) {
  * Will create an alternative lat,lng by shifting location 100-200 meters to random direction
  * @link http://gis.stackexchange.com/a/2980
  */
-function fuzzyLocation(location, offset) {
-  const { min: minOffset, max: maxOffset } = offset || config.randomLocationOffset;
+function fuzzyLocation(location, inputOffset) {
+  const { min: minOffset, max: maxOffset } = inputOffset || config.randomLocationOffset;
   // Offsets in meters, random between 100-200 meters to random direction
-  var offset = fuzzyOffset(minOffset, maxOffset);
-  var dn = offset[0];
-  var de = offset[1];
+  const offset = fuzzyOffset(minOffset, maxOffset);
+  const dn = offset[0];
+  const de = offset[1];
 
   // Position, decimal degrees
-  var lat = location[0];
-  var lng = location[1];
+  const lat = location[0];
+  const lng = location[1];
 
   // Earth’s radius, sphere
-  var Radius = 6378137;
+  const Radius = 6378137;
 
   // Coordinate offsets in radians
-  var dLat = dn / Radius;
-  var dLng = de / (Radius * Math.cos(Math.PI * lat / 180));
+  const dLat = dn / Radius;
+  const dLng = de / (Radius * Math.cos(Math.PI * lat / 180));
 
   // OffsetPosition, decimal degrees
-  var latO = lat + dLat * 180 / Math.PI;
-  var lngO = lng + dLng * 180 / Math.PI;
+  const latO = lat + dLat * 180 / Math.PI;
+  const lngO = lng + dLng * 180 / Math.PI;
 
   return [latO, lngO];
 }

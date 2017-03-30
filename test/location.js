@@ -2,7 +2,6 @@
 
 const supertest = require('supertest'),
       should = require('should'),
-      _ = require('lodash'),
       sinon = require('sinon'),
       path = require('path');
 
@@ -11,17 +10,16 @@ const app = require(path.resolve('./app')),
 
 const agent = supertest.agent(app);
 
-let dbData,
-    existentUser,
-    loggedUser,
-    unverifiedUser;
+let dbData;
 
+/*
 const nonexistentUser = {
   username: 'nonexistent-user',
   email: 'nonexistent-email@example.com',
 };
+*/
 
-describe.only('Location of people, tags, ideas, projects, ...', function () {
+describe('Location of people, tags, ideas, projects, ...', function () {
   let sandbox;
 
   beforeEach(function () {
@@ -138,7 +136,7 @@ describe.only('Location of people, tags, ideas, projects, ...', function () {
       context('invalid location', function () {
         it('[missing coordinates] error 400', async function () {
 
-          const res = await agent
+          await agent
             .patch(`/users/${loggedUser.username}`)
             .send({
               data: {
@@ -157,7 +155,7 @@ describe.only('Location of people, tags, ideas, projects, ...', function () {
 
         it('[bad data] error 400', async function () {
 
-          const res = await agent
+          await agent
             .patch(`/users/${loggedUser.username}`)
             .send({
               data: {
@@ -267,7 +265,7 @@ describe.only('Location of people, tags, ideas, projects, ...', function () {
 
     context('logged in as other user', function () {
       it('error 403', async function () {
-        const res = await agent
+        await agent
           .patch(`/users/${loggedUser.username}`)
           .send({
             data: {
@@ -294,47 +292,88 @@ describe.only('Location of people, tags, ideas, projects, ...', function () {
 
   describe('GET people within a rectangle', function () {
 
-    let loggedUser, otherUser;
+    let loggedUser;
 
     beforeEach(async function () {
       const data = {
         users: 10, // how many users to make
         verifiedUsers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], // which users to make verified
         userLocations: {
-          0: [0,0],
-          1: [-0.1, 10],
-          2: [11, 11],
-          3: [0, 12],
-          4: [0, 13],
-          5: [1, 14],
-          6: [1, 15],
-          7: [1, 16],
-          8: [1, 17],
-          9: [-0.1, 18],
+          0: [0, 5],
+          1: [1, 7],
+          2: [-1, 10],
+          3: [-1.0003, 15],
+          4: [4.993, 4.99999],
+          5: [-4.999, 15.01], // until here they should pass the 1st test
+          6: [0, 0],
+          7: [0, 15.2],
+          8: [-5.2, 10],
+          9: [5.2, 0],
         }
       };
       // create data in database
       dbData = await dbHandle.fill(data);
 
-      [loggedUser, otherUser] = dbData.users;
+      [loggedUser] = dbData.users;
     });
 
     afterEach(async function () {
       await dbHandle.clear();
     });
 
-    it('show people inside a specified rectangle', async function () {
-      const res = await agent
-        .get('/users?filter[location]=0,0,15,15')
-        .set('Content-Type', 'application/vnd.api+json')
-        .auth(loggedUser.username, loggedUser.password)
-        .expect('Content-Type', /^application\/vnd\.api\+json/)
-        .expect(200);
+    context('logged', function () {
+      it('show people inside a specified rectangle and don\'t show people outside', async function () {
+        const res = await agent
+          .get('/users?filter[location]=-5.1,4.9,5.1,15.1')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(200);
+
+        should(res).have.propertyByPath('body', 'data').length(6);
+        should(res.body.data[0]).have.property('id').not.eql('undefined');
+        should(res.body.data[0]).have.property('attributes').match({
+          familyName: '',
+          givenName: '',
+          description: '',
+          location: /.*/,
+          username: /.*/
+        });
+      });
+
+      it('limit the size of the rectangle');
+      it('TODO should we filter only verified users?'); // well, only verified people can have location in the first place
+
+      it('don\'t leak the preciseLocation', async function () {
+        const res = await agent
+          .get('/users?filter[location]=-5.1,4.9,5.1,15.1')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(200);
+
+        should(res).have.propertyByPath('body', 'data').length(6);
+
+        should(res.body.data[0]).not.have.propertyByPath('attributes', 'preciseLocation');
+      });
+
+      context('invalid location', function () {
+        it('[wrong corners] error with 400');
+        it('[wrong amount of coordinates] error with 400');
+      });
+
     });
 
-    it('don\'t show people outside a specified rectangle (lat, lon)');
-    it('limit a size of the rectangle');
-    it('TODO should we filter only verified users?');
+    context('not logged in', function () {
+      it('error with 403', async function () {
+        await agent
+          .get('/users?filter[location]=-1,-1,1,1')
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(403);
+      });
+    });
+
   });
 
   describe('GET people within a rectangle filtered by tags', function () {

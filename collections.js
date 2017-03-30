@@ -22,6 +22,10 @@ module.exports = {
         fields: ['email'],
         unique: true,
         sparse: true
+      },
+      {
+        type: 'geo',
+        fields: ['location']
       }
     ]
   },

@@ -123,9 +123,13 @@ exports.getUsers = async function (req, res, next) {
 
     } else if (_.has(req, 'query.filter.location')) {
 
-      console.log(req.query.filter.location);
+      const [loc1, loc2] = req.query.filter.location;
 
-      res.status(200).json();
+      const users = await models.user.readUsersWithinRectangle(loc1, loc2);
+
+      const serializedUsers = serialize.user(users);
+
+      res.status(200).json(serializedUsers);
     } else {
       // not found
       return next();
