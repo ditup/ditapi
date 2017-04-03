@@ -272,7 +272,47 @@ describe('/messages', function () {
     context('logged in', function () {
 
       describe('/messages?filter[threads]', function () {
-        it('show 1 or more last messages in my latest threads');
+        it('show last messages of my threads sorted by time', async function () {
+          const response = await agent
+            .get('/messages?filter[threads]')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(otherUser.username, otherUser.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response.body).have.propertyByPath('data');
+
+          should(response.body).have.propertyByPath('links', 'self')
+            .eql(`${config.url.all}/messages?filter[threads]`);
+
+          const threads = response.body.data;
+
+          should(threads).have.length(2);
+
+          const [msg0, msg1] = threads;
+
+          testMessage(msg0, dbData.messages[6], dbData.users[1], dbData.users[2]);
+          testMessage(msg1, dbData.messages[4], dbData.users[1], dbData.users[0]);
+
+          // check included users
+          should(response.body).have.property('included').length(3);
+
+          const included = response.body.included;
+
+          should(included).containDeep([{
+            type: 'users',
+            id: dbData.users[0].username
+          },
+          {
+            type: 'users',
+            id: dbData.users[1].username
+          },
+          {
+            type: 'users',
+            id: dbData.users[2].username
+          }]);
+        });
+
         it('allow pagination');
       });
 
@@ -345,6 +385,8 @@ describe('/messages', function () {
       });
     });
   });
+
+  it('TODO PATCH update multiple messages to read: true');
 
 });
 

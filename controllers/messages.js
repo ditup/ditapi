@@ -39,8 +39,10 @@ exports.postMessages = async function (req, res, next) {
  */
 exports.getMessages = async function (req, res, next) {
 
-  // get a thread of the logged user with another user
-  if(_.has(req, 'query.filter.with')) {
+  if (_.has(req, 'query.filter.with')) {
+    /*
+     * Get a conversation of the logged user with another user (with: username)
+     */
 
     // one user is me (the logged user)
     const me = req.auth.username;
@@ -59,13 +61,35 @@ exports.getMessages = async function (req, res, next) {
 
     const serializedMessages = serialize.message(messages);
 
-    serializedMessages.links.self = `${config.url.all}/messages?filter[with]=${withUser}`;
-
-    const selfLink = serializedMessages.links.self;
+    const selfLink = `${config.url.all}/messages?filter[with]=${withUser}`;
+    serializedMessages.links.self = selfLink;
 
     return res.status(200)
       .set('Location', selfLink)
       .json(serializedMessages);
+  } else if (_.has(req, 'query.filter.threads')) {
+    /*
+     * Get the last messages of my threads
+     */
+
+    // who am i?
+    const me = req.auth.username;
+
+    // what are last messages of my threads?
+    const messages = await models.message.readThreads(me);
+
+    const serializedMessages = serialize.message(messages);
+
+    const selfLink = `${config.url.all}/messages?filter[threads]`;
+
+    serializedMessages.links.self = selfLink;
+
+    return res.status(200)
+      .set('Location', selfLink)
+      .json(serializedMessages);
+
+  } else {
+    return next(); // go to 404, Not Found TODO check if that is the correct method
   }
 
 };

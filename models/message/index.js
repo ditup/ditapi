@@ -95,6 +95,52 @@ class Message extends Model {
     return thread;
   }
 
+  /**
+   * Read last messages in my conversations/threads
+   * @param {string} username - username
+   * @returns {Promise<Message[]>} - array of the found messages
+   */
+  static async readThreads(username) {
+
+    const query = `
+      // find myself
+      FOR u IN users FILTER u.username == @username
+
+        // find all the messages from or to myself
+        FOR msg IN messages FILTER msg._from == u._id OR msg._to == u._id
+
+          // put together messages between me and 1 person
+          // the latest will be first
+          SORT msg.created DESC
+          // who is the other user?
+          LET otherUser = msg._from == u._id ? msg._to : msg._from
+          COLLECT ou=otherUser INTO asdf KEEP msg
+
+          // the latest message of the thread
+          LET msg = asdf[0].msg
+
+          // the latest thread will be last
+          SORT msg.created DESC
+
+          // get the sender
+          LET from = (FOR usr IN users FILTER usr._id == msg._from
+            RETURN MERGE(KEEP(usr, 'username'), usr.profile))[0]
+          // get the receiver
+          LET to = (FOR usr IN users FILTER usr._id == msg._to
+            RETURN MERGE(KEEP(usr, 'username'), usr.profile))[0]
+
+          RETURN MERGE(KEEP(msg, 'body', 'created'),
+            { id: msg._key},
+            { from },
+            { to })
+      `;
+    const params = { username };
+    const cursor = await this.db.query(query, params);
+    const threads = await cursor.all();
+
+    return threads;
+  }
+
 }
 
 module.exports = Message;
