@@ -7,7 +7,7 @@ class Model {
     return this.database;
   }
 
-  static connect({ username: username, password: password, host: host, port: port, database: database, protocol: protocol }) {
+  static connect({ username, password, host, port, database, protocol }) {
     protocol = protocol || 'http';
     this.database = arangojs({
       url: `${protocol}://${username}:${encodeURIComponent(password)}@${host}:${port}`,

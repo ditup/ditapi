@@ -41,12 +41,31 @@ exports.general = async function ({ email, from, subject, html, text }) {
   }
 };
 
+exports.notifyMessages = async function ({ messages, from, to }) {
+  const hasParameters = Boolean(messages && from && from.username && to && to.email);
+  if(!hasParameters) throw dataNotProvided;
+
+  const template = new EmailTemplate(path.join(__dirname, 'templates', 'notify-messages'));
+
+  const url = `${config.appUrl.all}/messages/${from.username}`;
+
+  const { html, text } = await template.render({ from, to, messages, url });
+
+  const toSend = {
+    email: to.email,
+    subject: `${from.username} sent you a new message on ditup`,
+    html,
+    text
+  };
+
+  return await this.general(toSend);
+};
+
 exports.verifyEmail = async function ({ email, url, username }) {
   const hasParameters = Boolean(email && url && username);
   if(!hasParameters) throw dataNotProvided;
 
-  const verify =
-    new EmailTemplate(path.join(__dirname, 'templates', 'verify-email'));
+  const verify = new EmailTemplate(path.join(__dirname, 'templates', 'verify-email'));
 
   const { html, text } = await verify.render({ username, url });
 
@@ -57,7 +76,7 @@ exports.verifyEmail = async function ({ email, url, username }) {
     text
   };
 
-  return this.general(toSend);
+  return await this.general(toSend);
 };
 
 /*

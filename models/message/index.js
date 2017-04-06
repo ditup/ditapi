@@ -141,6 +141,71 @@ class Message extends Model {
     return threads;
   }
 
+  static async readUnnotified() {
+    const query = `
+      FOR msg IN messages FILTER msg.notified != true
+        SORT msg.created ASC
+        COLLECT fromid = msg._from, toid = msg._to INTO asdf
+        LET to = KEEP(DOCUMENT(toid), 'username', 'email', 'profile')
+        LET from = KEEP(DOCUMENT(fromid), 'username', 'email', 'profile')
+        LET messages = asdf[*].msg
+        
+        RETURN { messages, from, to }
+    `;
+    const cursor = await this.db.query(query);
+    const unnotified = await cursor.all();
+
+    return unnotified;
+  }
+
+  /**
+   * @param {string[]} ids: ids of messages to update to notified: true
+   *
+   */
+  static async updateNotified(ids) {
+    const query = `
+      FOR msg IN messages FILTER msg.id IN @ids
+        UPDATE msg WITH { notified: true } IN messages
+        RETURN MERGE(NEW, {id: NEW._key})
+    `;
+    const params = { ids };
+
+    const cursor = await this.db.query(query, params);
+    const notified = await cursor.all();
+
+    return notified;
+  }
+
+  static async updateRead(id, receiver) {
+    const query = `
+      LET msg = (FOR u IN users FILTER u.username == @receiver
+        FOR msg IN messages FILTER msg._key == @id
+          AND msg._to == u._id AND !msg.read
+          RETURN msg)[0]
+      LET updated = (FOR msgup IN messages
+        FILTER msgup._from == msg._from AND msgup._to == msg._to
+          AND msgup.created <= msg.created
+          AND !msgup.read
+        UPDATE msgup WITH { read: true } IN messages
+        RETURN MERGE(NEW, {id: NEW._key}))
+      // when the original message was not found (bad id or receiver doesn't fit)
+      // return 403 Not Authorized
+      RETURN msg ? updated : 403
+    `;
+    const params = { id, receiver };
+
+    const cursor = await this.db.query(query, params);
+    const read = (await cursor.all())[0];
+
+    if (read === 403) {
+      const err = new Error('Not Authorized');
+      err.status = 403;
+      throw err;
+    }
+
+    return read;
+  }
+
 }
 
 module.exports = Message;

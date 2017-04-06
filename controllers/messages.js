@@ -93,3 +93,30 @@ exports.getMessages = async function (req, res, next) {
   }
 
 };
+
+exports.patchMessage = async function (req, res, next) {
+  const me = req.auth.username;
+
+  const { id } = req.body;
+
+  if (req.body.hasOwnProperty('read') && req.body.read === true) {
+    // update messages to read: true
+    let messages;
+    try {
+      messages = await models.message.updateRead(id, me);
+    } catch (e) {
+      /* handle error */
+      if (e.status === 403) return next(e);
+      throw e;
+    }
+
+    const serializedMessages = serialize.message(messages);
+
+    delete serializedMessages.links.self;
+
+    return res.status(200)
+      .json(serializedMessages);
+  }
+
+  return next();
+};

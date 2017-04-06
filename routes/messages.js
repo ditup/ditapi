@@ -12,6 +12,7 @@ router.route('/')
   .post(authorize.onlyLogged, validators.messages.post, messageController.postMessages)
   .get(authorize.onlyLogged, messageController.getMessages);
 
-router.route('/:id');
+router.route('/:id')
+  .patch(authorize.onlyLogged, validators.messages.patch, messageController.patchMessage);
 
 module.exports = router;

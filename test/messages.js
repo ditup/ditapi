@@ -8,7 +8,11 @@ const supertest = require('supertest'),
 const app = require(path.resolve('./app')),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
+      notificationJobs = require(path.resolve('./jobs/notifications')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
+
+// to stub the mailer
+const mailer = require(path.resolve('./services/mailer'));
 
 const agent = supertest.agent(app);
 
@@ -141,8 +145,6 @@ describe('/messages', function () {
             should(messageDb.id).equal(message.data.id);
           });
 
-          it('send a message notification to user after some time');
-
         }); // end of context existent receiver
 
         context('nonexistent receiver', function () {
@@ -249,6 +251,48 @@ describe('/messages', function () {
     }); // end of context logged unverified
 
   }); // end of describe POST
+
+  describe('email notifications', function () {
+
+    // create some conversations
+    beforeEachPopulate({
+      users: 3, // how many users to make
+      verifiedUsers: [0, 1, 2], // which  users to make verified
+      messages: [
+        [0, 1], [1, 0], [0, 1], [0, 1], [1, 0],
+        [1, 2], [1, 2], [2, 1]
+      ]
+    });
+
+    beforeEach(function () {
+      // check that the mail was sent
+      sandbox.stub(mailer, 'general');
+    });
+
+    it('send message notifications about all unnotified and unread messages', async function () {
+      // run the job (in reality it will be run every 3 minutes)
+      await notificationJobs.messages();
+
+      sinon.assert.callCount(mailer.general, 4);
+
+      // TODO test the text of the messages
+    });
+
+    it('don\'t notify already notified messages again', async function () {
+      // run the job (in reality it will be run every 3 minutes)
+      await notificationJobs.messages();
+      // first time it's called 4 times
+
+      sinon.assert.callCount(mailer.general, 4);
+
+      await notificationJobs.messages();
+
+
+      // second time still just 4 times
+      sinon.assert.callCount(mailer.general, 4);
+
+    });
+  });
 
   // read messages with a filter
   // fetch threads
@@ -385,16 +429,149 @@ describe('/messages', function () {
       });
     });
   });
-
-  it('TODO PATCH update multiple messages to read: true');
-
 });
 
 describe('/messages/:id', function () {
+  let dbData;
+
+  function beforeEachPopulate(data) {
+    // put pre-data into database
+    beforeEach(async function () {
+      // create data in database
+      dbData = await dbHandle.fill(data);
+    });
+
+    afterEach(async function () {
+      await dbHandle.clear();
+    });
+  }
+
   describe('PATCH', function () {
+    let msgData;
+
+    beforeEach(() => {
+      msgData = {
+        data: {
+          type: 'messages',
+          attributes: {
+            read: true
+          }
+        }
+      };
+    });
+
+    beforeEachPopulate({
+      users: 4, // how many users to make
+      verifiedUsers: [0, 1, 2], // which  users to make verified
+      messages: [
+        [0, 1], [1, 0], [0, 1], [0, 1], [1, 0],
+        [1, 2], [1, 2]
+      ]
+    });
+
     it('edit the message body if i\'m a sender');
 
-    it('update message.read to true if i\'m a receiver');
+    describe('mark messages as read', function () {
+      it('update message.read and all the older received messages of the thread to true if i\'m the receiver', async function () {
+        const [,, msg2, msg3] = dbData.messages;
+        const [, user1] = dbData.users;
+
+        msgData.data.id = msg2.id;
+
+        const resp = await agent
+          .patch(`/messages/${msg2.id}`)
+          .send(msgData)
+          .auth(user1.username, user1.password)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        should(resp.body.data).have.length(2);
+
+        // the second time update the rest of the messages
+        //
+        msgData.data.id = msg3.id;
+
+        const resp2 = await agent
+          .patch(`/messages/${msg3.id}`)
+          .send(msgData)
+          .auth(user1.username, user1.password)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        should(resp2.body.data).have.length(1);
+      });
+
+      // the receiver must match logged user
+      // the id in url must match id in body
+      // no other attributes than read: true must be present
+
+      it('if i\'m not a receiver, error 403', async function () {
+        const [,, msg2] = dbData.messages;
+        const [user0] = dbData.users;
+
+        msgData.data.id = msg2.id;
+
+        await agent
+          .patch(`/messages/${msg2.id}`)
+          .send(msgData)
+          .auth(user0.username, user0.password)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(403)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+
+      it('if id in url doesn\'t match id in body, error 400', async function () {
+        const [, msg1, msg2] = dbData.messages;
+        const [user0] = dbData.users;
+
+        msgData.data.id = msg1.id;
+
+        await agent
+          .patch(`/messages/${msg2.id}`)
+          .send(msgData)
+          .auth(user0.username, user0.password)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+
+      it('if other attributes than read are present, error 400', async function () {
+        const [, msg1] = dbData.messages;
+        const [user0] = dbData.users;
+
+        msgData.data.id = msg1.id;
+
+        msgData.data.attributes.body = 'new message text';
+
+        await agent
+          .patch(`/messages/${msg1.id}`)
+          .send(msgData)
+          .auth(user0.username, user0.password)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+
+      it('if read is not equal true, error with 400', async function () {
+        const [, msg1] = dbData.messages;
+        const [user0] = dbData.users;
+
+        msgData.data.id = msg1.id;
+
+        msgData.data.attributes.read = '';
+
+        await agent
+          .patch(`/messages/${msg1.id}`)
+          .send(msgData)
+          .auth(user0.username, user0.password)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+    });
+
   });
 
   describe('DELETE', function () {

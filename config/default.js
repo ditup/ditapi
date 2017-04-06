@@ -15,6 +15,9 @@ module.exports = {
       return `${this.protocol}://${this.host}${this.path}`;
     }
   },
+  appUrl: {
+    all: 'https://ditup.org'
+  },
   security: {
     // iterations for pbkdf2 hashing of passwords
     iterations: 10000
