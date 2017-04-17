@@ -51,7 +51,10 @@ const tag = {
 
 const message = {
   body: {
-    notEmpty: true
+    notEmpty: true,
+    isLength: {
+      options: [{ max: 2048 }]
+    }
   }
 };
 

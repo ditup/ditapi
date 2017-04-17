@@ -88,6 +88,32 @@ exports.getMessages = async function (req, res, next) {
       .set('Location', selfLink)
       .json(serializedMessages);
 
+  } else if (_.has(req, 'query.filter.count')) {
+    /*
+     * Get the last messages of my threads
+     */
+
+    // who am i?
+    const me = req.auth.username;
+
+    // count amount of my threads which contain messages unread by me
+    const unread = await models.message.countUnreadThreads(me);
+
+    const selfLink = `${config.url.all}/messages?filter[count]`;
+
+    const responseBody = {
+      meta: {
+        unread
+      },
+      links: {
+        self: selfLink
+      }
+    };
+
+    return res.status(200)
+      .set('Location', selfLink)
+      .json(responseBody);
+
   } else {
     return next(); // go to 404, Not Found TODO check if that is the correct method
   }

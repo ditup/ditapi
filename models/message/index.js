@@ -69,7 +69,7 @@ class Message extends Model {
           LET from = MERGE(KEEP(from_, 'username'), from_.profile)
           LET to = MERGE(KEEP(to_, 'username'), to_.profile)
 
-          LET message = MERGE(KEEP(msg, 'body', 'created'), { id: msg._key})
+          LET message = MERGE(KEEP(msg, 'body', 'created', 'read'), { id: msg._key})
           SORT message.created DESC
           RETURN MERGE(message, { from }, { to })
       )
@@ -129,7 +129,7 @@ class Message extends Model {
           LET to = (FOR usr IN users FILTER usr._id == msg._to
             RETURN MERGE(KEEP(usr, 'username'), usr.profile))[0]
 
-          RETURN MERGE(KEEP(msg, 'body', 'created'),
+          RETURN MERGE(KEEP(msg, 'body', 'created', 'read'),
             { id: msg._key},
             { from },
             { to })
@@ -139,6 +139,21 @@ class Message extends Model {
     const threads = await cursor.all();
 
     return threads;
+  }
+
+  static async countUnreadThreads(username) {
+    const query = `
+      FOR u IN users FILTER u.username == @username
+        FOR msg IN messages FILTER msg.read != true AND msg._to == u._id
+          COLLECT fromid = msg._from, toid = msg._to INTO asdf
+          RETURN COUNT(asdf)
+    `;
+    const params = { username };
+    const cursor = await this.db.query(query, params);
+    const count = (await cursor.all())[0];
+
+    return count;
+
   }
 
   static async readUnnotified() {

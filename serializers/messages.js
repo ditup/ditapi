@@ -5,7 +5,7 @@ const Serializer = require('jsonapi-serializer').Serializer;
 const config = require(path.resolve('./config/config'));
 
 const messageSerializer = new Serializer('messages', {
-  attributes: ['body', 'created', 'from', 'to'],
+  attributes: ['body', 'created', 'read', 'from', 'to'],
   keyForAttribute: 'camelCase',
   typeForAttribute(attribute) {
     if (attribute === 'from' || attribute === 'to') {

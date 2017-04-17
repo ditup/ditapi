@@ -3,6 +3,7 @@
 const supertest = require('supertest'),
       should = require('should'),
       sinon = require('sinon'),
+      _ = require('lodash'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
@@ -205,7 +206,17 @@ describe('/messages', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
 
-        it('[message too long] respond with 400');
+        it('[message too long] respond with 400', async () => {
+          // invalidate the message
+          validMessage.data.attributes.body = _.repeat('*', 2049);
+          await agent
+            .post('/messages')
+            .send(validMessage)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
 
         it('sender is receiver', async () => {
           // invalidate the message
@@ -301,11 +312,12 @@ describe('/messages', function () {
     let thirdUser;
 
     beforeEachPopulate({
-      users: 4, // how many users to make
-      verifiedUsers: [0, 1, 2], // which  users to make verified
+      users: 5, // how many users to make
+      verifiedUsers: [0, 1, 2, 3], // which  users to make verified
       messages: [
         [0, 1], [1, 0], [0, 1], [0, 1], [1, 0],
-        [1, 2], [1, 2]
+        [1, 2], [1, 2],
+        [0, 3], [3, 0], [0, 3]
       ]
     });
 
@@ -314,6 +326,21 @@ describe('/messages', function () {
     });
 
     context('logged in', function () {
+
+      describe('/messages?filter[count]', function () {
+        it('show amount of unread threads in meta', async function () {
+          const response = await agent
+            .get('/messages?filter[count]')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+
+          should(response).have.propertyByPath('body', 'meta', 'unread').equal(2);
+
+        });
+      });
 
       describe('/messages?filter[threads]', function () {
         it('show last messages of my threads sorted by time', async function () {
@@ -358,6 +385,25 @@ describe('/messages', function () {
         });
 
         it('allow pagination');
+
+        it('mark received messages as either unread or read', async function () {
+          const response = await agent
+            .get('/messages?filter[threads]')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response).have.propertyByPath('body', 'data');
+
+          should(response.body.data).have.length(2);
+
+          const [msg0] = response.body.data;
+
+          should(msg0).have.propertyByPath('attributes', 'read').Boolean();
+        });
+
+        it('TODO, maybe: don\'t mark sent messages as read or unread');
       });
 
       describe('/messages?filter[with]=:username', function () {
@@ -399,6 +445,23 @@ describe('/messages', function () {
             const messages = response.body.data;
 
             should(messages).have.length(0);
+          });
+
+          it('mark received messages as either unread or read', async function () {
+            const response = await agent
+              .get(`/messages?filter[with]=${otherUser.username}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response).have.propertyByPath('body', 'data');
+
+            should(response.body.data).have.length(5);
+
+            const [, msg1] = response.body.data;
+
+            should(msg1).have.propertyByPath('attributes', 'read').Boolean();
           });
 
           it('allow pagination');
@@ -582,7 +645,7 @@ describe('/messages/:id', function () {
 function testMessage(msg, data, from, to) {
   should(msg).have.property('type', 'messages');
   should(msg).have.property('id', data.id);
-  should(msg).have.property('attributes').deepEqual({
+  should(msg).have.property('attributes').containEql({
     body: data.body,
     created: data.created
   });
