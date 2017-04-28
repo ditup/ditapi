@@ -32,9 +32,10 @@ exports.postUsers = async function (req, res, next) {
 
     // send a link for email verification to the provided email address
     await mailer.verifyEmail({
-      username: username,
-      url: `${config.url.all}/users/${username}/account/email/verify/${user.emailVerifyCode}`,
-      email: req.body.email
+      username,
+      url: `${config.appUrl.all}${config.appUrl.verifyEmail(username, user.emailVerifyCode)}`,
+      email: req.body.email,
+      code: user.emailVerifyCode
     });
 
     // respond

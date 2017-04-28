@@ -61,13 +61,13 @@ exports.notifyMessages = async function ({ messages, from, to }) {
   return await this.general(toSend);
 };
 
-exports.verifyEmail = async function ({ email, url, username }) {
+exports.verifyEmail = async function ({ email, url, username, code }) {
   const hasParameters = Boolean(email && url && username);
   if(!hasParameters) throw dataNotProvided;
 
   const verify = new EmailTemplate(path.join(__dirname, 'templates', 'verify-email'));
 
-  const { html, text } = await verify.render({ username, url });
+  const { html, text } = await verify.render({ username, url, code });
 
   const toSend = {
     email,

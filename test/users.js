@@ -5,54 +5,32 @@ process.env.NODE_ENV = 'test';
 const supertest = require('supertest'),
       should = require('should'),
       path = require('path'),
-      MailDev = require('maildev'),
-      EventEmitter = require('events');
-
-class MailEmitter extends EventEmitter {}
-const mailEmitter = new MailEmitter();
+      sinon = require('sinon');
 
 const app = require(path.resolve('./app')),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
+      mailer = require(path.resolve('./services/mailer')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
 const agent = supertest.agent(app);
 
 describe('/users', function () {
-  let maildev;
-
-  // TODO stub maildev
-  // set mailer at the beginning
-  before(function (done) {
-    maildev = new MailDev(config.mailer);
-
-    maildev.listen(function (err) {
-      if (err) return done(err);
-      return done();
-    });
-  });
-
-  /**
-   * @todo better description
-   * mail event (probably to know that the email was sent)
-   */
-  before(function () {
-    maildev.on('new', function (email) {
-      mailEmitter.emit('mail', email);
-    });
-  });
-
-  // unset mailer at the end
-  after(function (done) {
-    maildev.end(function (err) {
-      if(err) return done(err);
-      return done();
-    });
-  });
+  let sandbox;
 
   // clear database after every test
   afterEach(function () {
     return dbHandle.clear();
+  });
+
+  beforeEach(function () {
+    sandbox = sinon.sandbox.create();
+    // check that the mail was sent
+    sandbox.stub(mailer, 'general');
+  });
+
+  afterEach(function () {
+    sandbox.restore();
   });
 
   describe('POST', function () {
@@ -118,17 +96,16 @@ describe('/users', function () {
           .set('Content-Type', 'application/vnd.api+json')
           .expect(201);
 
-        // wait for the 'mail' event
-        await new Promise(function (resolve) {
-          mailEmitter.once('mail', function (email) {
-            email.should.have.property('from');
-            email.from[0].should.have.property('address', 'info@ditup.org');
-            email.should.have.property('to');
-            email.to[0].should.have.property('address', user.email);
-            email.should.have.property('text');
-            return resolve();
-          });
-        });
+        // check the email
+        sinon.assert.callCount(mailer.general, 1);
+
+        const email = mailer.general.getCall(0).args[0];
+        should(email).have.property('email', 'test@example.com');
+        should(email).have.property('subject', 'email verification for ditup.org');
+
+        should(email).have.property('html').match(/^<p>Hello test,<br>\nplease follow this link to verify your email:<br>\n<a href="https:\/\/ditup.org\/user\/test\/verify-email\/[0-9a-f]{32}">https:\/\/ditup.org\/user\/test\/verify-email\/[0-9a-f]{32}<\/a>\n<\/p>\n<p>Or copy-paste your verification code:<br>[0-9a-f]{32}<\/p>\n<p>If you received this email by accident, kindly ignore it, please.<\/p>\n$/m);
+        should(email).have.property('text').match(/^Hello test,\n\nplease follow this link to verify your email:\nhttps:\/\/ditup.org\/user\/test\/verify-email\/[0-9a-f]{32}\n\nOr copy-paste your verification code:\n[0-9a-f]{32}\n\nIf you received this email by accident, kindly ignore it, please.\n$/m);
+
       });
     });
 
