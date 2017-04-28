@@ -143,10 +143,11 @@ class Message extends Model {
 
   static async countUnreadThreads(username) {
     const query = `
-      FOR u IN users FILTER u.username == @username
+      LET threads = (FOR u IN users FILTER u.username == @username
         FOR msg IN messages FILTER msg.read != true AND msg._to == u._id
-          COLLECT fromid = msg._from, toid = msg._to INTO asdf
-          RETURN COUNT(asdf)
+          COLLECT fromid = msg._from, toid = msg._to
+          RETURN fromid)
+      RETURN COUNT(threads)
     `;
     const params = { username };
     const cursor = await this.db.query(query, params);
