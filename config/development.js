@@ -9,19 +9,19 @@ module.exports = {
     password: ''
   },
   url: {
-    protocol: 'http',
-    host: 'localhost',
-    path: '',
+    protocol: 'https',
+    host: 'dev.ditup.org',
+    path: '/api',
     get all() {
       return `${this.protocol}://${this.host}${this.path}`;
     }
   },
   appUrl: {
-    all: 'http://dev.ditup.org:4200'
+    all: 'https://dev.ditup.org',
+    verifyEmail: (username, code) => `/user/${username}/verify-email/${code}`
   },
   mailer: {
     host: '0.0.0.0',
-    port: 1025,
-    ignoreTLS: true
+    port: 25
   }
 };
