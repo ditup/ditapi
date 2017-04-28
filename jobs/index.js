@@ -9,6 +9,7 @@
 const cron = require('node-cron'),
       _ = require('lodash'),
       tags = require('./tags'),
+      users = require('./users'),
       notifications = require('./notifications');
 
 const tasks = [];
@@ -20,6 +21,9 @@ exports.start = function () {
 
   // every 5 minutes send notifications about unread messages
   tasks.push(cron.schedule('0 */5 * * * *', notifications.messages));
+
+  // every 30 minutes delete unverified users
+  tasks.push(cron.schedule('0 */30 * * * *', users.deleteUnverified));
 };
 
 exports.stop = function () {

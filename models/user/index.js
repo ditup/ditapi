@@ -299,6 +299,44 @@ class User extends Model {
 
     return output;
   }
+
+  /**
+   * counts users
+   *
+   * @param {Object} options
+   * @param {boolean} options.verified
+   */
+  static async count(options) {
+    const { verified } = options;
+    const query = `
+      FOR u IN users FILTER TO_BOOL(u.email) == @verified
+        COLLECT WITH COUNT INTO length
+        RETURN length`;
+    const params = { verified };
+    const count = await (await this.db.query(query, params)).next();
+
+    return count;
+  }
+
+  /**
+   * delete unverified users who are created more than ttl ago
+   *
+   * @param {number} ttl - time to live for unverified users in seconds
+   * @returns {number} - amount of deleted users
+   */
+  static async deleteUnverified(ttl) {
+    const query = `
+      FOR u IN users FILTER TO_BOOL(u.email) == false AND DATE_DIFF(u.created, @now, 'f') > @ttl
+        REMOVE u IN users
+        COLLECT WITH COUNT INTO length
+        RETURN length
+    `;
+    const params = { ttl, now: Date.now() };
+    const output = await (await this.db.query(query, params)).next();
+
+    return output;
+  }
+
 }
 
 module.exports = User;

@@ -21,6 +21,7 @@ module.exports = async function (user) {
       givenName: '',
       familyName: '',
       description: ''
-    }
+    },
+    created: Date.now()
   };
 };
