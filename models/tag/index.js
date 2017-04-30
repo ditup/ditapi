@@ -55,11 +55,13 @@ class Tag extends Model {
   // get tags which start with likeTagname string
   static async filter(likeTagname) {
     const query = `
-      FOR t IN tags FILTER t.tagname LIKE @likeTagname
+      FOR t IN tags
+        FILTER t.tagname LIKE CONCAT(@likeTagname, '%')
+        OR     t.tagname LIKE CONCAT('%-', @likeTagname, '%')
         RETURN KEEP(t, 'username', 'tagname', 'created')`;
     // % serves as a placeholder for multiple characters in arangodb LIKE
     // _ serves as a placeholder for a single character
-    const params = { likeTagname: `%${likeTagname}%` };
+    const params = { likeTagname };
     const out = await (await this.db.query(query, params)).all();
 
     const formatted = [];

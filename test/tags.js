@@ -35,7 +35,7 @@ describe('/tags', function () {
         const data = {
           users: 3, // how many users to make
           verifiedUsers: [0], // which  users to make verified
-          namedTags: ['named-tag-1', 'other-tag-0', 'named-tag-2']
+          namedTags: ['named-tag-1', 'other-tag-0', 'named-tag-2', 'tag', 'utag', 'etags']
         };
         // create data in database
         dbData = await dbHandle.fill(data);
@@ -60,7 +60,18 @@ describe('/tags', function () {
         ]);
       });
 
-      it('don\'t match tags in the middle of a word, but match after hyphen');
+      it('don\'t match tags in the middle of a word, but match after hyphen', async function () {
+        const response = await agent
+          .get('/tags?filter[tagname][like]=tag')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        const foundTags = response.body;
+        foundTags.should.have.property('data');
+        foundTags.data.length.should.equal(4);
+      });
       // i.e. name matches name, namespace, named, namel, first-name, tag-name
       // doesn't match tagname, username, firstname
     });
