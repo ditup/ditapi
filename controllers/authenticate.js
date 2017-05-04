@@ -29,7 +29,7 @@ passport.use(new BasicStrategy(
 ));
 
 module.exports = function (req, res, next) {
-  passport.authenticate('basic', { session : false },
+  passport.authenticate('basic', { session: false },
   function (err, user, info) {
     // add user info to body
     info; // satisfy eslint and maybe use it later

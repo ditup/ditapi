@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const userController = require(path.resolve('./controllers/users'));
+const accountController = require(path.resolve('./controllers/users.account'));
 const validators = require(path.resolve('./controllers/validators')),
       authorize = require(path.resolve('./controllers/authorize'));
 
@@ -15,6 +16,9 @@ router.route('/')
 router.route('/:username')
   .get(validators.getUser, userController.getUser)
   .patch(authorize.onlyLoggedMe, validators.patchUser, userController.patchUser, userController.getUser);
+
+router.route('/:username/account')
+  .patch(authorize.onlyLoggedMe, validators.patchAccount, accountController.patchAccount);
 
 router.route('/:username/tags')
   .post(authorize.onlyLoggedMe, validators.postUserTags, userController.postUserTags)

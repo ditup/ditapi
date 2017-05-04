@@ -138,6 +138,7 @@ describe('/users', function () {
     });
 
     it('[existing username] should respond with error', async function () {
+
       const userData = {
         data: {
           type: 'users',
@@ -174,6 +175,28 @@ describe('/users', function () {
             username: 'test',
             password: 'asdfasdf',
             email: 'test@example'
+          }
+        }
+      };
+
+      const res = await agent
+        .post('/users')
+        .send(userData)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(400);
+
+      res.body.should.have.property('errors');
+    });
+
+    it('[bad password] should respond with 400', async function () {
+      const userData = {
+        data: {
+          type: 'users',
+          attributes: {
+            username: 'test',
+            password: 'invalid',
+            email: 'test@example.com'
           }
         }
       };

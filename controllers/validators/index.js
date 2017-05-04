@@ -7,9 +7,39 @@ const messages = require('./messages');
 const rules = require('./rules');
 
 exports.postUsers = function (req, res, next) {
-  req.checkBody(_.pick(rules.user, ['username', 'email']));
+  req.checkBody(_.pick(rules.user, ['username', 'email', 'password']));
 
   // prepare and return errors
+  const errors = req.validationErrors();
+
+  const errorOutput = { errors: [] };
+  if (errors) {
+    for(const e of errors) {
+      errorOutput.errors.push({ meta: e });
+    }
+    return res.status(400).json(errorOutput);
+  }
+
+  return next();
+};
+
+exports.patchAccount = function (req, res, next) {
+  const passwordFields = ['password', 'oldPassword'];
+  const requestBodyFields = Object.keys(req.body);
+
+  const unexpectedFields = _.difference(requestBodyFields, passwordFields);
+
+  if (unexpectedFields.length > 0) {
+    return res.status(400).end();
+  };
+
+  const passwordRules = rules.user.password;
+
+  req.checkBody({
+    password: passwordRules,
+    oldPassword: passwordRules
+  });
+
   const errors = req.validationErrors();
 
   const errorOutput = { errors: [] };
@@ -30,6 +60,7 @@ exports.getUsers = function (req, res, next) {
     req.query.filter.tag = req.query.filter.tag.split(/,\s?/);
   }
   // TODO validate the tagnames in req.query.filter.tag
+
   if (_.has(req, 'query.filter.byMyTags')) {
     const filter = req.query.filter;
     filter.byMyTags = (filter.byMyTags === 'true') ? true : false;
@@ -60,7 +91,7 @@ exports.getUser = function (req, res, next) {
 
   if (errors) {
     for(const e of errors) {
-      errorOutput.errors.push({meta: e});
+      errorOutput.errors.push({ meta: e });
     }
     return res.status(400).json(errorOutput);
   }

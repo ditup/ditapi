@@ -28,6 +28,11 @@ const user = {
       options: [{ max: 2048 }]
     }
   },
+  password: {
+    isLength: {
+      options: [{ min: 8, max: 512 }]
+    }
+  },
   get id() {
     return this.username;
   }

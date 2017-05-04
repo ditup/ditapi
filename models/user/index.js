@@ -337,6 +337,19 @@ class User extends Model {
     return output;
   }
 
+  static async updatePassword(username, newPassword) {
+    const newHashedPassword = await account.hash(newPassword);
+
+    const query = `FOR u IN users FILTER u.username == @username
+      UPDATE u WITH { password: @password } IN users
+      RETURN NEW`;
+
+    const params = { username, password: newHashedPassword };
+
+    await this.db.query(query, params);
+
+  }
+
 }
 
 module.exports = User;
