@@ -19,25 +19,6 @@ describe('/users/:username/account...', function () {
     });
   });
 
-  describe('./password', function () {
-    describe('PUT', function () {
-      it('change password');
-    });
-  });
-
-  describe('./password/forgotten', function () {
-    // this should be done with CAPTCHA
-    describe('GET?', function () {
-      it('send email for changing password');
-    });
-  });
-
-  describe('./password/forgotten/:code', function () {
-    describe('GET?', function () {
-      it('change the password');
-    });
-  });
-
   describe('./email', function () {
     describe('GET', function () {
       it('get user\'s  email');
