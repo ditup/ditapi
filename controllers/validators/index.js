@@ -3,6 +3,7 @@
 const _ = require('lodash');
 
 const messages = require('./messages');
+const account = require('./account');
 
 const rules = require('./rules');
 
@@ -31,7 +32,7 @@ exports.patchAccount = function (req, res, next) {
 
   if (unexpectedFields.length > 0) {
     return res.status(400).end();
-  };
+  }
 
   const passwordRules = rules.user.password;
 
@@ -190,3 +191,4 @@ exports.patchUserTag = function (req, res, next) {
 };
 
 exports.messages = messages;
+exports.account = account;

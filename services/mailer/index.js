@@ -79,29 +79,21 @@ exports.verifyEmail = async function ({ email, url, username, code }) {
   return await this.general(toSend);
 };
 
-/*
-exports.resetPassword = function (data) {
-  data = data || {};
-  data.email = data.to || data.email;
-  if(!data.email || !data.url || !data.username) return Promise.reject(dataNotProvided);
+exports.resetPassword = async function ({ username, email, url }) {
+  const hasParameters = Boolean(email && url && username);
 
-  var that = this;
+  if(!hasParameters) throw dataNotProvided;
 
-  var templateDir = path.join(__dirname, 'templates', 'reset-password');
+  const template = new EmailTemplate(path.join(__dirname, 'templates', 'reset-password'));
 
-  var rep = new EmailTemplate(templateDir);
+  const { html, text } = await template.render({ username, url });
 
-  var renderData = { username: data.username, url: data.url };
-  return rep.render(renderData)
-    .then(function (result) {
-      var toSend = {
-        to: data.email,
-        subject: 'password reset for ditup.org',
-        html: result.html,
-        text: result.text
-      };
+  const toSend = {
+    email,
+    subject: 'reset your password for ditup',
+    html,
+    text
+  };
 
-      return that.general(toSend);
-    });
+  return await this.general(toSend);
 };
-*/

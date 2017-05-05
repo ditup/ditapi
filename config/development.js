@@ -18,7 +18,8 @@ module.exports = {
   },
   appUrl: {
     all: 'https://dev.ditup.org',
-    verifyEmail: (username, code) => `/user/${username}/verify-email/${code}`
+    verifyEmail: (username, code) => `/user/${username}/verify-email/${code}`,
+    resetPassword: (username, code) => `/reset-password/${username}/${code}`
   },
   mailer: {
     host: '0.0.0.0',

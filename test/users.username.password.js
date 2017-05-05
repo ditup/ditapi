@@ -14,12 +14,10 @@ const agent = supertest.agent(app);
 
 
 describe('change password', function () {
-  let dbData,
-      sandbox;
+  let dbData;
 
   describe('PATCH /users/:username/account', function () {
 
-    
     beforeEach(async function () {
       const data = {
         users: 3, // how many users to make
@@ -52,7 +50,7 @@ describe('change password', function () {
           };
 
 
-          const resp = await agent
+          await agent
             .patch(`/users/${user1.username}/account`)
             .send(patchBody)
             .auth(user1.username, user1.password)
@@ -81,7 +79,7 @@ describe('change password', function () {
             }
           };
 
-          const resp = await agent
+          await agent
             .patch(`/users/${user0.username}/account`)
             .send(patchBody)
             .auth(user0.username, user0.password)
@@ -103,7 +101,7 @@ describe('change password', function () {
             }
           };
 
-          const resp = await agent
+          await agent
             .patch(`/users/${user0.username}/account`)
             .send(patchBody)
             .auth(user0.username, user0.password)
@@ -124,14 +122,14 @@ describe('change password', function () {
             }
           };
 
-          const resp = await agent
+          await agent
             .patch(`/users/${user0.username}/account`)
             .send(patchBody)
             .auth(user0.username, user0.password)
             .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
-        
+
         it('[invalid new password] should error with 400', async function () {
           const [user0] = dbData.users;
 
@@ -146,7 +144,7 @@ describe('change password', function () {
             }
           };
 
-          const resp = await agent
+          await agent
             .patch(`/users/${user0.username}/account`)
             .send(patchBody)
             .auth(user0.username, user0.password)
@@ -170,7 +168,7 @@ describe('change password', function () {
           };
 
 
-          const resp = await agent
+          await agent
             .patch(`/users/${user0.username}/account`)
             .send(patchBody)
             .auth(user0.username, user0.password)
@@ -196,8 +194,7 @@ describe('change password', function () {
           }
         };
 
-
-        const resp = await agent
+        await agent
           .patch(`/users/${user0.username}/account`)
           .send(patchBody)
           .set('Content-Type', 'application/vnd.api+json')

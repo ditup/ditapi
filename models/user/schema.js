@@ -9,11 +9,11 @@ module.exports = async function (user) {
   return {
     username: user.username,
     email: null,
-    password: password,
+    password,
     account: {
       email: {
         temporary: user.email,
-        code: code,
+        code,
         codeExpire: Date.now() + 2 * 3600 * 1000 // in 2 hours
       }
     },

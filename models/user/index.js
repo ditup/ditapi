@@ -35,6 +35,85 @@ class User extends Model {
     return output[0];
   }
 
+  static async createPasswordResetCode(usernameOrEmail) {
+
+    const code = await account.generateHexCode(32);
+    const hashedCode = await account.hash(code);
+
+    const query = `
+      FOR u IN users FILTER (u.username == @usernameOrEmail
+        OR u.email == @usernameOrEmail) AND TO_BOOL(u.email) == true
+        UPDATE u WITH { account: MERGE(u.account, {
+          password: {
+            code: @hashedCode,
+            codeExpire: @codeExpire
+          }
+        })} IN users
+        RETURN { username: NEW.username, email: NEW.email }
+    `;
+
+    const params = { usernameOrEmail, hashedCode, codeExpire: Date.now() + 30 * 60 * 1000 };
+
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
+
+    if (output.length < 1) {
+      const unverifiedQuery = 'FOR u IN users FILTER (u.username == @usernameOrEmail) AND TO_BOOL(u.email) == false RETURN u';
+      const unverifiedParams = { usernameOrEmail };
+
+      const output = await (await this.db.query(unverifiedQuery, unverifiedParams)).all();
+
+      if (output.length > 0) {
+        throw new Error('User not verified');
+      }
+
+      throw new Error('User not found');
+    }
+
+    if (output.length > 1) {
+      throw new Error('Multiple users, this should never happen.');
+    }
+
+    return { username: output[0].username, email: output[0].email, code };
+  }
+
+  static async checkPasswordResetCode(username, code) {
+    const query = `
+      FOR u IN users FILTER u.username == @username
+        RETURN u.account.password`;
+    const params = { username };
+    const cursor = await this.db.query(query, params);
+    const output = await cursor.all();
+
+    // change default values when authenticated
+    switch (output.length) {
+      // when we found no user by the username, keep default values (not logged)
+      case 0: {
+        throw new Error('User not found');
+      }
+      case 1: {
+        // check whether the provided password matches the hashed password from db
+        const matchCode = await account.compare(code, output[0].code);
+
+        if (!matchCode) throw new Error('Wrong code');
+
+        const isExpired = output[0].codeExpire < Date.now();
+
+        if (isExpired) throw new Error('Expired code');
+
+        // if we're correct
+        if (!isExpired && matchCode) return;
+
+        break;
+      }
+      default: {
+        throw new Error('Database Error: duplicate user');
+      }
+    }
+
+    throw new Error('unexpected error');
+  }
+
   static async update(username, newData) {
     const profile = _.pick(newData, ['givenName', 'familyName', 'description']);
     const query = `FOR u IN users FILTER u.username == @username
@@ -337,10 +416,16 @@ class User extends Model {
     return output;
   }
 
-  static async updatePassword(username, newPassword) {
+  static async updatePassword(username, newPassword, disableCode) {
     const newHashedPassword = await account.hash(newPassword);
 
-    const query = `FOR u IN users FILTER u.username == @username
+    const query = (disableCode)
+      ?
+      `FOR u IN users FILTER u.username == @username
+        UPDATE u WITH { password: @password, account: MERGE(u.account, { password: null }) } IN users OPTIONS { keepNull: false }
+        RETURN NEW`
+      :
+      `FOR u IN users FILTER u.username == @username
       UPDATE u WITH { password: @password } IN users
       RETURN NEW`;
 

@@ -31,7 +31,15 @@ const user = {
   password: {
     isLength: {
       options: [{ min: 8, max: 512 }]
-    }
+    },
+    errorMessage: 'Password should be 8-512 characters long'
+  },
+  code: {
+    notEmpty: true,
+    matches: {
+      options: [/^[0-9a-f]{32}$/]
+    },
+    errorMessage: 'Invalid code'
   },
   get id() {
     return this.username;
