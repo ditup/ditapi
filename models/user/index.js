@@ -35,6 +35,28 @@ class User extends Model {
     return output[0];
   }
 
+  static async updateEmail(username, email) {
+    // generate an email verification code
+    const emailVerifyCode = await account.generateHexCode(32);
+
+    // generate a user object in a standard shape
+    const accountEmail = await schema.account.email({ email, emailVerifyCode });
+
+    const query = `
+      FOR u IN users FILTER u.username == @username
+        LET account = MERGE(u.account, { email: @accountEmail })
+        UPDATE u WITH { account } IN users
+        RETURN NEW`;
+
+    const params = { accountEmail, username };
+
+    // save the user into a database
+    await this.db.query(query, params);
+
+    // return some information
+    return { emailVerifyCode };
+  }
+
   static async createPasswordResetCode(usernameOrEmail) {
 
     const code = await account.generateHexCode(32);

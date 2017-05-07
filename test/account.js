@@ -7,6 +7,7 @@ const supertest = require('supertest'),
 
 const app = require(path.resolve('./app')),
       models = require(path.resolve('./models')),
+      config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
 // to stub the mailer
@@ -384,6 +385,229 @@ describe('/account', function () {
           should(resp.body).have.propertyByPath('errors', 0, 'meta', 'msg').eql('Password should be 8-512 characters long');
         });
       });
+    });
+  });
+
+  describe('change email', function () {
+    beforeEach(function () {
+      sandbox = sinon.sandbox.create();
+
+      sandbox.stub(mailer, 'general');
+
+    });
+
+    afterEach(function () {
+      sandbox.restore();
+    });
+
+    beforeEach(async function () {
+      const data = {
+        users: 2, // how many users to make
+        verifiedUsers: [0] // which  users to make verified
+      };
+
+      // create data in database
+      dbData = await dbHandle.fill(data);
+    });
+
+    afterEach(async function () {
+      await dbHandle.clear();
+    });
+
+    let dbData,
+        sandbox;
+
+    context('logged in', function () {
+      context('good data', function () {
+        it('save unverified email and send verification message', async function () {
+          const [{ username, password }] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: username,
+              attributes: {
+                email: 'other.email@example.com',
+                password
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(username, password)
+            .expect(204);
+
+          sinon.assert.calledOnce(mailer.general);
+
+          const email = mailer.general.getCall(0).args[0];
+
+          should(email).have.property('email', 'other.email@example.com');
+          should(email).have.property('subject', 'email verification for ditup.org');
+          should(email).have.property('text').match(new RegExp(`${config.appUrl.all}/user/user0/verify-email/[0-9a-f]{32}`));
+          should(email).have.property('html').match(new RegExp(`${config.appUrl.all}/user/user0/verify-email/[0-9a-f]{32}`));
+        });
+      });
+
+      context('bad data', function () {
+
+        it('[invalid email] 400', async function () {
+          const [{ username, password }] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: username,
+              attributes: {
+                email: 'invalid@email',
+                password
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(username, password)
+            .expect(400);
+        });
+
+        it('[missing password] 400', async function () {
+          const [{ username, password }] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: username,
+              attributes: {
+                email: 'other.email@example.com'
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(username, password)
+            .expect(400);
+        });
+
+        it('[unexpected attributes] 400', async function () {
+          const [{ username, password }] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: username,
+              attributes: {
+                email: 'other.email@example.com',
+                password,
+                unexpected: 'unexpected'
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(username, password)
+            .expect(400);
+        });
+
+        it('[invalid password] 400', async function () {
+          const [{ username, password }] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: username,
+              attributes: {
+                email: 'other.email@example.com',
+                password: 'invalid'
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(username, password)
+            .expect(400);
+        });
+
+        it('[wrong password] 403', async function () {
+          const [{ username, password }] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: username,
+              attributes: {
+                email: 'other.email@example.com',
+                password: 'wrong password'
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(username, password)
+            .expect(403);
+        });
+
+        it('[auth.username vs. req.body.id mismatch] 403', async function () {
+          const [{ username, password }] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: 'test1',
+              attributes: {
+                email: 'other.email@example.com',
+                password
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(username, password)
+            .expect(403);
+        });
+      });
+    });
+
+    context('not logged in', function () {
+
+      it('error 403', async function () {
+          const [user0] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: user0.username,
+              attributes: {
+                email: 'other.email@example.com'
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(403);
+        });
     });
   });
 });

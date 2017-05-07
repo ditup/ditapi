@@ -25,3 +25,14 @@ module.exports = async function (user) {
     created: Date.now()
   };
 };
+
+module.exports.account = {
+  async email({ email, emailVerifyCode }) {
+    const code = await account.hash(emailVerifyCode);
+    return {
+      temporary: email,
+      code,
+      codeExpire: Date.now() + 2 * 3600 * 1000 // in 2 hours
+    };
+  }
+};
