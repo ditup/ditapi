@@ -41,7 +41,7 @@ describe('change password', function () {
           const patchBody = {
             data: {
               type: 'users',
-              id: user1.id,
+              id: user1.username,
               attributes: {
                 oldPassword: user1.password,
                 password: 'new-password_?'
@@ -66,13 +66,36 @@ describe('change password', function () {
       });
 
       context('bad data', function () {
+
+        it('[logged user doesn\'t match request body data.id] error 400', async function () {
+          const [user0] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: 'username',
+              attributes: {
+                oldPassword: user0.password,
+                password: 'new-password_?'
+              }
+            }
+          };
+
+          await agent
+            .patch(`/users/${user0.username}/account`)
+            .send(patchBody)
+            .auth(user0.username, user0.password)
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(400);
+        });
+
         it('[missing old password] should error with 400', async function () {
           const [user0] = dbData.users;
 
           const patchBody = {
             data: {
               type: 'users',
-              id: user0.id,
+              id: user0.username,
               attributes: {
                 password: 'new-password_?'
               }
@@ -93,7 +116,7 @@ describe('change password', function () {
           const patchBody = {
             data: {
               type: 'users',
-              id: user0.id,
+              id: user0.username,
               attributes: {
                 oldPassword: 'wrongPassword',
                 password: 'new-password_?'
@@ -115,7 +138,7 @@ describe('change password', function () {
           const patchBody = {
             data: {
               type: 'users',
-              id: user0.id,
+              id: user0.username,
               attributes: {
                 oldPassword: user0.password
               }
@@ -136,7 +159,7 @@ describe('change password', function () {
           const patchBody = {
             data: {
               type: 'users',
-              id: user0.id,
+              id: user0.username,
               attributes: {
                 oldPassword: user0.password,
                 password: 'invalid'
@@ -158,7 +181,7 @@ describe('change password', function () {
           const patchBody = {
             data: {
               type: 'users',
-              id: user0.id,
+              id: user0.username,
               attributes: {
                 oldPassword: user0.password,
                 password: 'new-password_?',
@@ -186,7 +209,7 @@ describe('change password', function () {
         const patchBody = {
           data: {
             type: 'users',
-            id: user0.id,
+            id: user0.username,
             attributes: {
               oldPassword: user0.password,
               password: 'new-password_?'

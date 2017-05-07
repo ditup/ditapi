@@ -25,15 +25,28 @@ exports.postUsers = function (req, res, next) {
 };
 
 exports.patchAccount = function (req, res, next) {
-  const passwordFields = ['password', 'oldPassword'];
+
+  // username in url should match username in body should match logged user
+
+  if (req.body.id !== req.params.username || req.body.id !== req.auth.username) {
+    return res.status(400).json({
+      errors: [{ meta: 'document id doesn\'t match username in url && logged user' }]
+    });
+  }
+
+  // only expected fields should be present
+  const passwordFields = ['id', 'password', 'oldPassword'];
   const requestBodyFields = Object.keys(req.body);
 
   const unexpectedFields = _.difference(requestBodyFields, passwordFields);
 
   if (unexpectedFields.length > 0) {
-    return res.status(400).end();
+    return res.status(400).json({
+      errors: [{ meta: `unexpected body attributes: ${unexpectedFields.join(', ')}` }]
+    });
   }
 
+  // both passwords should be valid
   const passwordRules = rules.user.password;
 
   req.checkBody({
