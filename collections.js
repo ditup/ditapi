@@ -59,6 +59,19 @@ module.exports = {
     from: ['users'],
     to: ['users'],
     indexes: []
+  },
+
+  contacts: {
+    type: 'edge',
+    from: ['users'],
+    to: ['users'],
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['unique'],
+        unique: true
+      }
+    ]
   }
 };
 

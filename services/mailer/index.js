@@ -61,6 +61,26 @@ exports.notifyMessages = async function ({ messages, from, to }) {
   return await this.general(toSend);
 };
 
+exports.notifyContactRequest = async function ({ from, to, message }) {
+  const hasParameters = Boolean(from && from.username && to && to.email, message);
+  if(!hasParameters) throw dataNotProvided;
+
+  const template = new EmailTemplate(path.join(__dirname, 'templates', 'notify-contact-request'));
+
+  const url = `${config.appUrl.all}/user/${to.username}/contact/${from.username}`;
+
+  const { html, text } = await template.render({ from, to, url, message });
+
+  const toSend = {
+    email: to.email,
+    subject: `${from.username} would like to create a contact with you on ditup`,
+    html,
+    text
+  };
+
+  return await this.general(toSend);
+};
+
 exports.verifyEmail = async function ({ email, url, username, code }) {
   const hasParameters = Boolean(email && url && username);
   if(!hasParameters) throw dataNotProvided;
