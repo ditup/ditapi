@@ -4,6 +4,7 @@ const _ = require('lodash');
 
 const messages = require('./messages');
 const account = require('./account');
+const contacts = require('./contacts');
 
 const rules = require('./rules');
 
@@ -203,5 +204,6 @@ exports.patchUserTag = function (req, res, next) {
   return next();
 };
 
+exports.contacts = contacts;
 exports.messages = messages;
 exports.account = account;

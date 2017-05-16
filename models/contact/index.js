@@ -20,7 +20,11 @@ class Contact extends Model {
     const cursor = await this.db.query(query, params);
     const out = await cursor.all();
 
-    if (out.length !== 1) return null;
+    if (out.length !== 1) {
+      const e = new Error('some users not found');
+      e.code = 404;
+      throw e;
+    }
 
     return out[0];
   }

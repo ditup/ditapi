@@ -71,5 +71,13 @@ const message = {
   }
 };
 
-module.exports = { user, tag, message };
+const contact = {
+  reference: {
+    isLength: {
+      options: [{ max: 2048 }]
+    }
+  }
+};
+
+module.exports = { user, tag, message, contact };
 

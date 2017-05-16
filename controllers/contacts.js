@@ -19,6 +19,12 @@ exports.postContacts = async function (req, res, next) {
   } catch (e) {
     if (e.code === 409) {
       return res.status(409).end();
+    } else if (e.code === 404) {
+      return res.status(404).json({
+        errors: [
+          { meta: e.message }
+        ]
+      });
     }
 
     return next(e);

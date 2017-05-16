@@ -16,7 +16,7 @@ const mailer = require(path.resolve('./services/mailer'));
 
 const agent = supertest.agent(app);
 
-describe.only('contacts', function () {
+describe('contacts', function () {
   let dbData,
       sandbox;
 
@@ -54,6 +54,25 @@ describe.only('contacts', function () {
       const url = `${config.appUrl.all}/user/${to.username}/contact/${from.username}`;
       should(email).have.property('text').match(new RegExp(`^Hello ${to.username},\n\n${from.username} would like to make a contact with you on ditup\. Go to ${url} to confirm or cancel it\.\n\nHere is what ${from.username} wrote to you:\n\n${message}$`, 'm'));
       should(email).have.property('html').match(new RegExp(`^Hello ${to.username},<br><br>\n\n${from.username} would like to make a contact with you on ditup\. Go to ${url} to confirm or cancel it\.<br><br>\n\nHere is what ${from.username} wrote to you:<br><br>\n\n${message}$`, 'm'));
+    }
+
+    function generateContactBody(to, { trust, reference, message }) {
+
+      trust = trust || 1;
+      reference = reference || 'default reference';
+      message = message || 'default message';
+
+      return {
+        data: {
+          type: 'contacts',
+          attributes: { trust, reference, message },
+          relationships: {
+            to: {
+              data: { type: 'users', id: to.username }
+            }
+          }
+        }
+      };
     }
 
     beforeEach(function () {
@@ -211,13 +230,107 @@ describe.only('contacts', function () {
       });
 
       context('invalid data', function () {
-        it('[missing attributes in request body] 400');
-        it('[too many attributes] 400');
-        it('[invalid other username] error 400');
-        it('[invalid trust level] error 400');
-        it('[invalid reference] 400');
-        it('[contact to oneself], 400');
-        it('[nonexistent other user] error 404 and info');
+        it('[missing attribute \'trust\' in request body] 400', async function () {
+          const [me, other] = dbData.users;
+
+          const contactBody = generateContactBody(other, {});
+          delete contactBody.data.attributes.trust;
+
+          await agent
+            .post('/contacts')
+            .send(contactBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+
+        it('[invalid attributes] 400', async function () {
+          const [me, other] = dbData.users;
+
+          const contactBody = generateContactBody(other, {});
+          contactBody.data.attributes.invalid = 'invalid';
+
+          await agent
+            .post('/contacts')
+            .send(contactBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+
+        it('[invalid other username] error 400', async function () {
+          const [me] = dbData.users;
+
+          const contactBody = generateContactBody({ username: 'invalid username' }, {});
+
+          await agent
+            .post('/contacts')
+            .send(contactBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+
+        it('[invalid trust level] error 400', async function () {
+          const [me, other] = dbData.users;
+
+          const contactBody = generateContactBody(other, { trust: 7 });
+
+          await agent
+            .post('/contacts')
+            .send(contactBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        });
+
+        it('[invalid reference] 400', async function () {
+          const [me, other] = dbData.users;
+
+          const contactBody = generateContactBody(other, { reference: '.'.repeat(2049)});
+
+          await agent
+            .post('/contacts')
+            .send(contactBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        });
+
+        it('[contact to oneself], 400', async function () {
+          const [me] = dbData.users;
+
+          await agent
+            .post('/contacts')
+            .send(generateContactBody(me, {}))
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+
+        it('[nonexistent other user] error 404 and info', async function () {
+          const [me] = dbData.users;
+
+          const response = await agent
+            .post('/contacts')
+            .send(generateContactBody({ username: 'nonexistent-user' }, {}))
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(404)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response.body).have.propertyByPath('errors', '0', 'meta').eql('some users not found');
+
+        });
+
         it('[already existent] 409 Conflict', async function () {
           const [me] = dbData.users;
           await agent
@@ -260,7 +373,15 @@ describe.only('contacts', function () {
     });
 
     context('not logged in', function () {
-      it('error 403');
+      it('error 403', async function (){
+        await agent
+          .post('/contacts')
+          .send(contactBody)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(403)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+      });
     });
   });
 
