@@ -76,6 +76,11 @@ const contact = {
     isLength: {
       options: [{ max: 2048 }]
     }
+  },
+  message: {
+    isLength: {
+      options: [{ max: 2048 }]
+    }
   }
 };
 

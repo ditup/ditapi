@@ -13,4 +13,7 @@ const router = express.Router();
 router.route('/')
   .post(authorize.onlyLogged, validators.contacts.post, contactController.postContacts);
 
+router.route('/:from/:to')
+  .patch(authorize.onlyLogged, validators.contacts.patchConfirm, contactController.patchConfirmContact);
+
 module.exports = router;

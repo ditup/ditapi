@@ -31,3 +31,32 @@ exports.postContacts = async function (req, res, next) {
   }
 
 };
+
+exports.patchConfirmContact = async function (req, res, next) {
+  const [from, to] = req.body.id.split('--');
+
+  if (req.auth.username !== from) {
+    return res.status(403).json({
+      errors: [{ meta: 'you can only confirm your contacts'}]
+    });
+  }
+
+  const { trust, reference } = req.body;
+
+  try {
+    await models.contact.confirm(from, to, { trust, reference });
+    return res.end();
+  } catch (e) {
+    if (e.code == 404) {
+      return res.status(404).json({
+        errors: [{ meta: e.message }]
+      });
+    } else if (e.code == 403) {
+      return res.status(403).json({
+        errors: [{ meta: e.message }]
+      });
+    }
+
+    return next(e);
+  }
+};

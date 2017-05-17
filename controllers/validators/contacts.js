@@ -33,8 +33,8 @@ exports.post = function (req, res, next) {
   req.checkBody(_.pick(rules.user, ['username']));
   delete req.body.username;
 
-  // check that reference is valid
-  req.checkBody(_.pick(rules.contact, ['reference']));
+  // check that reference and message is valid
+  req.checkBody(_.pick(rules.contact, ['reference', 'message']));
 
   // check that trust level is valid
   const isTrustValid = [1, 2, 4, 8].indexOf(req.body.trust) > -1;
@@ -62,6 +62,87 @@ exports.post = function (req, res, next) {
 
   const errorOutput = { errors: [] };
   if (_.isArray(errors) && errors.length > 0) {
+    for(const e of errors) {
+      errorOutput.errors.push({ meta: e });
+    }
+    return res.status(400).json(errorOutput);
+  }
+
+  return next();
+};
+
+exports.patchConfirm = function (req, res, next) {
+  let errors = [];
+
+  // check if the body has and only has the expected attributes
+  const expectedAttrs = ['trust', 'reference', 'confirmed', 'id'];
+  const attrs = Object.keys(req.body);
+  const missingAttrs = _.difference(expectedAttrs, attrs);
+  const invalidAttrs = _.difference(attrs, expectedAttrs);
+
+  if (missingAttrs.length > 0) {
+    errors.push({
+      msg: 'incomplete request',
+      value: `missing attributes: ${missingAttrs.join(', ')}`
+    });
+  }
+
+  if (invalidAttrs.length > 0) {
+    errors.push({
+      msg: 'invalid request',
+      value: `invalid attributes: ${invalidAttrs.join(', ')}`
+    });
+  }
+
+  // check that query params match jsonapi document id
+  const { from: queryFrom, to: queryTo } = req.params;
+  const [from, to] = req.body.id.split('--');
+
+  const matchFromTo = queryFrom === from && queryTo === to;
+  if (!matchFromTo) {
+    errors.push({
+      param: 'id',
+      msg: 'document id doesn\'t match the url parameters',
+      value: req.body.id
+    });
+  }
+
+  // check that the target username is valid
+  req.body.username = to;
+  req.checkBody(_.pick(rules.user, ['username']));
+  delete req.body.username;
+
+  // check that reference is valid
+  req.checkBody(_.pick(rules.contact, ['reference']));
+
+  // check that trust level is valid
+  const isTrustValid = [1, 2, 4, 8].indexOf(req.body.trust) > -1;
+  if(!isTrustValid) {
+    errors.push({
+      param: 'trust',
+      msg: 'the trust level is invalid',
+      value: req.body.trust
+    });
+  }
+
+  // check that trust level is valid
+  const isConfirmedValid = req.body.confirmed === true;
+  if(!isConfirmedValid) {
+    errors.push({
+      param: 'confirmed',
+      msg: 'confirmed must be true (we can only confirm the contact (use DELETE to refuse the contact))',
+      value: req.body.confirmed
+    });
+  }
+
+  // prepare and return errors
+  errors = errors.concat(req.validationErrors() || []);
+
+
+  if (errors.length > 0) {
+
+    const errorOutput = { errors: [] };
+
     for(const e of errors) {
       errorOutput.errors.push({ meta: e });
     }

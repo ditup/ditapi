@@ -19,7 +19,8 @@ exports.fill = async function (data) {
     tags: 0,
     namedTags: [],
     userTag: [],
-    messages: []
+    messages: [],
+    contacts: []
   };
 
   data = _.defaults(data, def);
@@ -66,6 +67,11 @@ exports.fill = async function (data) {
     message.id = outMessage.id;
   }
 
+  for(const contact of processed.contacts) {
+    const { from: { username: from }, to: { username: to }, message, reference, trust, notified, confirmed, created } = contact;
+    await models.contact.create({ from, to, message, reference, notified, confirmed, created, trust });
+  }
+
   return processed;
 };
 
@@ -88,6 +94,7 @@ function processData(data) {
       email: `user${n}@example.com`,
       tags: [],
       _messages: [],
+      _contacts: [],
       get messages() {
         return _.map(this._messages, message => output.messages[message]);
       }
@@ -159,6 +166,32 @@ function processData(data) {
 
     resp.from._messages.push(i);
     resp.to._messages.push(i);
+
+    return resp;
+  });
+
+  // create contacts
+  output.contacts = _.map(data.contacts, function ([_from, _to, attrs], i) {
+    const { trust, reference, message, confirmed, notified, created } = attrs || {};
+    const resp = {
+      _from,
+      _to,
+      get from() {
+        return output.users[_from];
+      },
+      get to() {
+        return output.users[_to];
+      },
+      trust: trust || 2 ** (i % 4), // 1, 2, 4, 8
+      reference: reference || 'default reference',
+      message: message || 'default message',
+      confirmed: (typeof(confirmed) === 'boolean') ? confirmed : true,
+      notified: (typeof(notified) === 'boolean') ? notified : true,
+      created: created || Date.now() + 1000 * i
+    };
+
+    resp.from._contacts.push(i);
+    resp.to._contacts.push(i);
 
     return resp;
   });

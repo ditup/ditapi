@@ -20,14 +20,6 @@ describe('contacts', function () {
   let dbData,
       sandbox;
 
-  beforeEach(async function () {
-    // create data in database
-    dbData = await dbHandle.fill({
-      users: 4,
-      verifiedUsers: [0, 1, 2]
-    });
-  });
-
   afterEach(async function () {
     await dbHandle.clear();
   });
@@ -45,6 +37,14 @@ describe('contacts', function () {
   });
 
   describe('POST /contacts', function () {
+    beforeEach(async function () {
+      // create data in database
+      dbData = await dbHandle.fill({
+        users: 4,
+        verifiedUsers: [0, 1, 2]
+      });
+    });
+
     let contactBody;
 
     function checkEmail(email, from, to, message) {
@@ -220,6 +220,10 @@ describe('contacts', function () {
 
           await notificationJobs.contactRequests();
 
+          sandbox.clock.tick(100);
+          // second time the mail should not be sent
+          await notificationJobs.contactRequests();
+
           sinon.assert.calledOnce(mailer.general);
 
           const email = mailer.general.getCall(0).args[0];
@@ -289,6 +293,21 @@ describe('contacts', function () {
 
         });
 
+        it('[invalid message] 400', async function () {
+          const [me, other] = dbData.users;
+
+          const contactBody = generateContactBody(other, { message: '.'.repeat(2049)});
+
+          await agent
+            .post('/contacts')
+            .send(contactBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        });
+
         it('[invalid reference] 400', async function () {
           const [me, other] = dbData.users;
 
@@ -304,7 +323,7 @@ describe('contacts', function () {
 
         });
 
-        it('[contact to oneself], 400', async function () {
+        it('[contact to oneself] 400', async function () {
           const [me] = dbData.users;
 
           await agent
@@ -380,16 +399,343 @@ describe('contacts', function () {
           .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
-
       });
     });
   });
 
-  describe('PATCH /contacts', function () {
+  describe('PATCH /contacts/:from/:to', function () {
     // confirming the contact
-    it('todo');
+    describe('confirming the contact', function () {
+
+      beforeEach(async function () {
+        // create data in database
+        dbData = await dbHandle.fill({
+          users: 4,
+          verifiedUsers: [0, 1, 2, 3],
+          contacts: [
+            [0, 1, { confirmed: false }],
+            [2, 0, { confirmed: false }],
+            [3, 0, { confirmed: true }]
+          ]
+        });
+      });
+
+      context('logged in', function () {
+
+        context('valid data', function () {
+
+          it('makes the contact confirmed and saves trust & reference', async function () {
+            const [other, me] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: 'other reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const dbContact = await models.contact.read(other.username, me.username);
+            should(dbContact).have.property('confirmed', true);
+            should(dbContact).have.property('trust10', 4);
+            should(dbContact).have.property('reference10', 'other reference');
+          });
+
+          it('TODO returns the updated contact');
+
+          it('TODO maybe notifications? (not email, just info on login)');
+        });
+
+        context('invalid data', function () {
+          it('[nonexistent contact to confirm] 404 and info', async function () {
+            const [, me, another] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${another.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${another.username}`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: 'other reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[already confirmed contact to confirm] 403', async function () {
+            const [me,,, other] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: 'other reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(403)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[nonexistent user] 404', async function () {
+            const [me] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/nonexistent-user`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--nonexistent-user`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: 'other reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+          it('[url params and id don\'t match] 400', async function () {
+            const [me, other, another] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${another.username}`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: 'other reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[missing parameters (confirmed, trust, reference)] 400', async function () {
+            const [other, me] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    confirmed: true,
+                    reference: 'other reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[unexpected (invalid) parameters] 400', async function () {
+            const [other, me] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: 'other reference',
+                    message: 'invalid'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[invalid reference] 400', async function () {
+            const [other, me] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: '.'.repeat(2049)
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[invalid trust] 400', async function () {
+            const [other, me] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 3,
+                    reference: 'some reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[invalid username] 400', async function () {
+            const [, me] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/invalid..username`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--invalid..username`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: 'some reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[body.confirmed!=true] 400', async function () {
+            const [other, me] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    confirmed: false,
+                    trust: 4,
+                    reference: 'some reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[the same user who created confirms] 404', async function () {
+            const [me, other] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: 'other reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[confirming contact not directed to me] 403', async function () {
+            const [other, me, another] = dbData.users;
+            await agent
+              .patch(`/contacts/${other.username}/${another.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${other.username}--${another.username}`,
+                  attributes: {
+                    confirmed: true,
+                    trust: 4,
+                    reference: 'other reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(403)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+        });
+      });
+
+      context('not logged in', function () {
+        it('403', async function () {
+          const [other, me] = dbData.users;
+          await agent
+            .patch(`/contacts/${me.username}/${other.username}`)
+            .send({
+              data: {
+                type: 'contacts',
+                id: `${me.username}--${other.username}`,
+                attributes: {
+                  confirmed: true,
+                  trust: 4,
+                  reference: 'other reference'
+                }
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(403)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+      });
+    });
+
     // updating the reference and level of trust (1,2,4,8)
-    it('todo');
+    describe('updating the contact', function () {
+      it('todo');
+    });
   });
 
   describe('GET', function () {
