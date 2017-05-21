@@ -75,7 +75,7 @@ exports.patchConfirm = function (req, res, next) {
   let errors = [];
 
   // check if the body has and only has the expected attributes
-  const expectedAttrs = ['trust', 'reference', 'confirmed', 'id'];
+  const expectedAttrs = ['trust', 'reference', 'isConfirmed', 'id'];
   const attrs = Object.keys(req.body);
   const missingAttrs = _.difference(expectedAttrs, attrs);
   const invalidAttrs = _.difference(attrs, expectedAttrs);
@@ -126,14 +126,40 @@ exports.patchConfirm = function (req, res, next) {
   }
 
   // check that trust level is valid
-  const isConfirmedValid = req.body.confirmed === true;
+  const isConfirmedValid = req.body.isConfirmed === true;
   if(!isConfirmedValid) {
     errors.push({
-      param: 'confirmed',
-      msg: 'confirmed must be true (we can only confirm the contact (use DELETE to refuse the contact))',
-      value: req.body.confirmed
+      param: 'isConfirmed',
+      msg: 'isConfirmed must be true (we can only confirm the contact (use DELETE to refuse the contact))',
+      value: req.body.isConfirmed
     });
   }
+
+  // prepare and return errors
+  errors = errors.concat(req.validationErrors() || []);
+
+
+  if (errors.length > 0) {
+
+    const errorOutput = { errors: [] };
+
+    for(const e of errors) {
+      errorOutput.errors.push({ meta: e });
+    }
+    return res.status(400).json(errorOutput);
+  }
+
+  return next();
+};
+
+exports.getOne = function (req, res, next) {
+  let errors = [];
+
+  // check that reference is valid
+  req.checkParams({
+    from: rules.user.username,
+    to: rules.user.username
+  });
 
   // prepare and return errors
   errors = errors.concat(req.validationErrors() || []);

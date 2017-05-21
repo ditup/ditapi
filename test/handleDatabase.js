@@ -68,8 +68,12 @@ exports.fill = async function (data) {
   }
 
   for(const contact of processed.contacts) {
-    const { from: { username: from }, to: { username: to }, message, reference, trust, notified, confirmed, created } = contact;
-    await models.contact.create({ from, to, message, reference, notified, confirmed, created, trust });
+    const { from: { username: from }, to: { username: to }, message, reference01, reference10, trust01, trust10, notified, isConfirmed } = contact;
+    await models.contact.create({ from, to, message, reference: reference01, notified, trust: trust01 });
+    if (isConfirmed === true) {
+      await models.contact.confirm(to, from, { trust: trust10, reference: reference10 });
+
+    }
   }
 
   return processed;
@@ -172,7 +176,7 @@ function processData(data) {
 
   // create contacts
   output.contacts = _.map(data.contacts, function ([_from, _to, attrs], i) {
-    const { trust, reference, message, confirmed, notified, created } = attrs || {};
+    const { trust01, trust10, reference01, reference10, message, confirmed, isConfirmed, notified, created } = attrs || {};
     const resp = {
       _from,
       _to,
@@ -182,10 +186,13 @@ function processData(data) {
       get to() {
         return output.users[_to];
       },
-      trust: trust || 2 ** (i % 4), // 1, 2, 4, 8
-      reference: reference || 'default reference',
+      trust01: trust01 || 2 ** (i % 4), // 1, 2, 4, 8
+      reference01: reference01 || 'default reference 01',
+      trust10: trust10 || 2 ** (3 - (i % 4)), // 1, 2, 4, 8
+      reference10: reference10 || 'default reference 10',
       message: message || 'default message',
-      confirmed: (typeof(confirmed) === 'boolean') ? confirmed : true,
+      isConfirmed: (typeof(isConfirmed) === 'boolean') ? isConfirmed : true,
+      confirmed: confirmed || Date.now() + 2000 * i,
       notified: (typeof(notified) === 'boolean') ? notified : true,
       created: created || Date.now() + 1000 * i
     };

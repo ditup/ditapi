@@ -5,7 +5,7 @@ const Serializer = require('jsonapi-serializer').Serializer;
 const config = require(path.resolve('./config/config'));
 
 const contactSerializer = new Serializer('contacts', {
-  attributes: ['trust', 'reference', 'created', 'confirmed', 'from', 'to'],
+  attributes: ['trust', 'reference', 'created', 'isConfirmed', 'confirmed', 'from', 'to', 'message'],
   keyForAttribute: 'camelCase',
   typeForAttribute(attribute) {
     if (attribute === 'from' || attribute === 'to') {

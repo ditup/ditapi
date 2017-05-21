@@ -128,7 +128,7 @@ describe('contacts', function () {
               trust: 2,
               reference: 'we met, she exists',
               created: Date.now(),
-              confirmed: false
+              isConfirmed: false
             });
 
           // relationships from and to
@@ -413,9 +413,9 @@ describe('contacts', function () {
           users: 4,
           verifiedUsers: [0, 1, 2, 3],
           contacts: [
-            [0, 1, { confirmed: false }],
-            [2, 0, { confirmed: false }],
-            [3, 0, { confirmed: true }]
+            [0, 1, { isConfirmed: false }],
+            [2, 0, { isConfirmed: false }],
+            [3, 0, { isConfirmed: true }]
           ]
         });
       });
@@ -433,7 +433,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${other.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: 'other reference'
                   }
@@ -444,10 +444,11 @@ describe('contacts', function () {
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            const dbContact = await models.contact.read(other.username, me.username);
-            should(dbContact).have.property('confirmed', true);
-            should(dbContact).have.property('trust10', 4);
-            should(dbContact).have.property('reference10', 'other reference');
+            const dbContact = await models.contact.read(me.username, other.username);
+            should(dbContact).have.property('isConfirmed', true);
+            should(dbContact).have.property('confirmed', Date.now());
+            should(dbContact).have.property('trust', 4);
+            should(dbContact).have.property('reference', 'other reference');
           });
 
           it('TODO returns the updated contact');
@@ -465,7 +466,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${another.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: 'other reference'
                   }
@@ -486,7 +487,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${other.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: 'other reference'
                   }
@@ -507,7 +508,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--nonexistent-user`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: 'other reference'
                   }
@@ -527,7 +528,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${another.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: 'other reference'
                   }
@@ -548,7 +549,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${other.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     reference: 'other reference'
                   }
                 }
@@ -568,7 +569,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${other.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: 'other reference',
                     message: 'invalid'
@@ -590,7 +591,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${other.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: '.'.repeat(2049)
                   }
@@ -611,7 +612,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${other.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 3,
                     reference: 'some reference'
                   }
@@ -632,7 +633,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--invalid..username`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: 'some reference'
                   }
@@ -644,7 +645,7 @@ describe('contacts', function () {
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
-          it('[body.confirmed!=true] 400', async function () {
+          it('[body.isConfirmed!=true] 400', async function () {
             const [other, me] = dbData.users;
             await agent
               .patch(`/contacts/${me.username}/${other.username}`)
@@ -653,7 +654,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${other.username}`,
                   attributes: {
-                    confirmed: false,
+                    isConfirmed: false,
                     trust: 4,
                     reference: 'some reference'
                   }
@@ -674,7 +675,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${me.username}--${other.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: 'other reference'
                   }
@@ -695,7 +696,7 @@ describe('contacts', function () {
                   type: 'contacts',
                   id: `${other.username}--${another.username}`,
                   attributes: {
-                    confirmed: true,
+                    isConfirmed: true,
                     trust: 4,
                     reference: 'other reference'
                   }
@@ -719,7 +720,7 @@ describe('contacts', function () {
                 type: 'contacts',
                 id: `${me.username}--${other.username}`,
                 attributes: {
-                  confirmed: true,
+                  isConfirmed: true,
                   trust: 4,
                   reference: 'other reference'
                 }
@@ -747,7 +748,86 @@ describe('contacts', function () {
   });
 
   describe('DELETE', function () {
+    beforeEach(async function () {
+      // create data in database
+      dbData = await dbHandle.fill({
+        users: 3,
+        verifiedUsers: [0, 1, 2],
+        contacts: [
+          [0, 1, { isConfirmed: false }],
+          [2, 0, { isConfirmed: true }],
+        ]
+      });
+    });
     // delete a contact
-    it('todo');
+    /*
+     *
+     *
+     */
+    context('owner', function () {
+      it('[existent contact] returns 204 and removes the contact from database', async function () {
+        const [me, other] = dbData.users;
+
+        await should(models.contact.read(me.username, other.username)).be.fulfilled();
+        await agent
+          .delete(`/contacts/${other.username}/${me.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(me.username, me.password)
+          .expect(204)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          await should(models.contact.read(me.username, other.username)).be.rejectedWith(Error, { code: 404 });
+      });
+
+      it('[nonexistent contact] returns 404', async function () {
+        const [, me, other] = dbData.users;
+
+        await agent
+          .delete(`/contacts/${other.username}/${me.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(me.username, me.password)
+          .expect(404)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+    });
+
+    context('not owner', function () {
+      it('403', async function () {
+        const [userA, userB, me]= dbData.users;
+
+        await agent
+          .delete(`/contacts/${userA.username}/${userB.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(me.username, me.password)
+          .expect(403)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+    });
+
+    context('not logged', function () {
+      it('403', async function () {
+        const [userA, userB]= dbData.users;
+
+        await agent
+          .delete(`/contacts/${userA.username}/${userB.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(403)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+    });
+
+    context('invalid username(s)', function () {
+      it('400', async function () {
+        const [me]= dbData.users;
+
+        await agent
+          .delete(`/contacts/${me.username}/invalid..username`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(me.username, me.password)
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+    });
+
   });
 });

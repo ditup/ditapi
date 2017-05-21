@@ -5,14 +5,14 @@ const Model = require(path.resolve('./models/model')),
 
 class Contact extends Model {
 
-  static async create({ from, to, trust, reference, message, confirmed, notified }) {
-    const contact = schema({ trust, reference, message, confirmed, notified });
+  static async create({ from, to, trust, reference, message, isConfirmed, notified }) {
+    const contact = schema({ trust, reference, message, isConfirmed, notified });
     const query = `
       FOR from IN users FILTER from.username == @from
         FOR to IN users FILTER to.username == @to
           LET unique = (from._id < to._id) ? CONCAT(from._id, '--', to._id) : CONCAT(to._id, '--', from._id)
           INSERT MERGE({ _from: from._id, _to: to._id, unique }, @contact) IN contacts
-          LET contact = MERGE(KEEP(NEW, 'created', 'confirmed'), { trust: NEW.trust01, reference: NEW.reference01})
+          LET contact = MERGE(KEEP(NEW, 'created', 'isConfirmed', 'confirmed'), { trust: NEW.trust01, reference: NEW.reference01})
           LET userFrom = MERGE(KEEP(from, 'username'), from.profile)
           LET userTo = MERGE(KEEP(to, 'username'), to.profile)
           RETURN MERGE(contact, { from: userFrom }, { to: userTo })`;
@@ -34,19 +34,32 @@ class Contact extends Model {
       FOR from IN users FILTER from.username == @from
         FOR to IN users FILTER to.username == @to
           FOR c IN contacts
-            FILTER CONTAINS([from, to], c._from)
-            AND CONTAINS([from, to], c._to)
-      RETURN c
+            FILTER [c._from, c._to] ALL IN [from._id, to._id]
+      LET userFrom = KEEP(from, 'username', 'profile')
+      LET userTo = KEEP(to, 'username', 'profile')
+      LET contact = MERGE(
+        KEEP(c, 'created', 'confirmed', 'isConfirmed', 'message'),
+        {
+          reference: (c._from == from._id) ? c.reference01 : c.reference10,
+          trust: (c._from == from._id) ? c.trust01 : c.trust10
+        }
+      )
+      RETURN MERGE(contact, { from: userFrom, to: userTo })
       `;
     const params = { from, to };
     const cursor = await this.db.query(query, params);
     const out = await cursor.all();
+    if (out.length === 0) {
+      const e = new Error('no contact found');
+      e.code = 404;
+      throw e;
+    }
     return out[0];
   }
 
   static async readUnnotified() {
     const query = `
-      FOR c IN contacts FILTER c.notified != true AND c.confirmed != true
+      FOR c IN contacts FILTER c.notified != true AND c.isConfirmed != true
         LET to = KEEP(DOCUMENT(c._to), 'username', 'email', 'profile')
         LET from = KEEP(DOCUMENT(c._from), 'username', 'email', 'profile')
         
@@ -86,17 +99,18 @@ class Contact extends Model {
           FOR c IN contacts FILTER c._from == to._id AND c._to == from._id
             RETURN { c, from, to })
       // we find out whether it is unconfirmed
-      LET c = (FOR c IN cu FILTER c.c.confirmed==false
+      LET c = (FOR c IN cu FILTER c.c.isConfirmed==false
         UPDATE c.c WITH {
-          confirmed: true,
+          isConfirmed: true,
+          notified: null, // not needed anymore
           trust10: @trust,
           reference10: @reference,
-          confirmationTime: @confirmationTime,
-          message: null
+          confirmed: @confirmationTime,
+          message: null // not needed anymore
         } IN contacts OPTIONS { keepNull: false }
         LET userFrom = KEEP(c.from, 'username', 'profile')
         LET userTo = KEEP (c.to, 'username', 'profile')
-        RETURN MERGE(KEEP(NEW, 'confirmed', 'confirmationTime'), { trust: NEW.trust10, reference: NEW.reference10, from: userFrom, to: userTo }))
+        RETURN MERGE(KEEP(NEW, 'confirmed', 'isConfirmed'), { trust: NEW.trust10, reference: NEW.reference10, from: userFrom, to: userTo }))
       RETURN { c, cu }
     `;
     const params = { from, to, trust, reference, confirmationTime: Date.now() };
@@ -118,6 +132,28 @@ class Contact extends Model {
     }
 
     return out[0];
+  }
+
+  static async remove(from, to) {
+    const query = `
+      FOR from IN users FILTER from.username == @from
+        FOR to IN users FILTER to.username == @to
+          FOR c IN contacts
+            FILTER [c._from, c._to] ALL IN [from._id, to._id]
+            REMOVE c IN contacts
+            RETURN OLD
+      `;
+    const params = { from, to };
+    const cursor = await this.db.query(query, params);
+    const out = await cursor.all();
+
+    if (out.length === 0) {
+      const e = new Error('no contact found');
+      e.code = 404;
+      throw e;
+    }
+
+    return;
   }
 }
 
