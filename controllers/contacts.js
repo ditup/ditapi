@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path'),
+      _ = require('lodash'),
       serialize = require(path.resolve('./serializers')).serialize,
       models = require(path.resolve('./models'));
 
@@ -107,5 +108,36 @@ exports.deleteContact = async function (req, res, next) {
     }
 
     return next(e);
+  }
+};
+
+exports.getContacts = async function (req, res, next) {
+  const hasFrom = _.has(req, 'query.filter.from');
+  const hasTo = _.has(req, 'query.filter.to');
+  if ((hasFrom) ? !hasTo : hasTo) { // XOR
+    const { filter: { from, to } } = req.query;
+
+    const includeUnconfirmed = (req.auth.username === from) || (req.auth.username === to);
+    try {
+      const contacts = await models.contact.filter({ from, to, includeUnconfirmed });
+
+      for (const c of contacts) {
+        // create the id
+        c.id = `${c.from.username}--${c.to.username}`;
+
+        // the unconfirmed contacts should not leak trust & reference to requested
+        if (c.isConfirmed !== true && req.auth.username === to && c.trust !== null) {
+          delete c.trust;
+          delete c.reference;
+        }
+      }
+
+      const serialized = serialize.contact(contacts);
+
+      return res.status(200).json(serialized);
+
+    } catch (e) {
+      return next(e);
+    }
   }
 };

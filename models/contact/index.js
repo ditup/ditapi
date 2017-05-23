@@ -57,6 +57,62 @@ class Contact extends Model {
     return out[0];
   }
 
+  /**
+   * read contacts going from XOR to a specified user
+   * either from or to parameter must be provided, but not both
+   * @param {string} from - username
+   * @param {string} to - username
+   * @param {boolean}
+   *
+   */
+  static async filter({ from, to, includeUnconfirmed }) {
+    if ((!from && !to) || (from && to)) throw new Error('provide from XOR to');
+    includeUnconfirmed = includeUnconfirmed || false;
+    const filterConfirmed = (includeUnconfirmed) ? '' : 'AND c.isConfirmed == true';
+    const queryFrom = `
+      FOR from IN users FILTER from.username == @from
+        FOR c IN contacts
+          FILTER from._id IN [c._from, c._to] ${filterConfirmed}
+          LET userFrom = KEEP(from, 'username', 'profile')
+          LET to = (from._id == c._from) ? DOCUMENT(c._to) : DOCUMENT(c._from)
+          LET userTo = KEEP(to, 'username', 'profile')
+          LET contact = MERGE(
+            KEEP(c, 'created', 'confirmed', 'isConfirmed'),
+            {
+              reference: (c._from == from._id) ? c.reference01 : c.reference10,
+              trust: (c._from == from._id) ? c.trust01 : c.trust10
+            }
+          )
+          RETURN MERGE(contact, { from: userFrom, to: userTo })
+      `;
+    const paramsFrom = { from };
+
+    const queryTo = `
+      FOR to IN users FILTER to.username == @to
+        FOR c IN contacts
+          FILTER to._id IN [c._from, c._to] ${filterConfirmed}
+          LET userTo = KEEP(to, 'username', 'profile')
+          LET from = (to._id == c._to) ? DOCUMENT(c._from) : DOCUMENT(c._to)
+          LET userFrom = KEEP(from, 'username', 'profile')
+          LET contact = MERGE(
+            KEEP(c, 'created', 'confirmed', 'isConfirmed'),
+            {
+              reference: (c._from == from._id) ? c.reference01 : c.reference10,
+              trust: (c._from == from._id) ? c.trust01 : c.trust10
+            }
+          )
+          RETURN MERGE(contact, { from: userFrom, to: userTo })
+      `;
+    const paramsTo = { to };
+
+    const query = (from) ? queryFrom : queryTo;
+    const params = (from) ? paramsFrom : paramsTo;
+
+    const cursor = await this.db.query(query, params);
+    const out = await cursor.all();
+    return out;
+  }
+
   static async readUnnotified() {
     const query = `
       FOR c IN contacts FILTER c.notified != true AND c.isConfirmed != true

@@ -11,6 +11,7 @@ const router = express.Router();
 
 // basic authenticator
 router.route('/')
+  .get(authorize.onlyLogged, contactController.getContacts)
   .post(authorize.onlyLogged, validators.contacts.post, contactController.postContacts);
 
 router.route('/:from/:to')

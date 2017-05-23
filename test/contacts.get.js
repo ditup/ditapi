@@ -3,6 +3,7 @@
 const supertest = require('supertest'),
       should = require('should'),
       sinon = require('sinon'),
+      _ = require('lodash'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
@@ -33,6 +34,206 @@ describe('GET contacts', function () {
     sandbox.restore();
   });
 
+  describe('GET /contacts', function () {
+
+    beforeEach(async function () {
+      // create data in database
+      dbData = await dbHandle.fill({
+        users: 5,
+        verifiedUsers: [0, 1, 2, 3, 4],
+        contacts: [
+          [0, 1, { isConfirmed: true, trust01: 4 }],
+          [2, 0, { isConfirmed: false, trust01: 2 }],
+          [4, 0, { isConfirmed: true, trust01: 1 }],
+          [1, 2, { isConfirmed: true, trust01: 8 }],
+          [1, 3, { isConfirmed: true, trust01: 4 }],
+        ]
+      });
+    });
+
+    context('logged in', function () {
+      describe('?filter[from]=username', function () {
+        context('everybody', function () {
+          it('see only confirmed contacts from username to others (trust & reference which user gave to others)', async function () {
+            const [user0,, me] = dbData.users;
+            const response = await agent
+              .get(`/contacts?filter[from]=${user0.username}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.property('data');
+            const { data } = response.body;
+
+            should(data).have.length(2);
+
+            should(data).matchEach({
+              type: 'contacts',
+              relationships: {
+                from: {
+                  data: {
+                    type: 'users',
+                    id: dbData.users[0].username
+                  }
+                }
+              },
+              attributes: {
+                isConfirmed: true
+              }
+            });
+
+            should(data).matchAny({
+              type: 'contacts',
+              relationships: {
+                to: {
+                  data: {
+                    type: 'users',
+                    id: dbData.users[1].username
+                  }
+                }
+              }
+            });
+          });
+        });
+
+        context('me', function () {
+          it('see confirmed and unconfirmed contacts from me to others', async function () {
+            const [me] = dbData.users;
+            const response = await agent
+              .get(`/contacts?filter[from]=${me.username}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.property('data');
+            const { data } = response.body;
+
+            should(data).have.length(3);
+
+            should(data).matchEach({
+              type: 'contacts',
+              relationships: {
+                from: {
+                  data: {
+                    type: 'users',
+                    id: dbData.users[0].username
+                  }
+                }
+              }
+            });
+
+            should(data).matchAny({
+              type: 'contacts',
+              attributes: {
+                isConfirmed: false,
+                trust: null,
+                reference: null
+              },
+              relationships: {
+                from: { data: { id: dbData.users[0].username } },
+                to: { data: { id: dbData.users[2].username } }
+              }
+            });
+          });
+        });
+      });
+
+      describe('?filter[to]=username', function () {
+        context('everybody', function () {
+          it('see only confirmed contacts with trust & reference given to the user', async function () {
+            const [user0,, me] = dbData.users;
+            const response = await agent
+              .get(`/contacts?filter[to]=${user0.username}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.property('data');
+            const { data } = response.body;
+
+            should(data).have.length(2);
+
+            should(data).matchEach({
+              type: 'contacts',
+              relationships: {
+                to: {
+                  data: {
+                    type: 'users',
+                    id: dbData.users[0].username
+                  }
+                }
+              },
+              attributes: {
+                isConfirmed: true
+              }
+            });
+          });
+        });
+
+        context('me', function () {
+          it('see confirmed & unconfirmed contacts with trust & reference given to me', async function () {
+            const [me] = dbData.users;
+            const response = await agent
+              .get(`/contacts?filter[to]=${me.username}`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.property('data');
+            const { data } = response.body;
+
+            should(data).have.length(3);
+
+            should(data).matchEach({
+              type: 'contacts',
+              relationships: {
+                to: {
+                  data: {
+                    type: 'users',
+                    id: dbData.users[0].username
+                  }
+                }
+              }
+            });
+
+            should(data).matchAny({
+              type: 'contacts',
+              attributes: {
+                isConfirmed: false
+              },
+              relationships: {
+                from: { data: { id: dbData.users[2].username } },
+                to: { data: { id: dbData.users[0].username } }
+              }
+            });
+
+            // don't leak trust & reference
+            const unconfirmed = _.filter(data, contact => !contact.attributes.isConfirmed);
+            should(unconfirmed).length(1);
+
+            should(unconfirmed[0]).not.have.propertyByPath('attributes', 'trust');
+            should(unconfirmed[0]).not.have.propertyByPath('attributes', 'reference');
+          });
+        });
+      });
+    });
+
+    context('not logged in', function () {
+      it('403', async function () {
+        const [user] = dbData.users;
+        await agent
+          .get(`/contacts?filter[to]=${user.username}`)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(403)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+    });
+  });
+
   describe('GET /contacts/:from/:to', function () {
 
     beforeEach(async function () {
@@ -41,11 +242,11 @@ describe('GET contacts', function () {
         users: 3,
         verifiedUsers: [0, 1, 2],
         contacts: [
-          [0, 1, { isConfirmed: true, trust01: 'defined trust 01' }],
+          [0, 1, { isConfirmed: true, trust01: 4 }],
           [1, 2, {
             isConfirmed: false,
-            trust01: 'unconfirmed trust 01',
-            trust10: 'unconfirmed trust 10',
+            trust01: 2,
+            trust10: 4,
             reference01: 'unconfirmed reference 01',
             reference10: 'unconfirmed reference 10',
             message: 'unconfirmed message'
