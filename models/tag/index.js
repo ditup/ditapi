@@ -15,7 +15,7 @@ class Tag extends Model {
     const tag = schema({ tagname });
     const query = `
       FOR u IN users FILTER u.username == @creator
-        INSERT MERGE(@tag, { creator: u }) IN tags
+        INSERT MERGE(@tag, { creator: u._id }) IN tags
           RETURN NEW`;
     const params = { tag, creator };
 
