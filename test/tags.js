@@ -75,6 +75,84 @@ describe('/tags', function () {
       // i.e. name matches name, namespace, named, namel, first-name, tag-name
       // doesn't match tagname, username, firstname
     });
+
+    describe('/tags?filter[relatedToMyTags]', function () {
+
+      function testTag(jsonApiTag, { tagname }) {
+        should(jsonApiTag).have.property('id', tagname);
+      }
+
+      beforeEach(async function () {
+        const data = {
+          users: 5, // how many users to make
+          verifiedUsers: [0, 1, 2, 3, 4], // which  users to make verified
+          tags: 10,
+          userTag: [
+            [0, 0, '', 5],
+            [0, 1, '', 4],
+            [0, 2, '', 3],
+            [0, 3, '', 2],
+            [1, 0, '', 1],
+            [1, 1, '', 5],
+            [2, 1, '', 4],
+            [2, 2, '', 3],
+            [3, 1, '', 2],
+            [1, 4, '', 1],
+            [1, 5, '', 5],
+            [2, 5, '', 4],
+            [2, 6, '', 3],
+            [2, 7, '', 2],
+            [3, 7, '', 1],
+            [3, 8, '', 5],
+            [4, 9, '', 4]
+          ]
+        };
+
+        // create data in database
+        dbData = await dbHandle.fill(data);
+      });
+
+      // clear database after every test
+      afterEach(async function () {
+        await dbHandle.clear();
+      });
+
+      context('logged', function () {
+        it('respond with tags related to my tags', async function () {
+          const [me] = dbData.users;
+
+          const resp = await agent
+            .get('/tags?filter[relatedToMyTags]')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(resp.body).have.property('data').Array().length(5);
+          const [tagA, tagB, tagC, tagD, tagE] = resp.body.data;
+
+          testTag(tagA, { tagname: 'tag5'});
+          testTag(tagB, { tagname: 'tag7'});
+          testTag(tagC, { tagname: 'tag6'});
+          testTag(tagD, { tagname: 'tag4'});
+          testTag(tagE, { tagname: 'tag8'});
+        });
+      });
+
+      context('not logged', function () {
+        it('403', async function () {
+          await agent
+            .get('/tags?filter[relatedToMyTags]')
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(403)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+      });
+    });
+
+    describe('get a random tag', function () {
+      it('todo');
+    });
   });
 
   describe('POST', function () {

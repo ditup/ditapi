@@ -1,6 +1,7 @@
 'use strict';
 
-const path = require('path');
+const path = require('path'),
+      _ = require('lodash');
 const Serializer = require('jsonapi-serializer').Serializer;
 const config = require(path.resolve('./config/config'));
 
@@ -18,9 +19,19 @@ const tagSerializer = new Serializer('tags', {
   attributes: ['tagname'],
   keyForAttribute: 'camelCase',
   topLevelLinks: {
-    self: (data) => `${config.url.all}/tags/${data.id}`
+    self: generateSelfLink
   }
 });
+
 exports.tag = function (data) {
   return tagSerializer.serialize(data);
 };
+
+function generateSelfLink(data) {
+  if (_.isArray(data)) {
+    const { urlParam } = data;
+    return `${config.url.all}/tags?${urlParam}`;
+  }
+
+  return `${config.url.all}/tags/${data.id}`;
+}

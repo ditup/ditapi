@@ -7,10 +7,16 @@ const path = require('path');
 const tagController = require(path.resolve('./controllers/tags'));
 const validators = require(path.resolve('./controllers/validators'));
 const authorize = require(path.resolve('./controllers/authorize'));
-// post a new tag
+
 router.route('/')
+  // post a new tag
   .post(authorize.onlyLogged, validators.postTags, tagController.postTags)
-  .get(authorize.onlyLogged, tagController.getTags);
+  // get tags like a string
+  .get(tagController.gotoGetTagsLike, authorize.onlyLogged, tagController.getTagsLike);
+
+// get tags related to my tags
+router.route('/')
+  .get(tagController.gotoRelatedToMyTags, authorize.onlyLogged, tagController.relatedToMyTags);
 
 router.route('/:tagname')
   .get(validators.getTag, tagController.getTag);

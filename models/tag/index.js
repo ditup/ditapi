@@ -74,6 +74,43 @@ class Tag extends Model {
   }
 
   /**
+   * find tags related to tags of a user
+   * @param {string} username - username of the user
+   * @returns Promise<object[]> - array of the found tags (including relevance parameter)
+   */
+  static async findTagsRelatedToTagsOfUser(username) {
+    const query = `
+      FOR u IN users FILTER u.username == @username
+
+        // find the tags of user (to later exclude them from results)
+        LET utags = (FOR v IN 1..1 ANY u ANY userTag RETURN v.tagname)
+
+        FOR v, e, p IN 3..3
+          ANY u
+          ANY userTag
+          FILTER NOT(v.tagname IN utags) // filter out the tags of user
+
+          // count the relevance for each found path
+          // (geometric mean of edge relevances)
+          LET relevanceWeight = POW(p.edges[0].relevance*p.edges[1].relevance*p.edges[2].relevance, 1/3)
+
+          COLLECT tag = v INTO asdf KEEP relevanceWeight
+          LET finalTag = KEEP(tag, 'tagname', 'created')
+          // sum the relevance of found paths
+          LET weightSum = SUM(asdf[*].relevanceWeight)
+          SORT weightSum DESC
+          LIMIT 5
+          RETURN MERGE(finalTag, { relevance: weightSum })
+    `;
+    // % serves as a placeholder for multiple characters in arangodb LIKE
+    // _ serves as a placeholder for a single character
+    const params = { username };
+    const out = await (await this.db.query(query, params)).all();
+
+    return out;
+  }
+
+  /**
    * delete all tags which have no userTag edges
    *
    *

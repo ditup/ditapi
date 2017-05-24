@@ -6,6 +6,52 @@ const path = require('path'),
       models = require(path.resolve('./models')),
       _ = require('lodash');
 
+/*
+ * Does the url query contain 'filter[tagname][like]=pattern'?
+ */
+exports.gotoGetTagsLike = function (req, res, next) {
+  if (_.has(req, 'query.filter.tagname.like')) {
+    return next();
+  }
+
+  return next('route');
+};
+
+/*
+ * Does the url query contain 'filter[relatedToMyTags]'?
+ */
+exports.gotoRelatedToMyTags = function (req, res, next) {
+  if (_.has(req, 'query.filter.relatedToMyTags')) {
+    return next();
+  }
+
+  return next('route');
+};
+
+/*
+ * Having the url with ?filter[relatedToMyTags] query
+ * respond with an array of tags related to my tags.
+ * "related" means: There exist users who have both my tag and the other tag
+ * (sorted by geometric mean of the userTag relevances)
+ */
+exports.relatedToMyTags = async function (req, res, next) {
+  // this is me
+  const { username } = req.auth;
+
+  try {
+    // find tags which are related to my tags
+    const foundTags = await models.tag.findTagsRelatedToTagsOfUser(username);
+
+    // define the parameters for self link
+    foundTags.urlParam = encodeURIComponent('filter[relatedToMyTags]');
+
+    // serialize and send the results
+    return res.status(200).json(serialize.tag(foundTags));
+  } catch (e) {
+    return next(e);
+  }
+};
+
 /**
  * Create a new tag
  *
@@ -52,7 +98,12 @@ exports.postTags = async function (req, res, next) {
   }
 };
 
-exports.getTags = async function (req, res, next) {
+/*
+ * Having the url with ?filter[tagname][like]=string query
+ * find the tags matching the provided string
+ *
+ */
+exports.getTagsLike = async function (req, res, next) {
   // get the pattern to search the tags by
   const filterLike = _.get(req.query, 'filter.tagname.like');
   try {
