@@ -150,8 +150,47 @@ describe('/tags', function () {
       });
     });
 
-    describe('get a random tag', function () {
-      it('todo');
+    describe('get random tags: GET /tags?filter[random]', function () {
+      beforeEach(async function () {
+        const data = {
+          users: 1, // how many users to make
+          verifiedUsers: [0], // which  users to make verified
+          tags: 10,
+        };
+
+        // create data in database
+        dbData = await dbHandle.fill(data);
+      });
+
+      // clear database after every test
+      afterEach(async function () {
+        await dbHandle.clear();
+      });
+
+      context('logged', function () {
+        it('[default] respond with an array of 1 random tag', async function () {
+          const [me] = dbData.users;
+
+          const resp = await agent
+            .get('/tags?filter[random]')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(resp.body).have.property('data').Array().length(1);
+        });
+      });
+
+      context('not logged', function () {
+        it('403', async function () {
+          await agent
+            .get('/tags?filter[random]')
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(403)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+      });
     });
   });
 

@@ -34,6 +34,24 @@ class Tag extends Model {
     return (out[0]) ? tag : null;
   }
 
+  /**
+   * Return an array of random tags
+   * @param {number} [limit] - amount of tags to return, defaults to 1
+   * @returns Promise<Tag[]> - returns array of tags
+   */
+  static async random(limit) {
+    limit = limit || 1;
+    const query = `
+      FOR t IN tags
+        SORT RAND()
+        LIMIT @limit
+        RETURN KEEP(t, 'tagname', 'created')
+    `;
+    const params = { limit };
+    const out = await (await this.db.query(query, params)).all();
+    return out;
+  }
+
   static async exists(tagname) {
     const query = `
       FOR t IN tags FILTER t.tagname == @tagname

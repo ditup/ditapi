@@ -18,6 +18,10 @@ router.route('/')
 router.route('/')
   .get(tagController.gotoRelatedToMyTags, authorize.onlyLogged, tagController.relatedToMyTags);
 
+// get random tags
+router.route('/')
+  .get(tagController.gotoGetRandomTags, authorize.onlyLogged, tagController.getRandomTags);
+
 router.route('/:tagname')
   .get(validators.getTag, tagController.getTag);
 
