@@ -192,6 +192,112 @@ describe('/tags', function () {
         });
       });
     });
+
+    describe.only('/tags?filter[relatedToTags]=tag1,tag2,tag3', function () {
+
+      beforeEach(async function () {
+        const data = {
+          users: 4, // how many users to make
+          verifiedUsers: [0, 1, 2, 3], // which  users to make verified
+          tags: 7,
+          userTag: [
+            [0, 0, '', 1],
+            [0, 1, '', 3],
+            [0, 4, '', 1],
+            [0, 5, '', 3],
+            [1, 1, '', 4],
+            [1, 5, '', 4],
+            [1, 6, '', 2],
+            [2, 1, '', 5],
+            [2, 6, '', 4],
+            [3, 2, '', 4]
+          ]
+        };
+
+        // create data in database
+        dbData = await dbHandle.fill(data);
+      });
+
+      // clear database after every test
+      afterEach(async function () {
+        await dbHandle.clear();
+      });
+
+      context('logged in', function () {
+        context('valid data', function () {
+
+          function testTag(jsonApiTag, { tagname }) {
+            should(jsonApiTag).have.property('id', tagname);
+          }
+
+          it('[example 1] respond with tags related to the list of tags', async function () {
+            const [loggedUser] = dbData.users;
+
+            const resp = await agent
+              .get('/tags?filter[relatedToTags]=tag0,tag1')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp.body).have.property('data').Array().length(3);
+            const tags = resp.body.data;
+            const [tagA, tagB, tagC] = response.body.data;
+
+            testTag(tagA, { tagname: 'tag5'});
+            testTag(tagB, { tagname: 'tag6'});
+            testTag(tagC, { tagname: 'tag4'});
+          });
+
+          it('[example 2] respond with tags related to the list of tags', async function () {
+            const [loggedUser] = dbData.users;
+
+            const resp = await agent
+              .get('/tags?filter[relatedToTags]=tag0')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp.body).have.property('data').Array().length(2);
+            const tags = resp.body.data;
+            const [tagA, tagB] = response.body.data;
+
+            testTag(tagA, { tagname: 'tag5'});
+            testTag(tagB, { tagname: 'tag4'});
+          });
+
+          it('[example 3] respond with tags related to the list of tags', async function () {
+            const [loggedUser] = dbData.users;
+
+            const resp = await agent
+              .get('/tags?filter[relatedToTags]=tag1')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp.body).have.property('data').Array().length(3);
+            const tags = resp.body.data;
+            const [tagA, tagB, tagC] = response.body.data;
+
+            testTag(tagA, { tagname: 'tag6'});
+            testTag(tagB, { tagname: 'tag5'});
+            testTag(tagC, { tagname: 'tag4'});
+          });
+        });
+
+        context('invalid data', function () {
+          it('[invalid tagname(s)] error 400');
+          it('[nonexistent tagname(s)] error 404 (or ignore?)');
+        });
+      });
+
+      context('not logged in', function () {
+        it('error 403');
+      });
+      
+    });
   });
 
   describe('POST', function () {
