@@ -22,6 +22,9 @@ exports.start = function () {
   // every 5 minutes send notifications about unread messages
   tasks.push(cron.schedule('0 */5 * * * *', notifications.messages));
 
+  // every 2 minutes send notifications about unread messages
+  tasks.push(cron.schedule('0 */2 * * * *', notifications.contactRequests));
+
   // every 30 minutes delete unverified users
   tasks.push(cron.schedule('0 */30 * * * *', users.deleteUnverified));
 };
