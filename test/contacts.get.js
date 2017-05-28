@@ -133,7 +133,8 @@ describe('GET contacts', function () {
               },
               relationships: {
                 from: { data: { id: dbData.users[0].username } },
-                to: { data: { id: dbData.users[2].username } }
+                to: { data: { id: dbData.users[2].username } },
+                creator: { data: { type: 'users', id: dbData.users[2].username } }
               }
             });
           });
@@ -207,7 +208,8 @@ describe('GET contacts', function () {
               },
               relationships: {
                 from: { data: { id: dbData.users[2].username } },
-                to: { data: { id: dbData.users[0].username } }
+                to: { data: { id: dbData.users[0].username } },
+                creator: { data: { type: 'users', id: dbData.users[2].username } }
               }
             });
 
@@ -340,6 +342,11 @@ describe('GET contacts', function () {
               message: dbData.contacts[1].message,
               created: Date.now(),
               isConfirmed: false
+            },
+            relationships: {
+              from: { data: { type: 'users', id: requester.username } },
+              to: { data: { type: 'users', id: requested.username } },
+              creator: { data: { type: 'users', id: requester.username } }
             }
           });
         });

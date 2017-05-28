@@ -6,10 +6,10 @@ const Serializer = require('jsonapi-serializer').Serializer;
 const config = require(path.resolve('./config/config'));
 
 const contactSerializer = new Serializer('contacts', {
-  attributes: ['trust', 'reference', 'created', 'isConfirmed', 'confirmed', 'from', 'to', 'message'],
+  attributes: ['trust', 'reference', 'created', 'isConfirmed', 'confirmed', 'from', 'to', 'message', 'creator'],
   keyForAttribute: 'camelCase',
   typeForAttribute(attribute) {
-    if (attribute === 'from' || attribute === 'to') {
+    if (_.includes(['from', 'to', 'creator'], attribute)) {
       return 'users';
     }
   },
@@ -23,12 +23,14 @@ const contactSerializer = new Serializer('contacts', {
     }
   },
   from: generateUserRelation('from'),
-  to: generateUserRelation('to')
+  to: generateUserRelation('to'),
+  creator: generateUserRelation('creator')
 });
 
 function generateUserRelation(name) {
   return {
     ref: 'username',
+    type: 'users',
     attributes: ['username', 'givenName', 'familyName', 'description'],
     includedLinks: {
       self: (data, { username }) => {

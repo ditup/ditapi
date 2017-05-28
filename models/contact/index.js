@@ -41,10 +41,13 @@ class Contact extends Model {
         KEEP(c, 'created', 'confirmed', 'isConfirmed', 'message'),
         {
           reference: (c._from == from._id) ? c.reference01 : c.reference10,
-          trust: (c._from == from._id) ? c.trust01 : c.trust10
+          trust: (c._from == from._id) ? c.trust01 : c.trust10,
+          creator: (c._from == from._id) ? userFrom : userTo,
+          from: userFrom,
+          to: userTo
         }
       )
-      RETURN MERGE(contact, { from: userFrom, to: userTo })
+      RETURN contact
       `;
     const params = { from, to };
     const cursor = await this.db.query(query, params);
@@ -80,10 +83,13 @@ class Contact extends Model {
             KEEP(c, 'created', 'confirmed', 'isConfirmed'),
             {
               reference: (c._from == from._id) ? c.reference01 : c.reference10,
-              trust: (c._from == from._id) ? c.trust01 : c.trust10
+              trust: (c._from == from._id) ? c.trust01 : c.trust10,
+              from: userFrom,
+              to: userTo,
+              creator: (c._from == from._id) ? userFrom : userTo
             }
           )
-          RETURN MERGE(contact, { from: userFrom, to: userTo })
+          RETURN contact
       `;
     const paramsFrom = { from };
 
@@ -98,10 +104,13 @@ class Contact extends Model {
             KEEP(c, 'created', 'confirmed', 'isConfirmed'),
             {
               reference: (c._from == from._id) ? c.reference01 : c.reference10,
-              trust: (c._from == from._id) ? c.trust01 : c.trust10
+              trust: (c._from == from._id) ? c.trust01 : c.trust10,
+              from: userFrom,
+              to: userTo,
+              creator: (c._from == from._id) ? userFrom : userTo
             }
           )
-          RETURN MERGE(contact, { from: userFrom, to: userTo })
+          RETURN contact
       `;
     const paramsTo = { to };
 
