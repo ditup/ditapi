@@ -128,6 +128,20 @@ class Tag extends Model {
     return out;
   }
 
+  static async findTagsRelatedToTags(tagsArray) {
+    const query = `
+      FOR t in tags FILTER t.tagname == @firstTag
+      FOR v, e, p IN 2..2
+      ANY t
+      userTag
+      COLLECT foundTag = v AGGREGATE similarity = SUM(sqrt(p.edges[0].relevance * p.edges[1].relevance )) INTO u RETURN {foundTag: foundTag._id}
+    `;
+    const firstTag = tagsArray[0]
+    const params = { firstTag };
+    const out = await (await this.db.query(query, params)).all();
+    return out;
+  }
+
   /**
    * delete all tags which have no userTag edges
    *

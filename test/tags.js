@@ -232,6 +232,7 @@ describe('/tags', function () {
 
           it('[example 1] respond with tags related to the list of tags', async function () {
             const [loggedUser] = dbData.users;
+            console.log(loggedUser)
 
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1')
@@ -251,7 +252,7 @@ describe('/tags', function () {
 
           it('[example 2] respond with tags related to the list of tags', async function () {
             const [loggedUser] = dbData.users;
-
+            console.log(loggedUser)
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0')
               .set('Content-Type', 'application/vnd.api+json')
@@ -269,7 +270,7 @@ describe('/tags', function () {
 
           it('[example 3] respond with tags related to the list of tags', async function () {
             const [loggedUser] = dbData.users;
-
+            console.log(loggedUser)
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag1')
               .set('Content-Type', 'application/vnd.api+json')
