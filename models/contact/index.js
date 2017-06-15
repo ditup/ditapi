@@ -155,8 +155,75 @@ class Contact extends Model {
     return notified;
   }
 
+  /**
+   * Update a contact
+   * @param {string} from - username of contact originator (i.e. who provided the trust & reference & message we update)
+   * @param {string} to - username of contact receiver
+   * @param {Object} contact - the contact object to update
+   * @param {number} [contact.trust]
+   * @param {string} [contact.reference]
+   * @param {string} [contact.message]
+   * @returns Object the updated contact object
+   */
+  static async update(from, to, { trust, reference, message }) {
+    const update01 = {
+      trust01: trust,
+      reference01: reference,
+      message
+    };
+
+    const update10 = {
+      trust10: trust,
+      reference10: reference,
+      message
+    };
+
+    const isMessageProvided = message !== undefined;
+
+    const query = `
+      FOR from IN users FILTER from.username == @from
+        FOR to IN users FILTER to.username == @to
+          LET cUnfiltered = (FOR c IN contacts FILTER (c._from == from._id && c._to == to._id) OR (c._from == to._id && c._to == from._id) RETURN c)
+          LET cAllowed = (FOR c IN cUnfiltered
+            FILTER c.isConfirmed OR c._from == from._id
+            RETURN c)
+
+          LET c = (FOR c IN cAllowed FILTER !c.isConfirmed OR !@isMessageProvided
+            LET updateObj = (c._from == from._id)
+              ? @update01
+              : @update10
+            UPDATE c WITH updateObj IN contacts
+            RETURN NEW)
+          RETURN { c, cUnfiltered, cAllowed }
+    `;
+    const params = { from, to, update01, update10, isMessageProvided };
+    const cursor = await this.db.query(query, params);
+    const out = await cursor.all();
+
+    const [{ c: [c], cUnfiltered: [cUnfiltered], cAllowed: [cAllowed] }] = out;
+
+    if (!cUnfiltered) {
+      const e = new Error('contact doesn\'t exist');
+      e.status = 404;
+      throw e;
+    }
+
+    if (!cAllowed) {
+      const e = new Error('you can\'t update the contact you didn\'t confirm');
+      e.status = 400;
+      throw e;
+    }
+
+    if (!c) {
+      const e = new Error('you can\'t change a message of a confirmed contact');
+      e.status = 400;
+      throw e;
+    }
+
+    return c;
+  }
+
   static async confirm(from, to, { trust, reference }) {
-    // TODO remove the notified field when confirmed
     const query = `
       // first we get the contact between the users
       LET cu = (FOR from IN users FILTER from.username == @from

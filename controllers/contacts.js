@@ -5,6 +5,18 @@ const path = require('path'),
       serialize = require(path.resolve('./serializers')).serialize,
       models = require(path.resolve('./models'));
 
+/**
+ * Find out whether the request wants to confirm a contact
+ * The alternative is just updating the contact
+ */
+exports.gotoPatchConfirmContact = async function (req, res, next) {
+  if (_.has(req, 'body.isConfirmed')) {
+    return next();
+  }
+
+  return next('route');
+};
+
 exports.postContacts = async function (req, res, next) {
   const from = req.auth.username;
   const { message, trust, reference, to: { username: to }} = req.body;
@@ -60,6 +72,37 @@ exports.patchConfirmContact = async function (req, res, next) {
 
     return next(e);
   }
+};
+
+/**
+ * Update a contact (trust, reference for all, message only if unconfirmed)
+ */
+exports.patchContact = async function (req, res, next) {
+  const { from, to } = req.params;
+
+  const { trust, reference, message } = req.body;
+
+  try {
+    await models.contact.update(from, to, { trust, reference, message });
+  } catch (e) {
+    switch (e.status) {
+      case 404: {
+        return res.status(404).json({
+          errors: [{ meta: e.message }]
+        });
+      }
+      case 400: {
+        return res.status(400).json({
+          errors: [{ meta: e.message }]
+        });
+      }
+      default: {
+        throw e;
+      }
+    }
+  }
+
+  return next();
 };
 
 exports.getContact = async function (req, res, next) {

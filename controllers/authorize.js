@@ -22,3 +22,5 @@ exports.onlyLoggedMe = function (req, res, next) {
   return res.status(403).json({ errors: ['Not Authorized'] });
   // TODO improve the error
 };
+
+exports.contacts = require('./contacts');

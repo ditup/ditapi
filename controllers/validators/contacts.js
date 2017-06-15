@@ -37,14 +37,11 @@ exports.post = function (req, res, next) {
   req.checkBody(_.pick(rules.contact, ['reference', 'message']));
 
   // check that trust level is valid
-  const isTrustValid = [1, 2, 4, 8].indexOf(req.body.trust) > -1;
-  if(!isTrustValid) {
-    errors.push({
-      param: 'trust',
-      msg: 'the trust level is invalid',
-      value: req.body.trust
-    });
-  }
+  if (!validateTrust(req.body.trust)) errors.push({
+    param: 'trust',
+    msg: 'the trust level is invalid',
+    value: req.body.trust
+  });
 
   // prepare and return errors
   errors = errors.concat(req.validationErrors() || []);
@@ -152,6 +149,83 @@ exports.patchConfirm = function (req, res, next) {
   return next();
 };
 
+/**
+ * Validators for updating a contact
+ *
+ * Rules:
+ * - id in body needs to match url
+ * - contact needs to belong to me (i must be the originator)
+ * - only expected attributes
+ * - attributes need to be valid
+ *
+ */
+exports.patchUpdate = function (req, res, next) {
+  const { from, to } = req.params;
+  const [fromBody, toBody] = req.body.id.split('--');
+  // id should match url
+  const idMatchesUrl = from === fromBody && to === toBody;
+
+  let errors = [];
+
+  if (!idMatchesUrl) {
+    return res.status(400).json({
+      errors: [{ meta: 'id doesn\'t match url' }]
+    });
+  }
+
+  // when the contact doesn't belong to me, i should be Forbidden
+  const belongsToMe = from === req.auth.username;
+  if (!belongsToMe) {
+    return res.status(403).end();
+  }
+
+  // when some invalid attributes are present, error 400
+  const validAttrs = ['trust', 'reference', 'message', 'id'];
+  const presentAttrs = Object.keys(req.body);
+  const invalidAttrs = _.difference(presentAttrs, validAttrs);
+  if (invalidAttrs.length > 0) {
+    return res.status(400).json({
+      errors: [
+        { meta: 'invalid attributes provided' }
+      ]
+    });
+  }
+
+  // check that trust is valid
+  if (_.has(req.body, 'trust') && !validateTrust(req.body.trust)) {
+    errors.push('trust is invalid');
+  }
+
+  // check that reference and message is valid
+  req.checkBody(_.pick(rules.contact, ['reference', 'message']));
+
+  // prepare and return errors
+  errors = errors.concat(req.validationErrors() || []);
+
+  errors = _.map(errors, (err) => {
+    switch(err.param) {
+      case 'reference': {
+        return 'reference is invalid';
+      }
+      case 'message': {
+        return 'message is invalid (too long)';
+      }
+      default:
+        return err;
+    }
+  });
+
+  const errorOutput = { errors: [] };
+  if (_.isArray(errors) && errors.length > 0) {
+    for(const e of errors) {
+      errorOutput.errors.push({ meta: e });
+    }
+    return res.status(400).json(errorOutput);
+  }
+
+  return next();
+};
+
 exports.getOne = function (req, res, next) {
   let errors = [];
 
@@ -177,3 +251,13 @@ exports.getOne = function (req, res, next) {
 
   return next();
 };
+
+/**
+ * Provided trust, check that it is valid
+ * @param {any} trust - a value to be validated
+ * @returns boolean - true when valid, otherwise false
+ */
+function validateTrust(trust) {
+  // check that trust level is valid
+  return [1, 2, 4, 8].indexOf(trust) > -1;
+}

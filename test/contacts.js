@@ -735,16 +735,350 @@ describe('contacts', function () {
 
     // updating the reference and level of trust (1,2,4,8)
     describe('updating the contact', function () {
-      it('todo');
-    });
-  });
 
-  describe('GET', function () {
-    // read the contacts of a user
-    //
-    // give both directions of contact
-    // read info of one user
-    it('todo');
+      beforeEach(async function () {
+        // create data in database
+        dbData = await dbHandle.fill({
+          users: 4,
+          verifiedUsers: [0, 1, 2],
+          contacts: [
+            [0, 1, { isConfirmed: true }],
+            [0, 2, { isConfirmed: false }]
+          ]
+        });
+      });
+
+      context('logged in', function () {
+        context('good data provided', function () {
+          it('200 & update & respond with the updated contact', async function () {
+            const [me, other] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    trust: 4,
+                    reference: 'changed reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const dbContact = await models.contact.read(me.username, other.username);
+            should(dbContact).have.property('trust', 4);
+            should(dbContact).have.property('reference', 'changed reference');
+
+            should(resp).have.propertyByPath('body', 'data', 'id').eql(`${me.username}--${other.username}`);
+            should(resp).have.propertyByPath('body', 'data', 'attributes').match({
+              trust: 4,
+              reference: 'changed reference'
+            });
+          });
+
+          it('[opposite direction] 200 & update & respond with the updated contact', async function () {
+            const [other, me] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    trust: 4,
+                    reference: 'updated reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const dbContact = await models.contact.read(me.username, other.username);
+            should(dbContact).have.property('trust', 4);
+            should(dbContact).have.property('reference', 'updated reference');
+
+            should(resp).have.propertyByPath('body', 'data', 'id').eql(`${me.username}--${other.username}`);
+            should(resp).have.propertyByPath('body', 'data', 'attributes').match({
+              trust: 4,
+              reference: 'updated reference'
+            });
+
+          });
+
+
+          it('[unconfirmed which i created, including message] 200, update, respond', async function () {
+            const [me,, other] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    trust: 4,
+                    reference: 'updated reference',
+                    message: 'updated message'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const dbContact = await models.contact.read(me.username, other.username);
+            should(dbContact).have.property('trust', 4);
+            should(dbContact).have.property('reference', 'updated reference');
+            should(dbContact).have.property('message', 'updated message');
+          });
+
+          it('[partial update] 200, update partially, respond', async function () {
+            const [me,, other] = dbData.users;
+            await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    reference: 'updated reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const dbContact = await models.contact.read(me.username, other.username);
+            should(dbContact).have.property('trust', dbData.contacts[1].trust01);
+            should(dbContact).have.property('reference', 'updated reference');
+          });
+        });
+
+        context('bad data', function () {
+          it('[contact not from me] 403', async function () {
+            const [userA, userB, me] = dbData.users;
+            await agent
+              .patch(`/contacts/${userA.username}/${userB.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${userA.username}--${userB.username}`,
+                  attributes: {
+                    trust: 4,
+                    reference: 'changed reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(403)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[contains invalid attributes (other than trust, reference, message)] 400', async function () {
+            const [me, other] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    trust: 4,
+                    reference: 'changed reference',
+                    invalid: 'invalid attribute'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('invalid attributes provided');
+
+          });
+
+          it('[jsonapi id doesn\'t match url] 400', async function () {
+            const [me, userA, userB] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${userB.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${userB.username}--${userA.username}`,
+                  attributes: {
+                    trust: 4,
+                    reference: 'changed reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('id doesn\'t match url');
+          });
+
+          it('[invalid trust] 400', async function () {
+            const [me,, other] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    trust: 3.5
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('trust is invalid');
+          });
+
+          it('[invalid reference] 400', async function () {
+            const [me,, other] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    reference: '.'.repeat(2049)
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('reference is invalid');
+          });
+
+          it('[invalid message] 400', async function () {
+            const [me,, other] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    message: '.'.repeat(2049)
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('message is invalid (too long)');
+          });
+
+          it('[provided message when already confirmed] 400', async function () {
+            const [me, other] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    message: 'a'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('you can\'t change a message of a confirmed contact');
+          });
+
+          it('[nonexistent contact] 404', async function () {
+            const [, me, other] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    trust: 1
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp.body).have.propertyByPath('errors', 0, 'meta').eql('contact doesn\'t exist');
+          });
+
+          it('[updating unconfirmed contact i didn\'t create] 400', async function () {
+            const [other,, me] = dbData.users;
+            const resp = await agent
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    trust: 4,
+                    reference: 'changed reference'
+                  }
+                }
+              })
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp.body).have.propertyByPath('errors', 0, 'meta').eql('you can\'t update the contact you didn\'t confirm');
+          });
+        });
+      });
+
+      context('not logged in', function () {
+        it('403', async function () {
+          const [me, other] = dbData.users;
+          await agent
+            .patch(`/contacts/${me.username}/${other.username}`)
+            .send({
+              data: {
+                type: 'contacts',
+                id: `${me.username}--${other.username}`,
+                attributes: {
+                  trust: 4,
+                  reference: 'changed reference'
+                }
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(403)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+      });
+    });
   });
 
   describe('DELETE', function () {
