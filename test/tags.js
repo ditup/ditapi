@@ -76,7 +76,7 @@ describe('/tags', function () {
       // doesn't match tagname, username, firstname
     });
 
-    describe('/tags?filter[relatedToMyTags]', function () {
+    describe.only('/tags?filter[relatedToMyTags]', function () {
 
       function testTag(jsonApiTag, { tagname }) {
         should(jsonApiTag).have.property('id', tagname);
@@ -232,7 +232,6 @@ describe('/tags', function () {
 
           it('[example 1] respond with tags related to the list of tags', async function () {
             const [loggedUser] = dbData.users;
-            console.log(loggedUser)
 
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1')
@@ -243,7 +242,11 @@ describe('/tags', function () {
 
             should(resp.body).have.property('data').Array().length(3);
             const tags = resp.body.data;
-            const [tagA, tagB, tagC] = response.body.data;
+            console.log(tags);
+            const [tagA, tagB, tagC, tagD, tagE] = resp.body.data;
+            console.log(tagA);
+            console.log(tagB);
+            console.log(tagC);
 
             testTag(tagA, { tagname: 'tag5'});
             testTag(tagB, { tagname: 'tag6'});
@@ -252,7 +255,6 @@ describe('/tags', function () {
 
           it('[example 2] respond with tags related to the list of tags', async function () {
             const [loggedUser] = dbData.users;
-            console.log(loggedUser)
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0')
               .set('Content-Type', 'application/vnd.api+json')
@@ -260,31 +262,33 @@ describe('/tags', function () {
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(resp.body).have.property('data').Array().length(2);
+            should(resp.body).have.property('data').Array().length(3);
             const tags = resp.body.data;
-            const [tagA, tagB] = response.body.data;
+            const [tagA, tagB, tagC] = resp.body.data;
 
-            testTag(tagA, { tagname: 'tag5'});
+            testTag(tagA, { tagname: 'tag1'});
             testTag(tagB, { tagname: 'tag4'});
+            testTag(tagC, { tagname: 'tag5'});
           });
 
           it('[example 3] respond with tags related to the list of tags', async function () {
             const [loggedUser] = dbData.users;
-            console.log(loggedUser)
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag1')
               .set('Content-Type', 'application/vnd.api+json')
               .auth(loggedUser.username, loggedUser.password)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
-
-            should(resp.body).have.property('data').Array().length(3);
+            console.log("3")
+            //console.log(resp);
+            should(resp.body).have.property('data').Array().length(4);
             const tags = resp.body.data;
-            const [tagA, tagB, tagC] = response.body.data;
+            const [tagA, tagB, tagC, tagD] = resp.body.data;
 
-            testTag(tagA, { tagname: 'tag6'});
-            testTag(tagB, { tagname: 'tag5'});
-            testTag(tagC, { tagname: 'tag4'});
+            testTag(tagA, { tagname: 'tag5'});
+            testTag(tagB, { tagname: 'tag6'});
+            testTag(tagC, { tagname: 'tag0'});
+            testTag(tagD, { tagname: 'tag4'});
           });
         });
 
