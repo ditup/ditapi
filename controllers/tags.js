@@ -69,6 +69,8 @@ exports.relatedToMyTags = async function (req, res, next) {
     foundTags.urlParam = encodeURIComponent('filter[relatedToMyTags]');
 
     // serialize and send the results
+    console.log("in my tags controllers");
+    console.log(foundTags)
     return res.status(200).json(serialize.tag(foundTags));
   } catch (e) {
     return next(e);
@@ -89,6 +91,9 @@ exports.relatedToTags = async function (req, res, next) {
     // define the parameters for self link
     foundTags.urlParam = encodeURIComponent('filter[relatedToTags]');
 
+    console.log("in controllers");
+    console.log(foundTags)
+    //console.log(res.status(200).json(serialize.tag(foundTags)))
     // serialize and send the results
     return res.status(200).json(serialize.tag(foundTags));
 
