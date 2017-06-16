@@ -34,10 +34,10 @@ exports.gotoRelatedToMyTags = function (req, res, next) {
 exports.gotoRelatedToTags = function (req, res, next) {
   if (_.has(req, 'query.filter.relatedToTags')) {
     return next();
-  };
-  return next('route');
+  }
 
-}
+  return next('route');
+};
 
 
 /*
@@ -69,31 +69,23 @@ exports.relatedToMyTags = async function (req, res, next) {
     foundTags.urlParam = encodeURIComponent('filter[relatedToMyTags]');
 
     // serialize and send the results
-    console.log("in my tags controllers");
-    console.log(foundTags)
     return res.status(200).json(serialize.tag(foundTags));
   } catch (e) {
     return next(e);
   }
 };
 
-/* 
-*/
-
 exports.relatedToTags = async function (req, res, next) {
 
   const tagsArray = req.query.filter.relatedToTags.split(',');
-  console.log(tagsArray);
   try{
-    //get tags from database
+    // get tags from database
     const foundTags = await models.tag.findTagsRelatedToTags(tagsArray);
 
     // define the parameters for self link
     foundTags.urlParam = encodeURIComponent('filter[relatedToTags]');
 
-    console.log("in controllers");
-    console.log(foundTags)
-    //console.log(res.status(200).json(serialize.tag(foundTags)))
+    // console.log(res.status(200).json(serialize.tag(foundTags)))
     // serialize and send the results
     return res.status(200).json(serialize.tag(foundTags));
 
@@ -101,9 +93,7 @@ exports.relatedToTags = async function (req, res, next) {
     return next(e);
   }
 
-  return res.end();
-  return next();
-}
+};
 
 
 /*

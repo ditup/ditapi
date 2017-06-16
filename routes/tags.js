@@ -20,7 +20,7 @@ router.route('/')
 
 // get tags related to given tags
 router.route('/')
-.get(tagController.gotoRelatedToTags, tagController.relatedToTags)
+.get(tagController.gotoRelatedToTags, tagController.relatedToTags);
 
 // get random tags
 router.route('/')
