@@ -76,7 +76,7 @@ describe('/tags', function () {
       // doesn't match tagname, username, firstname
     });
 
-    describe.only('/tags?filter[relatedToMyTags]', function () {
+    describe('/tags?filter[relatedToMyTags]', function () {
 
       function testTag(jsonApiTag, { tagname }) {
         should(jsonApiTag).have.property('id', tagname);
@@ -193,7 +193,7 @@ describe('/tags', function () {
       });
     });
 
-    describe.only('/tags?filter[relatedToTags]=tag1,tag2,tag3', function () {
+    describe('/tags?filter[relatedToTags]=tag1,tag2,tag3', function () {
 
       beforeEach(async function () {
         const data = {
@@ -241,12 +241,7 @@ describe('/tags', function () {
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
             should(resp.body).have.property('data').Array().length(3);
-            const tags = resp.body.data;
-            console.log(tags);
-            const [tagA, tagB, tagC, tagD, tagE] = resp.body.data;
-            console.log(tagA);
-            console.log(tagB);
-            console.log(tagC);
+            const [tagA, tagB, tagC] = resp.body.data;
 
             testTag(tagA, { tagname: 'tag5'});
             testTag(tagB, { tagname: 'tag6'});
@@ -263,12 +258,11 @@ describe('/tags', function () {
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
             should(resp.body).have.property('data').Array().length(3);
-            const tags = resp.body.data;
             const [tagA, tagB, tagC] = resp.body.data;
 
             testTag(tagA, { tagname: 'tag1'});
-            testTag(tagB, { tagname: 'tag4'});
-            testTag(tagC, { tagname: 'tag5'});
+            testTag(tagB, { tagname: 'tag5'});
+            testTag(tagC, { tagname: 'tag4'});
           });
 
           it('[example 3] respond with tags related to the list of tags', async function () {
@@ -279,14 +273,12 @@ describe('/tags', function () {
               .auth(loggedUser.username, loggedUser.password)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
-            console.log("3")
-            //console.log(resp);
+
             should(resp.body).have.property('data').Array().length(4);
-            const tags = resp.body.data;
             const [tagA, tagB, tagC, tagD] = resp.body.data;
 
-            testTag(tagA, { tagname: 'tag5'});
-            testTag(tagB, { tagname: 'tag6'});
+            testTag(tagA, { tagname: 'tag6'});
+            testTag(tagB, { tagname: 'tag5'});
             testTag(tagC, { tagname: 'tag0'});
             testTag(tagD, { tagname: 'tag4'});
           });
@@ -301,7 +293,6 @@ describe('/tags', function () {
       context('not logged in', function () {
         it('error 403');
       });
-      
     });
   });
 

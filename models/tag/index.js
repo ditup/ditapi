@@ -130,20 +130,20 @@ class Tag extends Model {
 
   static async findTagsRelatedToTags(tagsArray) {
     const query = `
-      FOR l in (
-        FOR t in tags FILTER t.tagname IN @firstTag
-        FOR v, e, p IN 2..2
-        ANY t
-        userTag
-        COLLECT foundTag = v AGGREGATE similarity = SUM(sqrt(p.edges[0].relevance * p.edges[1].relevance )) INTO u RETURN {created: foundTag.tagname, tagname: foundTag.tagname, relevance: similarity }
+      FOR sortedTag in (
+        FOR t in tags FILTER t.tagname IN @givenTags
+          FOR v, e, p IN 2..2
+          ANY t
+          userTag
+          COLLECT foundTag = v AGGREGATE similarity = SUM(sqrt(p.edges[0].relevance * p.edges[1].relevance )) INTO u RETURN {created: foundTag.tagname, tagname: foundTag.tagname, relevance: similarity }
       )
-      SORT l.similarity DESC, l.tagname
-      RETURN l
+      FILTER sortedTag.tagname NOT IN @givenTags
+      SORT sortedTag.relevance DESC, sortedTag.tagname ASC
+      RETURN sortedTag
     `;
-    const firstTag = tagsArray
-    const params = { firstTag };
+    const givenTags = tagsArray;
+    const params = { givenTags };
     const out = await (await this.db.query(query, params)).all();
-    console.log(out)
     return out;
   }
 
