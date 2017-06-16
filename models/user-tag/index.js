@@ -54,8 +54,16 @@ class UserTag extends Model {
           RETURN NEW`;
     const params = { username, tagname, newUserTagData };
     const cursor = await this.db.query(query, params);
-    const output = await cursor.all();
-    return output[0];
+    const [output] = await cursor.all();
+
+    if (!output) {
+      const e = new Error('user-tag doesn\'t exist');
+      e.status = 404;
+
+      throw e;
+    }
+
+    return output;
   }
 
   static async exists(username, tagname) {

@@ -306,24 +306,22 @@ exports.patchUserTag = async function (req, res, next) {
 
   const { username, tagname } = req.params;
 
-  // TODO check that username--tagname matches params
-
   // the list of allowed user-tag fields (subset of these needs to be provided)
   const userTagFields = ['relevance', 'story'];
-
-  // check that only user-tag fields are present in the request body
-  const unwantedParams = _.difference(Object.keys(req.body), _.union(userTagFields, ['id']));
-  if (unwantedParams.length > 0) { // if any unwanted fields are present, error.
-    const e = new Error('The request body contains unexpected attributes');
-    e.status = 400;
-    return next(e);
-  }
 
   // pick only the user-tag fields from the body of the request
   const userTagData = _.pick(req.body, userTagFields);
 
   // update the user-tag with the new values
-  await models.userTag.update(username, tagname, userTagData);
+  try {
+    await models.userTag.update(username, tagname, userTagData);
+  } catch (e) {
+    if (e.status === 404) {
+      res.status(404);
+    }
+    return next(e);
+  }
+
   return next();
 };
 

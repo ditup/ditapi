@@ -46,6 +46,15 @@ const user = {
   }
 };
 
+const userTag = {
+  story: {
+    isLength: {
+      options: [{ max: 1024 }],
+      errorMessage: 'userTag story can be at most 1024 characters long'
+    }
+  }
+};
+
 const tag = {
   tagname: {
     notEmpty: true,
@@ -84,5 +93,5 @@ const contact = {
   }
 };
 
-module.exports = { user, tag, message, contact };
+module.exports = { user, tag, message, contact, userTag };
 

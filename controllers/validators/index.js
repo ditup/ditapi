@@ -2,11 +2,12 @@
 
 const _ = require('lodash');
 
-const messages = require('./messages');
-const account = require('./account');
-const contacts = require('./contacts');
-
 const rules = require('./rules');
+
+exports.contacts = require('./contacts');
+exports.messages = require('./messages');
+exports.account = require('./account');
+exports.userTags = require('./userTags');
 
 exports.postUsers = function (req, res, next) {
   req.checkBody(_.pick(rules.user, ['username', 'email', 'password']));
@@ -194,16 +195,3 @@ exports.getTag = function (req, res, next) {
   }
   return next();
 };
-
-exports.postUserTags = function (req, res, next) {
-  return next();
-};
-
-exports.patchUserTag = function (req, res, next) {
-  // TODO
-  return next();
-};
-
-exports.contacts = contacts;
-exports.messages = messages;
-exports.account = account;

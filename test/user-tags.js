@@ -1,7 +1,5 @@
 'use strict';
 
-// @TODO MIGRATE TO USER-TAGS
-
 const supertest = require('supertest'),
       should = require('should'),
       path = require('path');
@@ -21,6 +19,10 @@ describe('Tags of user', function () {
       loggedUser,
       otherUser;
 
+  /**
+   * Fill and clear the database with this function
+   * @param {Object} data - TODO (it's a complex object)
+   */
   function beforeEachPopulate(data) {
     // put pre-data into database
     beforeEach(async function () {
@@ -316,81 +318,298 @@ describe('Tags of user', function () {
     });
 
     describe('PATCH', function () {
-      let loggedUser;
 
       beforeEachPopulate({
-        users: 1, // how many users to make
-        verifiedUsers: [0], // which  users to make verified
+        users: 2, // how many users to make
+        verifiedUsers: [0, 1], // which  users to make verified
         tags: 1,
         userTag: [
           [0, 0, 'story', 3],
         ]
       });
 
-      beforeEach(function () {
-        [loggedUser] = dbData.users;
+      context('logged', function () {
+        context('valid data', function () {
+          it('[story] update user\'s story of a tag', async function () {
+            const [userTag] = dbData.userTag;
+            const { tag } = userTag;
+            const [me] = dbData.users;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${tag.tagname}`,
+                attributes: {
+                  story: 'a new story'
+                }
+              }
+            };
+
+            const response = await agent
+              .patch(`/users/${me.username}/tags/${tag.tagname}`)
+              .send(patchData)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const respUserTag = response.body;
+
+            should(respUserTag).have.propertyByPath('data', 'attributes', 'story').equal('a new story');
+
+            const userTagDb = await models.userTag.read(me.username, tag.tagname);
+            should(userTagDb).have.property('story', 'a new story');
+          });
+
+          it('[relevance] update relevance of the tag for user', async function () {
+            const [me] = dbData.users;
+            const [userTag] = dbData.userTag;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${userTag.tag.tagname}`,
+                attributes: {
+                  relevance: 2
+                }
+              }
+            };
+
+            const response = await agent
+              .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
+              .send(patchData)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const respUserTag = response.body;
+
+            should(respUserTag).have.propertyByPath('data', 'attributes', 'relevance').equal(2);
+
+            const userTagDb = await models.userTag.read(me.username,
+              userTag.tag.tagname);
+            should(userTagDb).have.property('relevance', 2);
+          });
+        });
+
+        context('invalid data', function () {
+          it('[i\'m not the user of user-tag] 403 and message', async function () {
+            const [other, me] = dbData.users;
+            const [userTag] = dbData.userTag;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${other.username}--${userTag.tag.tagname}`,
+                attributes: {
+                  story: 'a new story',
+                  relevance: 3
+                }
+              }
+            };
+
+            await agent
+              .patch(`/users/${other.username}/tags/${userTag.tag.tagname}`)
+              .send(patchData)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(403)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[JSON API id doesn\'t match url] 400 and msg', async function () {
+            const [me, other] = dbData.users;
+            const [userTag] = dbData.userTag;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                // the mismatch
+                id: `${other.username}--${userTag.tag.tagname}`,
+                attributes: {
+                  story: 'a new story',
+                  relevance: 3
+                }
+              }
+            };
+
+            const response = await agent
+              // compare with the mismatch
+              .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
+              .send(patchData)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('url should match body id');
+          });
+
+          it('[invalid story] 400 and msg', async function () {
+            const { userTag: [userTag], users: [me] } = dbData;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${userTag.tag.tagname}`,
+                attributes: {
+                  // the too long story
+                  story: '.'.repeat(1025)
+                }
+              }
+            };
+
+            const response = await agent
+              .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
+              .send(patchData)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('userTag story can be at most 1024 characters long');
+          });
+
+          it('[invalid relevance] 400 and msg', async function () {
+            const { users: [me], userTag: [userTag]} = dbData;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${userTag.tag.tagname}`,
+                attributes: {
+                  // invalid relevance
+                  relevance: 3.5
+                }
+              }
+            };
+
+            const response = await agent
+              .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
+              .send(patchData)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('relevance should be a number 1, 2, 3, 4 or 5');
+
+          });
+
+          it('[invalid tagname] 400 and msg', async function () {
+            const { users: [me] } = dbData;
+
+            const invalidTagname = 'invalid.tagname';
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${invalidTagname}`,
+                attributes: {
+                  relevance: 3
+                }
+              }
+            };
+
+            const response = await agent
+              .patch(`/users/${me.username}/tags/${invalidTagname}`)
+              .send(patchData)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .match(/Invalid Tagname/);
+
+          });
+
+          it('[user-tag doesn\'t exist] 404 and msg', async function () {
+            const [userTag] = dbData.userTag;
+            const { tag } = userTag;
+            // the user 1 has no tags
+            const [, me] = dbData.users;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${tag.tagname}`,
+                attributes: {
+                  story: 'a new story'
+                }
+              }
+            };
+
+            await agent
+              .patch(`/users/${me.username}/tags/${tag.tagname}`)
+              .send(patchData)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+          it('[invalid attributes in userTag body] 400', async function () {
+            const [userTag] = dbData.userTag;
+            const { tag } = userTag;
+            // the user 1 has no tags
+            const [me] = dbData.users;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${tag.tagname}`,
+                attributes: {
+                  story: 'a new story',
+                  invalid: 'some invalid attribute'
+                }
+              }
+            };
+
+            const response = await agent
+              .patch(`/users/${me.username}/tags/${tag.tagname}`)
+              .send(patchData)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('invalid attributes: invalid');
+
+          });
+        });
       });
 
-      it('TODO invalid data');
-      it('[story] update user\'s story of a tag', async function () {
-        const userTag = dbData.userTag[0];
+      context('not logged', function () {
+        it('403', async function () {
+          const [userTag] = dbData.userTag;
+          const { tag } = userTag;
+          const [me] = dbData.users;
 
-        const patchData = {
-          data: {
-            type: 'user-tags',
-            id: `${loggedUser.username}--${userTag.tag.tagname}`,
-            attributes: {
-              story: 'a new story'
+          const patchData = {
+            data: {
+              type: 'user-tags',
+              id: `${me.username}--${tag.tagname}`,
+              attributes: {
+                story: 'a new story'
+              }
             }
-          }
-        };
+          };
 
-        const response = await agent
-          .patch(`/users/${loggedUser.username}/tags/${userTag.tag.tagname}`)
-          .send(patchData)
-          .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
-          .expect(200)
-          .expect('Content-Type', /^application\/vnd\.api\+json/);
-
-        const respUserTag = response.body;
-
-        should(respUserTag).have.propertyByPath('data', 'attributes', 'story').equal('a new story');
-
-        const userTagDb = await models.userTag.read(loggedUser.username,
-          userTag.tag.tagname);
-        should(userTagDb).have.property('story', 'a new story');
+          await agent
+            .patch(`/users/${me.username}/tags/${tag.tagname}`)
+            .send(patchData)
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(403)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
       });
 
-      it('[relevance] update relevance of the tag for user', async function () {
-        const userTag = dbData.userTag[0];
-
-        const patchData = {
-          data: {
-            type: 'user-tags',
-            id: `${loggedUser.username}--${userTag.tag.tagname}`,
-            attributes: {
-              relevance: 2
-            }
-          }
-        };
-
-        const response = await agent
-          .patch(`/users/${loggedUser.username}/tags/${userTag.tag.tagname}`)
-          .send(patchData)
-          .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
-          .expect(200)
-          .expect('Content-Type', /^application\/vnd\.api\+json/);
-
-        const respUserTag = response.body;
-
-        should(respUserTag).have.propertyByPath('data', 'attributes', 'relevance').equal(2);
-
-        const userTagDb = await models.userTag.read(loggedUser.username,
-          userTag.tag.tagname);
-        should(userTagDb).have.property('relevance', 2);
-      });
     });
 
     describe('DELETE', function () {

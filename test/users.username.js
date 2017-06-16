@@ -327,8 +327,4 @@ describe('/users/:username', function () {
     it('should delete user and all her graph connections');
     it('should delete user\'s profile picture');
   });
-
-  describe('HEAD', function () {
-    it('should return header of GET request');
-  });
 });

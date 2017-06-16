@@ -20,15 +20,21 @@ router.route('/:username')
 router.route('/:username/account')
   .patch(authorize.onlyLoggedMe, validators.patchAccount, accountController.patchAccount);
 
+/**
+ * Routers for userTags
+ */
 router.route('/:username/tags')
-  .post(authorize.onlyLoggedMe, validators.postUserTags, userController.postUserTags)
+  .post(authorize.onlyLoggedMe, validators.userTags.post, userController.postUserTags)
   .get(userController.getUserTags);
 
 router.route('/:username/tags/:tagname')
   .get(userController.getUserTag)
-  .patch(authorize.onlyLoggedMe, validators.patchUserTag, userController.patchUserTag, userController.getUserTag)
+  .patch(authorize.onlyLoggedMe, validators.userTags.patch, userController.patchUserTag, userController.getUserTag)
   .delete(authorize.onlyLoggedMe, userController.deleteUserTag);
 
+/**
+ * Email verification router
+ */
 router.route('/:username/account/email/verify/:code')
   .get(userController.verifyEmail); // TODO validate the username & code
 
