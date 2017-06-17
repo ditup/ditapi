@@ -2,22 +2,30 @@
 
 const supertest = require('supertest'),
       should = require('should'),
+      sinon = require('sinon'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
-      serializers = require(path.resolve('./serializers')),
       models = require(path.resolve('./models')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       config = require(path.resolve('./config/config'));
-
-const serialize = serializers.serialize;
 
 const agent = supertest.agent(app);
 
 describe('Tags of user', function () {
   let dbData,
       loggedUser,
-      otherUser;
+      otherUser,
+      sandbox;
+
+  beforeEach(function () {
+    sandbox = sinon.sandbox.create();
+    sandbox.useFakeTimers(1500000000, 'Date');
+  });
+
+  afterEach(function () {
+    sandbox.restore();
+  });
 
   /**
    * Fill and clear the database with this function
@@ -148,21 +156,31 @@ describe('Tags of user', function () {
         [loggedUser, otherUser] = dbData.users;
       });
 
-      let newUserTag;
-      beforeEach(function () {
-        newUserTag = {
-          tagname: dbData.tags[0].tagname,
-          story: 'here user can answer why she has that tag in her profile',
-          relevance: 3
-        };
-      });
-
       context('logged in', function () {
+
         it('[self] add a tag to the user and respond 201', async function () {
+
+          const [tag] = dbData.tags;
 
           const response = await agent
             .post(`/users/${loggedUser.username}/tags`)
-            .send(serialize.newUserTag(newUserTag))
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: 'a new testing story',
+                  relevance: 3
+                },
+                relationships: {
+                  tag: {
+                    data: {
+                      type: 'tags',
+                      id: tag.tagname
+                    }
+                  }
+                }
+              }
+            })
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect(201)
@@ -179,31 +197,49 @@ describe('Tags of user', function () {
 
           data.should.have.property('type', 'user-tags');
           data.should.have.property('id',
-            `${loggedUser.username}--${newUserTag.tagname}`);
+            `${loggedUser.username}--${tag.tagname}`);
 
-          links.should.have.property('self', `${config.url.all}/users/${loggedUser.username}/tags/${newUserTag.tagname}`);
+          links.should.have.property('self', `${config.url.all}/users/${loggedUser.username}/tags/${tag.tagname}`);
           // links.should.have.property('related', `${config.url.all}/users/${loggedUser.username}/tags/${newUserTag.tagname}`);
 
           data.should.have.property('attributes');
 
           const attributes = data.attributes;
 
-          attributes.should.have.property('story', newUserTag.story);
+          attributes.should.have.property('story', 'a new testing story');
           attributes.should.have.property('relevance', 3);
 
           const userTagDb = await models.userTag.read(loggedUser.username,
-            newUserTag.tagname);
-          userTagDb.should.have.property('story', newUserTag.story);
+            tag.tagname);
+          userTagDb.should.have.property('story', 'a new testing story');
           // userTagDb.should.have.property('relevance', newUserTag.relevance);
           userTagDb.should.have.property('user');
           userTagDb.should.have.property('tag');
-          userTagDb.created.should.be.approximately(Date.now(), 1000);
+          userTagDb.created.should.eql(Date.now());
         });
 
         it('[other user] error 403', async function () {
+
+          const [tag] = dbData.tags;
           const response = await agent
             .post(`/users/${otherUser.username}/tags`)
-            .send(serialize.newUserTag(newUserTag))
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: 'a new testing story',
+                  relevance: 3
+                },
+                relationships: {
+                  tag: {
+                    data: {
+                      type: 'tags',
+                      id: tag.tagname
+                    }
+                  }
+                }
+              }
+            })
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect(403)
@@ -214,12 +250,26 @@ describe('Tags of user', function () {
         });
 
         it('[duplicate relation] error 409', async function () {
+          const [, tag] = dbData.tags;
           const response = await agent
             .post(`/users/${loggedUser.username}/tags`)
-            .send(serialize.newUserTag({
-              tagname: dbData.tags[loggedUser.tags[0]].tagname,
-              story: '************'
-            }))
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: 'a new testing story',
+                  relevance: 3
+                },
+                relationships: {
+                  tag: {
+                    data: {
+                      type: 'tags',
+                      id: tag.tagname
+                    }
+                  }
+                }
+              }
+            })
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect(409)
@@ -232,10 +282,23 @@ describe('Tags of user', function () {
         it('[nonexistent tagname] error 404', async function () {
           const response = await agent
             .post(`/users/${loggedUser.username}/tags`)
-            .send(serialize.newUserTag({
-              tagname: 'nonexistent-tag',
-              story: 'this is a story'
-            }))
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: 'a new testing story',
+                  relevance: 3
+                },
+                relationships: {
+                  tag: {
+                    data: {
+                      type: 'tags',
+                      id: 'nonexistent-tagname'
+                    }
+                  }
+                }
+              }
+            })
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect(404)
@@ -245,14 +308,175 @@ describe('Tags of user', function () {
           output.should.have.property('errors');
         });
 
-        it('invalid data, error 400');
+        it('[invalid tagname] 400', async function () {
+
+          const response = await agent
+            .post(`/users/${loggedUser.username}/tags`)
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: 'a new testing story',
+                  relevance: 3
+                },
+                relationships: {
+                  tag: {
+                    data: {
+                      type: 'tags',
+                      id: 'invalid tagname'
+                    }
+                  }
+                }
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response.body).have.propertyByPath('errors', '0', 'title').eql('invalid tagname');
+        });
+
+        it('[invalid story] 400', async function () {
+
+          const [tag] = dbData.tags;
+
+          const response = await agent
+            .post(`/users/${loggedUser.username}/tags`)
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: '.'.repeat(1025),
+                  relevance: 3
+                },
+                relationships: {
+                  tag: {
+                    data: {
+                      type: 'tags',
+                      id: tag.tagname
+                    }
+                  }
+                }
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response.body).have.propertyByPath('errors', '0', 'title').eql('invalid story');
+        });
+
+        it('[invalid relevance] 400', async function () {
+
+          const [tag] = dbData.tags;
+
+          const response = await agent
+            .post(`/users/${loggedUser.username}/tags`)
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: '.'.repeat(1024),
+                  relevance: 3.3
+                },
+                relationships: {
+                  tag: {
+                    data: {
+                      type: 'tags',
+                      id: tag.tagname
+                    }
+                  }
+                }
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response.body).have.propertyByPath('errors', '0', 'title').eql('invalid relevance');
+        });
+        it('[invalid attributes present] 400', async function () {
+
+          const [tag] = dbData.tags;
+
+          const response = await agent
+            .post(`/users/${loggedUser.username}/tags`)
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: '.'.repeat(1024),
+                  relevance: 3,
+                  invalid: 'invalid attribute'
+                },
+                relationships: {
+                  tag: {
+                    data: {
+                      type: 'tags',
+                      id: tag.tagname
+                    }
+                  }
+                }
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response.body).have.propertyByPath('errors', '0', 'title').eql('invalid attributes');
+          should(response.body).have.propertyByPath('errors', '0', 'detail').eql('unexpected attribute');
+        });
+
+        it('[missing attributes] 400', async function () {
+
+          const response = await agent
+            .post(`/users/${loggedUser.username}/tags`)
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: '.'.repeat(1024),
+                  relevance: 3
+                }
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response.body).have.propertyByPath('errors', '0', 'title').eql('invalid attributes');
+          should(response.body).have.propertyByPath('errors', '0', 'detail').eql('missing attribute');
+        });
+
       });
 
       context('not logged in', function () {
         it('errors 403', async function () {
+          const [tag] = dbData.tags;
           const response = await agent
             .post(`/users/${loggedUser.username}/tags`)
-            .send(serialize.newUserTag(newUserTag))
+            .send({
+              data: {
+                type: 'user-tags',
+                attributes: {
+                  story: 'a new testing story',
+                  relevance: 3
+                },
+                relationships: {
+                  tag: {
+                    data: {
+                      type: 'tags',
+                      id: tag.tagname
+                    }
+                  }
+                }
+              }
+            })
             .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);

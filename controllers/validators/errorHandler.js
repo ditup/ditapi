@@ -9,7 +9,9 @@ module.exports = function (err, req, res, next) {
 
     const errors = _.map(err, (e) => {
       return {
-        meta: e.msg || e
+        meta: e.msg || e,
+        title: (e.param) ? `invalid ${e.param}` : 'invalid',
+        detail: e.msg || ''
       };
     });
 

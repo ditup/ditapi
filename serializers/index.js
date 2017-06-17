@@ -24,6 +24,13 @@ const deserialize = new Deserializer({
         username: relationship.id
       };
     }
+  },
+  tags: {
+    valueForRelationship: function (relationship) {
+      return {
+        tagname: relationship.id
+      };
+    }
   }
 }).deserialize;
 

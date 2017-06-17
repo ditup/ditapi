@@ -236,9 +236,7 @@ exports.postUserTags = async function (req, res, next) {
   try {
     // should be already validated
     const username = req.params.username;
-    const tagname = req.body.tagname;
-    const story = req.body.story;
-    const relevance = req.body.relevance;
+    const { story, relevance, tag: { tagname } } = req.body;
 
     const exists = await models.userTag.exists(username, tagname);
 
