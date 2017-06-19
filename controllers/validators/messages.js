@@ -5,8 +5,15 @@ const _ = require('lodash');
 const rules = require('./rules');
 
 exports.post = function (req, res, next) {
+  // remove whitespaces from beginning and end of message body
   req.body.body = req.body.body.trim();
+  // validate the message body
   req.checkBody(_.pick(rules.message, ['body']));
+
+  // validate message receiver
+  req.body.username = _.get(req.body, 'to.username');
+  req.checkBody(_.pick(rules.user, ['username']));
+  delete req.body.username;
 
   // prepare and return errors
   let errors = req.validationErrors();
@@ -24,15 +31,11 @@ exports.post = function (req, res, next) {
     });
   }
 
-  const errorOutput = { errors: [] };
-  if (_.isArray(errors) && errors.length > 0) {
-    for(const e of errors) {
-      errorOutput.errors.push({ meta: e });
-    }
-    return res.status(400).json(errorOutput);
+  if (errors.length === 0) {
+    return next();
   }
 
-  return next();
+  return next(errors);
 };
 
 exports.patch = function (req, res, next) {

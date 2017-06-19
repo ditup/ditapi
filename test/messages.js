@@ -230,6 +230,20 @@ describe('/messages', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
 
+        it('invalid receiver', async () => {
+          // invalidate the message
+          delete validMessage.data.relationships.to.data.id;
+          const response = await agent
+            .post('/messages')
+            .send(validMessage)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response.body).have.propertyByPath('errors', 0, 'title').eql('invalid username');
+        });
+
       }); // end of context invalid data
 
     }); // end of context logged in
