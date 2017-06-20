@@ -78,6 +78,20 @@ exports.relatedToMyTags = async function (req, res, next) {
 exports.relatedToTags = async function (req, res, next) {
 
   const tagsArray = req.query.filter.relatedToTags.split(',');
+  // TODO regex should be taken from some general place
+  // where should be validating done
+  const re = new RegExp('^([a-z]+[a-z0-9-]{2,})$');
+  for (const t of tagsArray) {
+    if (!re.test(t)){
+      return res.status(400).json({
+  // TODO dictionary od errors?
+        errors: {
+          meta: 'Unvalid Tagname'
+        }
+      });
+    }
+  }
+
   try{
     // get tags from database
     const foundTags = await models.tag.findTagsRelatedToTags(tagsArray);
@@ -85,7 +99,6 @@ exports.relatedToTags = async function (req, res, next) {
     // define the parameters for self link
     foundTags.urlParam = encodeURIComponent('filter[relatedToTags]');
 
-    // console.log(res.status(200).json(serialize.tag(foundTags)))
     // serialize and send the results
     return res.status(200).json(serialize.tag(foundTags));
 
@@ -115,6 +128,7 @@ exports.getRandomTags = async function (req, res, next) {
     return next(e);
   }
 };
+
 
 /**
  * Create a new tag
