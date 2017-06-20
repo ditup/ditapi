@@ -104,3 +104,72 @@ exports.updateUnverifiedEmail = function (req, res, next) {
 
   return next();
 };
+
+exports.verifyEmail = function (req, res, next) {
+
+  let errors = [];
+
+  const { username, code } = rules.user;
+
+  // check that the username is valid
+  req.body.username = req.body.id;
+  req.checkBody({ username });
+  delete req.body.username;
+
+  // check that the code is valid
+  req.body.code = req.body.emailVerificationCode;
+  req.checkBody({ code });
+  delete req.body.code;
+
+  errors = errors.concat(req.validationErrors() || []);
+
+  if (errors.length === 0) {
+    return next();
+  }
+
+  return next(errors);
+};
+
+exports.changePassword = function (req, res, next) {
+
+  let errors = [];
+
+  // username in url should match username in body should match logged user
+  if (req.body.id !== req.auth.username) {
+    errors.push({
+      param: 'parameters',
+      msg: 'document id doesn\'t match logged user'
+    });
+  }
+
+  // only expected fields should be present
+  const passwordFields = ['id', 'password', 'oldPassword'];
+  const requestBodyFields = Object.keys(req.body);
+
+  const unexpectedFields = _.difference(requestBodyFields, passwordFields);
+
+  if (unexpectedFields.length > 0) {
+    errors.push({
+      param: 'attributes',
+      msg: 'unexpected body attributes',
+      value: unexpectedFields
+    });
+  }
+
+  // both passwords should be valid
+  const passwordRules = rules.user.password;
+
+  req.checkBody({
+    password: passwordRules,
+    oldPassword: passwordRules
+  });
+
+  errors = errors.concat(req.validationErrors() || []);
+
+  if (errors.length === 0) {
+    return next();
+  }
+
+  return next(errors);
+};
+

@@ -33,5 +33,7 @@ module.exports = {
     min: 1000, // meters
     max: 2000 // meters
   },
-  unverifiedUsersTTL: 24 * 3600 * 1000 // milliseconds
+  // how long should unverified users exist before being deleted
+  unverifiedUsersTTL: 24 * 3600 * 1000, // 1 day in milliseconds
+  emailVerificationCodeExpire: 2 * 3600 * 1000 // 2 hours in milliseconds
 };

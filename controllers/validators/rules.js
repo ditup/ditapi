@@ -37,7 +37,8 @@ const user = {
   code: {
     notEmpty: true,
     matches: {
-      options: [/^[0-9a-f]{32}$/]
+      options: [/^[0-9a-f]{32}$/],
+      errorMessage: 'code is invalid'
     },
     errorMessage: 'Invalid code'
   },

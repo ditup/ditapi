@@ -76,6 +76,11 @@ exports.updateResetPassword = async function (req, res) {
   return res.status(204).end();
 };
 
+/**
+ * Change the user's email.
+ * The current verified email remains valid until the new email is verified
+ * via a verification code sent to that email address.
+ */
 exports.updateUnverifiedEmail = async function (req, res) {
 
   const username = req.auth.username;
@@ -96,7 +101,7 @@ exports.updateUnverifiedEmail = async function (req, res) {
   await mailer.verifyEmail({
     username,
     url: `${config.appUrl.all}${config.appUrl.verifyEmail(username, emailVerifyCode)}`,
-    email: email,
+    email,
     code: emailVerifyCode
   });
 
@@ -110,4 +115,50 @@ exports.gotoUpdateUnverifiedEmail = function (req, res, next) {
   }
 
   return next('route');
+};
+
+exports.gotoVerifyEmail = function (req, res, next) {
+  if (_.has(req.body, 'emailVerificationCode')) {
+    return next();
+  }
+
+  return next('route');
+};
+
+exports.verifyEmail = async function (req, res, next) {
+  try {
+    const { id: username, emailVerificationCode: code } = req.body;
+
+    await models.user.verifyEmail(username, code);
+
+    return res.status(200).json({});
+
+  } catch (e) {
+    return next([e]);
+  }
+};
+
+exports.gotoChangePassword = function (req, res, next) {
+  if (_.has(req.body, 'password') && _.has(req.body, 'oldPassword')) {
+    return next();
+  }
+
+  return next('route');
+};
+
+exports.changePassword = async function (req, res) {
+  // check that the old password is correct
+
+  const username = req.body.id;
+  const { oldPassword, password } = req.body;
+
+  const { authenticated } = await models.user.authenticate(username, oldPassword);
+
+  if (!authenticated) {
+    return res.status(403).end();
+  }
+
+  // update the password
+  await models.user.updatePassword(username, password);
+  return res.status(204).end();
 };

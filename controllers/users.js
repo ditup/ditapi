@@ -217,21 +217,6 @@ exports.patchUser = async function (req, res, next) {
   return next();
 };
 
-exports.verifyEmail = async function (req, res, next) {
-  try {
-    const username = req.params.username;
-    const code = req.params.code;
-
-    await models.user.verifyEmail(username, code);
-
-    return res.status(200).json({});
-
-  } catch (e) {
-    e.status = 400;
-    return next(e);
-  }
-};
-
 exports.postUserTags = async function (req, res, next) {
   try {
     // should be already validated

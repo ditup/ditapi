@@ -275,17 +275,30 @@ class User extends Model {
 
     if(output.length === 0) throw new Error('User Not Found');
     if(output.length > 1) throw new Error('Database Corruption');
+
     const info = output[0];
+
+    // check that we don't verify a verified email
     const isAlreadyVerified = !(info.email && info.code && info.codeExpire);
-    if (isAlreadyVerified) throw new Error('User is already verified');
+    if (isAlreadyVerified) throw {
+      param: 'request',
+      msg: 'user is already verified'
+    };
 
-    // check the codes, time limit
+    // check that the code is not yet expired
     const isCodeExpired = Date.now() > info.codeExpire;
-    if (isCodeExpired) throw new Error('Code Is Expired');
+    if (isCodeExpired) throw {
+      param: 'code',
+      msg: 'code is expired'
+    };
 
+    // chect that the code is correct
     const codeMatches = await account.compare(code, info.code);
 
-    if (codeMatches !== true) throw new Error('Code Is Not Correct');
+    if (codeMatches !== true) throw {
+      param: 'code',
+      msg: 'code is wrong'
+    };
     // if correct, put emailTemporary to email and erase all the rest
     // update the database: move emailTemporary to email and clean the data
     await this.finalVerifyEmail(username);

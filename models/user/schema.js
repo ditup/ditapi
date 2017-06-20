@@ -1,21 +1,18 @@
 'use strict';
 
 const account = require('./account');
+const path = require('path');
+const config = require(path.resolve('./config'));
 
 module.exports = async function (user) {
   const password = await account.hash(user.password);
-  const code = await account.hash(user.emailVerifyCode);
 
   return {
     username: user.username,
     email: null,
     password,
     account: {
-      email: {
-        temporary: user.email,
-        code,
-        codeExpire: Date.now() + 2 * 3600 * 1000 // in 2 hours
-      }
+      email: await module.exports.account.email(user)
     },
     profile: {
       givenName: '',
@@ -32,7 +29,7 @@ module.exports.account = {
     return {
       temporary: email,
       code,
-      codeExpire: Date.now() + 2 * 3600 * 1000 // in 2 hours
+      codeExpire: Date.now() + config.emailVerificationCodeExpire
     };
   }
 };
