@@ -53,8 +53,8 @@ gulp.task('default', function() {
 
 // clean up if an error goes unhandled.
 process.on('exit', function() {
-    if (node) node.kill();
-    if (oauth) oauth.kill();
+  if (node) node.kill();
+  if (oauth) oauth.kill();
 });
 
 gulp.task('eslint', function() {

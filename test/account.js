@@ -591,24 +591,24 @@ describe('/account', function () {
     context('not logged in', function () {
 
       it('error 403', async function () {
-          const [user0] = dbData.users;
+        const [user0] = dbData.users;
 
-          const patchBody = {
-            data: {
-              type: 'users',
-              id: user0.username,
-              attributes: {
-                email: 'other.email@example.com'
-              }
+        const patchBody = {
+          data: {
+            type: 'users',
+            id: user0.username,
+            attributes: {
+              email: 'other.email@example.com'
             }
-          };
+          }
+        };
 
-          await agent
-            .patch('/account')
-            .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .expect(403);
-        });
+        await agent
+          .patch('/account')
+          .send(patchBody)
+          .set('Content-Type', 'application/vnd.api+json')
+          .expect(403);
+      });
     });
   });
 
