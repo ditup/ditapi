@@ -2,10 +2,10 @@
 
 // load module dependencies
 const express = require('express'),
-    bodyParser = require('body-parser'),
-    passport = require('passport'),
-    helmet = require('helmet'),
-    expressValidator = require('express-validator');
+      bodyParser = require('body-parser'),
+      passport = require('passport'),
+      helmet = require('helmet'),
+      expressValidator = require('express-validator');
 
 // load internal dependencies
 const models = require('./models'),

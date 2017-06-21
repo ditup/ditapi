@@ -1110,7 +1110,7 @@ describe('contacts', function () {
           .expect(204)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          await should(models.contact.read(me.username, other.username)).be.rejectedWith(Error, { code: 404 });
+        await should(models.contact.read(me.username, other.username)).be.rejectedWith(Error, { code: 404 });
       });
 
       it('[nonexistent contact] returns 404', async function () {
