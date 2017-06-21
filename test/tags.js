@@ -349,7 +349,7 @@ describe('/tags', function () {
           it('[invalid tagname(s)] error 400', async function() {
             const [loggedUser] = dbData.users;
             await agent
-              .get('/tags?filter[relatedToTags]=ta--+A,tag4')
+              .get('/tags?filter[relatedToTags]=ta-*-+A,tag4')
               .set('Content-Type', 'application/vnd.api+json')
               .auth(loggedUser.username, loggedUser.password)
               .expect(400)
@@ -358,6 +358,7 @@ describe('/tags', function () {
 
           // error 404
           it('[nonexistent tagname(s)] error 404');
+
 
           // ignore
           it('[nonexistent tagname(s)]: ignore', async function () {
