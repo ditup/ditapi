@@ -32,10 +32,9 @@ exports.gotoRelatedToMyTags = function (req, res, next) {
 * Does the url query contain 'filter[relatedToTags]=tag1,tag2,tag3'?
 */
 exports.gotoRelatedToTags = function (req, res, next) {
-  // TODO regex should be taken from somewhere
   if (_.has(req, 'query.filter.relatedToTags')) {
-      return next();
-    }
+    return next();
+  }
 
   return next('route');
 };
