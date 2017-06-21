@@ -193,7 +193,7 @@ describe('/tags', function () {
       });
     });
 
-    describe.only('/tags?filter[relatedToTags]=tag1,tag2,tag3', function () {
+    describe('/tags?filter[relatedToTags]=tag1,tag2,tag3', function () {
 
       beforeEach(async function () {
         const data = {

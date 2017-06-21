@@ -141,8 +141,7 @@ class Tag extends Model {
       SORT sortedTag.relevance DESC, sortedTag.tagname ASC
       RETURN sortedTag
     `;
-    const givenTags = tagsArray;
-    const params = { givenTags };
+    const params = { givenTags: tagsArray };
     const out = await (await this.db.query(query, params)).all();
     return out;
   }

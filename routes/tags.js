@@ -16,7 +16,7 @@ router.route('/')
 
 // get tags related to my tags
 router.route('/')
-  .get( tagController.gotoRelatedToMyTags, authorize.onlyLogged, tagController.relatedToMyTags);
+  .get(tagController.gotoRelatedToMyTags, authorize.onlyLogged, tagController.relatedToMyTags);
 
 // get tags related to given tags
 router.route('/')
