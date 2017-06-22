@@ -52,6 +52,11 @@ class Tag extends Model {
     return out;
   }
 
+  /**
+   * check if given tag exists
+   * @param {string} tagname - tagname to check
+   * @returns Boolean
+   */
   static async exists(tagname) {
     const query = `
       FOR t IN tags FILTER t.tagname == @tagname
@@ -70,7 +75,10 @@ class Tag extends Model {
     }
   }
 
-  // get tags which start with likeTagname string
+  /**
+   * Get tags which start with likeTagname string
+   * @param {string} likeTagname
+   */
   static async filter(likeTagname) {
     const query = `
       FOR t IN tags
@@ -92,7 +100,7 @@ class Tag extends Model {
   }
 
   /**
-   * find tags related to tags of a user
+   * Find tags related to tags of a user
    * @param {string} username - username of the user
    * @returns Promise<object[]> - array of the found tags (including relevance parameter)
    */
@@ -120,25 +128,36 @@ class Tag extends Model {
           LIMIT 5
           RETURN MERGE(finalTag, { relevance: weightSum })
     `;
-    // % serves as a placeholder for multiple characters in arangodb LIKE
-    // _ serves as a placeholder for a single character
     const params = { username };
     const out = await (await this.db.query(query, params)).all();
 
     return out;
   }
 
+  /**
+   * Find tags related to given in tagsArray tags
+   * @param {array} givenTags - tags given in tagsArray in request
+   * @returns Promise<object[]> - array of the found tags (including relevance parameter)
+   */
   static async findTagsRelatedToTags(tagsArray) {
     const query = `
       FOR sortedTag in (
-        FOR t in tags FILTER t.tagname IN @givenTags
-          FOR v, e, p IN 2..2
+        FOR t in tags FILTER t.tagname IN @givenTags // filter out given tags
+          
+          // find similar tags  - tags which have common user with given tags
+          FOR v, e, p IN 2..2 
           ANY t
           userTag
-          COLLECT foundTag = v AGGREGATE similarity = SUM(sqrt(p.edges[0].relevance * p.edges[1].relevance )) INTO u RETURN {created: foundTag.tagname, tagname: foundTag.tagname, relevance: similarity }
+
+          // count similarity for each found path
+          // (geometric mean of edge relevances)
+          // aggregate results by tags (vertices at the end of the paths)
+          // and sum similarity by tags
+          COLLECT foundTag = v AGGREGATE similarity = SUM(sqrt(p.edges[0].relevance * p.edges[1].relevance )) INTO u 
+          RETURN {created: foundTag.tagname, tagname: foundTag.tagname, relevance: similarity }
       )
-      FILTER sortedTag.tagname NOT IN @givenTags
-      SORT sortedTag.relevance DESC, sortedTag.tagname ASC
+      FILTER sortedTag.tagname NOT IN @givenTags // filter out given tags from rsults
+      SORT sortedTag.relevance DESC, sortedTag.tagname ASC // sort by relevance-similarity and by tagname if equal
       RETURN sortedTag
     `;
     const params = { givenTags: tagsArray };
@@ -159,8 +178,7 @@ class Tag extends Model {
             RETURN e)
         FILTER LENGTH(e) < 1
         REMOVE t IN tags RETURN KEEP(OLD, 'tagname')`;
-    // % serves as a placeholder for multiple characters in arangodb LIKE
-    // _ serves as a placeholder for a single character
+
     const out = await (await this.db.query(query)).all();
 
     return out;

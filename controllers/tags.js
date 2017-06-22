@@ -75,6 +75,12 @@ exports.relatedToMyTags = async function (req, res, next) {
   }
 };
 
+/*
+ * Having the url with ?filter[relatedToTags] query
+ * respond with an array of tags related to given tags.
+ * "related" means: There exist users who have both my tag and the other tag
+ * (sorted by geometric mean of the userTag relevances)
+ */
 exports.relatedToTags = async function (req, res, next) {
 
   const tagsArray = req.query.filter.relatedToTags.split(',');
@@ -88,7 +94,6 @@ exports.relatedToTags = async function (req, res, next) {
 
     // serialize and send the results
     return res.status(200).json(serialize.tag(foundTags));
-
   } catch (e) {
     return next(e);
   }

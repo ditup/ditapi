@@ -356,11 +356,9 @@ describe('/tags', function () {
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
-          // error 404
-          it('[nonexistent tagname(s)] error 404');
+          // TODO error 404 reaction for nonexistent tagname(s) if needed
 
-
-          // ignore
+          // ignore nonexistent tagname(s) in request
           it('[nonexistent tagname(s)]: ignore', async function () {
             const [loggedUser] = dbData.users;
 

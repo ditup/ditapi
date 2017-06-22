@@ -5,6 +5,7 @@
 const path = require('path');
 const models = require(path.resolve('./models'));
 
+// check if given value is a string of tags separated by commas ('tag0,tag1,tag2')
 exports.isTags = function(value) {
   // TODO Regex should be taken from somewhere (rules?)
   // old regex const re = new RegExp('^$|^[a-z][a-z0-9]*([,][a-z][a-z0-9]*)*$');
