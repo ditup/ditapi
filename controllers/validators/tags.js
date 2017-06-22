@@ -20,22 +20,3 @@ exports.getTagsRelatedToTags = function (req, res, next) {
 
   return next();
 };
-
-
-  /* if (_.has(req, 'query.filter.relatedToTags')) {
-    //req.checkQuery(rules.tags);
-    console.log('rules1');
-    console.log(req.query)
-    req.checkQuery(rules));
-    const errors = req.validationErrors();
-    console.log(errors)
-    const errorOutput = { errors: [] };
-    if (errors) {
-      for(const e of errors) {
-        errorOutput.errors.push({ meta: e });
-      }
-      return res.status(400).json(errorOutput);
-    }
-  }
-  return next();
-}; */

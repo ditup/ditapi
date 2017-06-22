@@ -72,18 +72,6 @@ const tag = {
   }
 };
 
-/*const tags = {
-  'relatedToTags': {
-    matches: {
-      options: [/'^$|^[a-z0-9]+(\-[a-z0-9]+)*([,][a-z0-9]+(\-[a-z0-9]+)*)*$'/]
-    },
-    errorMessage: 'Invalid Tagnames (2-64 characters; only a-z, -, i.e. tag-name; but not -tag-name, tag--name, tagname-)'
-  },
-  get id() {
-    return this.relatedToTags;
-  }
-};*/
-
 const message = {
   body: {
     notEmpty: true,
