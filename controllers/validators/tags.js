@@ -4,37 +4,38 @@ const _ = require('lodash');
 exports.getTagsRelatedToTags = function (req, res, next) {
   // TODO how to react for this filter, istnt it already checked?
   // spliting tags just for checking or forever?
-	if (_.has(req, 'query.filter.relatedToTags')) {
+  if (_.has(req, 'query.filter.relatedToTags')) {
 
-	req.checkQuery('filter.relatedToTags', 'invalid tagnames').isTags();
+    req.checkQuery('filter.relatedToTags', 'invalid tagnames').isTags();
 
-	const errors = req.validationErrors();
-	const errorOutput = { errors: [] };
-	if (errors) {
-		for(const e of errors) {
-			errorOutput.errors.push({ meta: e });
-		}
-		return res.status(400).json(errorOutput);
-	}
-   }
-   return next();
+    const errors = req.validationErrors();
+    const errorOutput = { errors: [] };
+    if (errors) {
+      for(const e of errors) {
+        errorOutput.errors.push({ meta: e });
+      }
+      return res.status(400).json(errorOutput);
+    }
+  }
+
+  return next();
 };
 
 
-	/* if (_.has(req, 'query.filter.relatedToTags')) {
-		//req.checkQuery(rules.tags);
-		console.log('rules1');
-		console.log(req.query)
-		req.checkQuery(rules));
-		const errors = req.validationErrors();
-		console.log(errors)
-		const errorOutput = { errors: [] };
-		if (errors) {
-			for(const e of errors) {
-				errorOutput.errors.push({ meta: e });
-			}
-			return res.status(400).json(errorOutput);
-		}
-	}
-	return next();
+  /* if (_.has(req, 'query.filter.relatedToTags')) {
+    //req.checkQuery(rules.tags);
+    console.log('rules1');
+    console.log(req.query)
+    req.checkQuery(rules));
+    const errors = req.validationErrors();
+    console.log(errors)
+    const errorOutput = { errors: [] };
+    if (errors) {
+      for(const e of errors) {
+        errorOutput.errors.push({ meta: e });
+      }
+      return res.status(400).json(errorOutput);
+    }
+  }
+  return next();
 }; */

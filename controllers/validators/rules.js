@@ -72,7 +72,7 @@ const tag = {
   }
 };
 
-const tags = {
+/*const tags = {
   'relatedToTags': {
     matches: {
       options: [/'^$|^[a-z0-9]+(\-[a-z0-9]+)*([,][a-z0-9]+(\-[a-z0-9]+)*)*$'/]
@@ -82,7 +82,7 @@ const tags = {
   get id() {
     return this.relatedToTags;
   }
-};
+};*/
 
 const message = {
   body: {
@@ -106,5 +106,5 @@ const contact = {
   }
 };
 
-module.exports = { user, tag, tags, message, contact, userTag };
+module.exports = { user, tag, message, contact, userTag };
 
