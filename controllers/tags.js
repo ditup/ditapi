@@ -29,6 +29,18 @@ exports.gotoRelatedToMyTags = function (req, res, next) {
 };
 
 /*
+* Does the url query contain 'filter[relatedToTags]=tag1,tag2,tag3'?
+*/
+exports.gotoRelatedToTags = function (req, res, next) {
+  if (_.has(req, 'query.filter.relatedToTags')) {
+    return next();
+  }
+
+  return next('route');
+};
+
+
+/*
  * Does the url query contain 'filter[random]'?
  */
 exports.gotoGetRandomTags = function (req, res, next) {
@@ -64,6 +76,32 @@ exports.relatedToMyTags = async function (req, res, next) {
 };
 
 /*
+ * Having the url with ?filter[relatedToTags] query
+ * respond with an array of tags related to given tags.
+ * "related" means: There exist users who have both my tag and the other tag
+ * (sorted by geometric mean of the userTag relevances)
+ */
+exports.relatedToTags = async function (req, res, next) {
+
+  const tagsArray = req.query.filter.relatedToTags.split(',');
+
+  try{
+    // get tags from database
+    const foundTags = await models.tag.findTagsRelatedToTags(tagsArray);
+
+    // define the parameters for self link
+    foundTags.urlParam = encodeURIComponent('filter[relatedToTags]');
+
+    // serialize and send the results
+    return res.status(200).json(serialize.tag(foundTags));
+  } catch (e) {
+    return next(e);
+  }
+
+};
+
+
+/*
  * Having the url with ?filter[random] query
  * respond with an array of random tags. (by default 1 tag)
  */
@@ -82,6 +120,7 @@ exports.getRandomTags = async function (req, res, next) {
     return next(e);
   }
 };
+
 
 /**
  * Create a new tag
