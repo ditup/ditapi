@@ -3,18 +3,22 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
+
 const userController = require(path.resolve('./controllers/users'));
 const validators = require(path.resolve('./controllers/validators')),
       authorize = require(path.resolve('./controllers/authorize'));
 
 // post a new user
 router.route('/')
-  .post(validators.postUsers, userController.postUsers)
-  .get(authorize.onlyLogged, validators.getUsers, userController.getUsers);
+  .post(validators.users.postUsers, userController.postUsers)
+  .get(authorize.onlyLogged, validators.users.getUsers, userController.getUsers);
+
+router.route('/')
+  .get(userController.gotoGetNewUsers, authorize.onlyLogged, validators.users.getNewUsers, userController.getNewUsers);
 
 router.route('/:username')
-  .get(validators.getUser, userController.getUser)
-  .patch(authorize.onlyLoggedMe, validators.patchUser, userController.patchUser, userController.getUser);
+  .get(validators.users.getUser, userController.getUser)
+  .patch(authorize.onlyLoggedMe, validators.users.patchUser, userController.patchUser, userController.getUser);
 
 /**
  * Routers for userTags

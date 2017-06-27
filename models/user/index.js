@@ -433,6 +433,30 @@ class User extends Model {
   }
 
   /**
+   * Find [limit] new users (newlycreated and veryfied)
+   * @param {int} limit
+   * @returns {Promise<Object>}
+   */
+  static async findNewUsers(limit) {
+    const query = `
+    FOR u IN users
+
+    // filter veryfied users
+    FILTER TO_BOOL(u.email) == true
+
+    // return @limit number of sorted by creation date users  
+    SORT u.created DESC
+    LIMIT @limit
+    RETURN {username: u.username}
+    `;
+    const params = { limit: parseInt(limit) };
+    const output = await (await this.db.query(query, params)).all();
+
+    return output;
+  }
+
+
+  /**
    * delete unverified users who are created more than ttl ago
    *
    * @param {number} ttl - time to live for unverified users in seconds

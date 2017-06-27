@@ -4,7 +4,7 @@ const user = {
   username: {
     notEmpty: true,
     matches: {
-      options: [/^(?=.{2,32}$)[a-z0-9]+([_\-\.][a-z0-9]+)*$/]
+      options: [/^(?=.{2,32}$)[a-z0-9]+([_\-.][a-z0-9]+)*$/]
     },
     errorMessage: 'Invalid Username (only a-z0-9.-_)' // Error message for the parameter
   },
@@ -63,7 +63,7 @@ const tag = {
       options: [{ min: 2, max: 64 }]
     },
     matches: {
-      options: [/^[a-z0-9]+(\-[a-z0-9]+)*$/]
+      options: [/^[a-z0-9]+(-[a-z0-9]+)*$/]
     },
     errorMessage: 'Invalid Tagname (2-64 characters; only a-z, -, i.e. tag-name; but not -tag-name, tag--name, tagname-)'
   },
@@ -94,5 +94,30 @@ const contact = {
   }
 };
 
-module.exports = { user, tag, message, contact, userTag };
+const newUsers = {
+  'sort': {
+    notEmpty: true,
+    matches: {
+      options: [/^-created$/]
+    },
+    errorMessage: 'Invalid "sorted" parameter for getting new users'
+  },
+  'page.offset': {
+    notEmpty: true,
+    matches: {
+      options: [/^0$/]
+    },
+    errorMessage: 'Invalid "offset" parameter for getting new users'
+  },
+  'page.limit': {
+    notEmpty: true,
+    matches: {
+      options: [/^[0-9]+$/]
+    },
+    errorMessage: 'Invalid "limit" parameter for getting new users'
+
+  }
+};
+
+module.exports = { user, tag, message, contact, userTag, newUsers };
 
