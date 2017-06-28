@@ -71,7 +71,7 @@ describe('/users/:username/avatar', function () {
           const data = response.body.data.attributes.base64;
           const hash = crypto.createHash('sha256').update(data).digest('hex');
 
-          should(hash).equal('e4bc10f78c8e645c9fe170c46534e3593f8230cb295f283c0ad2846b64914f12');
+          should(hash).equal('7d76d24aee7faf11a3494ae91b577d94cbb5320cec1b2fd04187fff1197915bb');
 
         });
 
