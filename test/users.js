@@ -33,7 +33,7 @@ describe('/users', function () {
     sandbox.restore();
   });
 
-  describe('POST', function () {
+  describe.only('POST', function () {
 
     context('good data', function () {
 
@@ -550,7 +550,7 @@ describe('/users', function () {
       });
     });
 
-    describe('show new users', function () {
+    describe.only('show new users', function () {
       let dbData,
           loggedUser;
 
@@ -660,6 +660,16 @@ describe('/users', function () {
               .auth(loggedUser.username, loggedUser.password)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(404);
+
+          });
+          // TODO 400 or 404
+          it('[additional \'includes\' parameter in the query] error 404', async function() {
+            await agent
+              .get('/users?sort=-created&includes=true&page[offset]=0&page[limit]=0')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(400);
 
           });
         });
