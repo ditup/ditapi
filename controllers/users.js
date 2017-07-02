@@ -16,6 +16,76 @@ exports.gotoGetNewUsers = function (req, res, next) {
   return next('route');
 };
 
+exports.gotoGetUsersWithMyTags = function (req, res, next) {
+  // TODO DZIK req.query.filter.byMyTags returns string not bool (how was it checked before?)
+  if (_.has(req, 'query.filter.byMyTags') && req.query.filter.byMyTags === 'true') {
+    return next();
+  }
+  return next('route');
+};
+
+exports.getUsersWithMyTags = async function (req, res, next) {
+  try {
+    /*
+     * Search users who are related to me by tags
+     *
+     *
+     */
+    const auth = _.get(req, 'auth', { logged: false });
+    const me = auth.username;
+
+    const users = await models.user.readUsersByMyTags(me);
+
+    // remap users to a proper format for serializing
+    const remappedUsers = _.map(users, function (ubt) {
+      // user
+      const user = {
+        id: ubt.user.username,
+        username: ubt.user.username
+      };
+      _.assign(user, _.pick(ubt.user.profile, ['givenName', 'familyName', 'description']));
+      // user-tags
+      user.userTags = _.map(ubt.userTags, function (userTag, i) {
+        // tag relationship of user-tags
+        userTag.tag = ubt.tags[i];
+        return userTag;
+      });
+      return user;
+    });
+
+    const serializedUsers = serialize.usersByMyTags(remappedUsers);
+
+    return res.status(200).json(serializedUsers);
+  } catch (e) {
+    // unhandled exceptions
+    return next(e);
+  }
+};
+
+exports.gotoGetUsersWithLocation = function (req, res, next) {
+  if (_.has(req, 'query.filter.location')) {
+    return next();
+  }
+  return next('route');
+};
+
+exports.getUsersWithLocation = async function (req, res, next) {
+  try {
+    const [loc1, loc2] = req.query.filter.location;
+
+    const users = await models.user.readUsersWithinRectangle(loc1, loc2);
+
+    const serializedUsers = serialize.user(users);
+
+    res.status(200).json(serializedUsers);
+  } catch (e) {
+    // unhandled exceptions
+    return next(e);
+  }
+};
+
+
+
 exports.postUsers = async function (req, res, next) {
   try {
     const { username, email } = req.body;
@@ -77,9 +147,53 @@ exports.getNewUsers = async function(req, res, next) {
   }
 };
 
+exports.gotoGetUsersWithTags = function (req, res, next) {
+  if (_.has(req, 'query.filter.tag')) {
+    return next();
+  }
+  return next('route');
+};
+
+exports.getUsersWithTags = async function (req, res, next) {
+  try {
+  // get array of tagnames from query (?filter[tag]=tag1,tag2)
+    const tags = req.query.filter.tag;
+    // read users from database
+    let usersByTags = await models.user.readUsersByTags(tags);
+
+    // remap users to a proper format for serializing
+    usersByTags = _.map(usersByTags, (ubt) => {
+      // user
+      const user = {
+        id: ubt.user.username,
+        username: ubt.user.username
+      };
+      _.assign(user, _.pick(ubt.user.profile, ['givenName', 'familyName', 'description']));
+      // user-tags
+      user.userTags = _.map(ubt.userTags, function (userTag, i) {
+        // tag relationship of user-tags
+        userTag.tag = ubt.tags[i];
+        return userTag;
+      });
+      return user;
+    });
+
+    // serialize users
+    const serializedUsers = serialize.usersByTags(usersByTags);
+
+    // respond
+    return res.status(200).json(serializedUsers);
+
+  } catch (e) {
+    // unhandled exceptions
+    return next(e);
+  }
+};
+
+
+
 exports.getUsers = async function (req, res, next) {
   try {
-
     /*
      * When query filter[tag]='tag1','tag0'
      * get users who have the provided tags
@@ -115,50 +229,6 @@ exports.getUsers = async function (req, res, next) {
       // respond
       return res.status(200).json(serializedUsers);
 
-    } else if (_.has(req, 'query.filter.byMyTags') && req.query.filter.byMyTags === true) {
-      /*
-       * Search users who are related to me by tags
-       *
-       *
-       */
-      const auth = _.get(req, 'auth', { logged: false });
-      const me = auth.username;
-
-      const users = await models.user.readUsersByMyTags(me);
-
-      // remap users to a proper format for serializing
-      const remappedUsers = _.map(users, (ubt) => {
-        // user
-        const user = {
-          id: ubt.user.username,
-          username: ubt.user.username
-        };
-        _.assign(user, _.pick(ubt.user.profile, ['givenName', 'familyName', 'description']));
-        // user-tags
-        user.userTags = _.map(ubt.userTags, function (userTag, i) {
-          // tag relationship of user-tags
-          userTag.tag = ubt.tags[i];
-          return userTag;
-        });
-        return user;
-      });
-
-      const serializedUsers = serialize.usersByMyTags(remappedUsers);
-
-      return res.status(200).json(serializedUsers);
-
-    } else if (_.has(req, 'query.filter.location')) {
-
-      const [loc1, loc2] = req.query.filter.location;
-
-      const users = await models.user.readUsersWithinRectangle(loc1, loc2);
-
-      const serializedUsers = serialize.user(users);
-
-      res.status(200).json(serializedUsers);
-    } else {
-      // not found
-      return next();
     }
   } catch (e) {
     // unhandled exceptions

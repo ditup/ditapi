@@ -15,23 +15,28 @@ exports.postUsers = function (req, res, next) {
     const errorOutput = ajv.errorsText(validate.errors);
     return res.status(400).json({'errors':errorOutput});
   }
-
   return next();
 };
 
-exports.getUsers = function (req, res, next) {
+exports.getUsersWithTags = function (req, res, next) {
   // parse the query like ?filter[tag]=tag1,tag2,tag3
 
   if (_.has(req, 'query.filter.tag')) {
     req.query.filter.tag = req.query.filter.tag.split(/,\s?/);
   }
   // TODO validate the tagnames in req.query.filter.tag
+  return next();
+};
 
+exports.getUsersWithMyTags = function (req, res, next) {
   if (_.has(req, 'query.filter.byMyTags')) {
     const filter = req.query.filter;
     filter.byMyTags = (filter.byMyTags === 'true') ? true : false;
   }
+  return next();
+};
 
+exports.getUsersWithLocation = function (req, res, next) {
   // parse the location
   if (_.has(req, 'query.filter.location')) {
 
