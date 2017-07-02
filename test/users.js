@@ -33,7 +33,7 @@ describe('/users', function () {
     sandbox.restore();
   });
 
-  describe.only('POST', function () {
+  describe('POST', function () {
 
     context('good data', function () {
 
@@ -550,7 +550,7 @@ describe('/users', function () {
       });
     });
 
-    describe.only('show new users', function () {
+    describe('show new users', function () {
       let dbData,
           loggedUser;
 

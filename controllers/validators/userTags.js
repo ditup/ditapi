@@ -1,7 +1,6 @@
 'use strict';
 
 const _ = require('lodash');
-
 const rules = require('./rules');
 
 exports.post = function (req, res, next) {
@@ -96,6 +95,15 @@ exports.patch = function (req, res, next) {
   }
 
   return next(errors);
+};
+
+exports.postUserTags = function (req, res, next) {
+  return next();
+};
+
+exports.patchUserTag = function (req, res, next) {
+  // TODO
+  return next();
 };
 
 function validateRelevance(relevance) {

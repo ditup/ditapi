@@ -3,18 +3,17 @@
 const _ = require('lodash'),
       rules = require('./rules'),
       schema = require('./schema.json'),
-      parser = require('./parsers'),
       {ajv} = require('./ajvInit');
 
 exports.postUsers = function (req, res, next) {
-  //req.checkBody(_.pick(rules.user, ['username', 'email', 'password']));
+  // req.checkBody(_.pick(rules.user, ['username', 'email', 'password']));
 
   const validate = ajv.compile(schema.postUsers.body);
   const valid = validate(req.body);
 
   if (!valid) {
     const errorOutput = ajv.errorsText(validate.errors);
-    return res.status(400).json({"errors":errorOutput});
+    return res.status(400).json({'errors':errorOutput});
   }
 
   return next();
@@ -60,7 +59,6 @@ exports.getUser = function (req, res, next) {
     for(const e of errors) {
       errorOutput.errors.push({ meta: e });
     }
-    res.body.errors = errorOutput;
     return res.status(400).json(errorOutput);
   }
 
@@ -118,7 +116,13 @@ exports.patchUser = function (req, res, next) {
 
 exports.getNewUsers = function (req, res, next) {
 
-  req.query = parser.newUsers(req.query);
+  // req.query = parser.newUsers(req.query);
+
+  const p = require('./parser');
+
+  req.query = p.parseQuery(req.query, p.parametersDictionary);
+
+  // console.log(p.parseQuery(req.query, parametersDictionary))
 
   const validate = ajv.compile(schema.newUsers.query);
   const valid = validate(req.query);
@@ -130,9 +134,9 @@ exports.getNewUsers = function (req, res, next) {
   }
 
   return next();
-}
+};
 
-/*exports.getNewUsers = function (req, res, next) {
+/* exports.getNewUsers = function (req, res, next) {
 
   req.checkQuery(rules.newUsers);
 
