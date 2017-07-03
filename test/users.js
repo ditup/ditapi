@@ -549,5 +549,131 @@ describe('/users', function () {
         }]);
       });
     });
+
+    describe('show new users', function () {
+      let dbData,
+          loggedUser;
+
+      // seed the database with users
+      beforeEach(async function () {
+        const data = {
+          users: 10,
+          verifiedUsers: [0, 1, 2, 4, 5, 6, 9]
+        };
+        // create data in database
+        dbData = await dbHandle.fill(data);
+
+        [loggedUser] = dbData.users;
+      });
+
+      context('logged in', function () {
+        context('valid data', function () {
+
+          function testUser(jsonApiUser, { username }) {
+            should(jsonApiUser).have.property('id', username);
+          }
+          // TODO limit shoud be set or given in query?
+          // diff query /users?filter[newUsers]=<limit>
+          it('[example 1] show list of 5 newly created and verified users sorted by creation date', async function () {
+            const res = await agent
+              .get('/users?sort=-created&page[offset]=0&page[limit]=5')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(200);
+            should(res.body).have.property('data').Array().length(5);
+
+            const [user1, user2, user3, user4, user5] = res.body.data;
+            testUser(user1, { username: 'user9'});
+            testUser(user2, { username: 'user6'});
+            testUser(user3, { username: 'user5'});
+            testUser(user4, { username: 'user4'});
+            testUser(user5, { username: 'user2'});
+          });
+
+          it('[example 2] show list of 20 newly created and verified users sorted by creation date', async function () {
+            const res = await agent
+              .get('/users?sort=-created&page[offset]=0&page[limit]=20')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(200);
+            should(res.body).have.property('data').Array().length(7);
+
+            const [user1, user2, user3, user4, user5, user6, user7] = res.body.data;
+            testUser(user1, { username: 'user9'});
+            testUser(user2, { username: 'user6'});
+            testUser(user3, { username: 'user5'});
+            testUser(user4, { username: 'user4'});
+            testUser(user5, { username: 'user2'});
+            testUser(user6, { username: 'user1'});
+            testUser(user7, { username: 'user0'});
+          });
+
+          it('[example 3] show list of 0 newly created and verified users', async function () {
+            const res = await agent
+              .get('/users?sort=-created&page[offset]=0&page[limit]=0')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(200);
+            should(res.body).have.property('data').Array().length(0);
+
+          });
+        });
+
+        context('invalid data', function() {
+          // TODO reaction for this data
+          it('[limit] data is a string: respond by error 400', async function() {
+            await agent
+              .get('/users?sort=-created&page[offset]=0&page[limit]=str')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(400);
+
+          });
+          it('[lack of limit data in the query] error 400', async function() {
+            await agent
+              .get('/users?sort=-created&page[offset]=0&page[limit]=')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(400);
+
+          });
+          // TODO 400 or 404
+          it('[lack of \'page.offset\' parameter in the query] error 404', async function() {
+            await agent
+              .get('/users?sort=-created&page[limit]=5')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(404);
+
+          });
+          // TODO 400 or 404
+          it('[lack of \'pagination\' parameter in the query] error 404', async function() {
+            await agent
+              .get('/users?sort=-created')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(404);
+
+          });
+        });
+      });
+      context('not logged in', function () {
+        // TODO reaction for not logged in 403?
+        it('error 403', async function() {
+          await agent
+            .get('/users?sort=-created&page[offset]=0&page[limit]=20')
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(403);
+        });
+      });
+    });
   });
 });

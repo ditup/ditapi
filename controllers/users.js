@@ -9,6 +9,13 @@ const path = require('path'),
       _ = require('lodash'),
       mailer = require(path.resolve('./services/mailer'));
 
+exports.gotoGetNewUsers = function (req, res, next) {
+  if (_.has(req, 'query.sort')&_.has(req, 'query.page')&_.has(req, 'query.page.offset')&_.has(req, 'query.page.limit')) {
+    return next();
+  }
+  return next('route');
+};
+
 exports.postUsers = async function (req, res, next) {
   try {
     const { username, email } = req.body;
@@ -48,6 +55,24 @@ exports.postUsers = async function (req, res, next) {
       }));
 
   } catch (e) {
+    return next(e);
+  }
+};
+
+exports.getNewUsers = async function(req, res, next) {
+
+  const limit = req.query.page.limit;
+
+  try {
+
+    // get users from database
+    const users = await models.user.findNewUsers(limit);
+
+    // serialize and send the results
+    return res.status(200).json(serialize.user(users));
+
+  } catch (e) {
+    // unhandled exceptions
     return next(e);
   }
 };
