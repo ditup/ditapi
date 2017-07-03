@@ -394,7 +394,17 @@ describe('/users', function () {
           }
         }]);
       });
-
+      context('invalid data', function () {
+        it('[invalid tagnames in a list]: error 400', async function () {
+          await agent
+            .get('/users?filter[tag]=t*,11')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+        });
+      });
+      // TODO how should it be done
       it('limit amount of tags to search by to prevend DoS');
     });
 
@@ -649,7 +659,7 @@ describe('/users', function () {
               .set('Content-Type', 'application/vnd.api+json')
               .auth(loggedUser.username, loggedUser.password)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .expect(404);
+              .expect(400);
 
           });
           // TODO 400 or 404
@@ -659,7 +669,7 @@ describe('/users', function () {
               .set('Content-Type', 'application/vnd.api+json')
               .auth(loggedUser.username, loggedUser.password)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .expect(404);
+              .expect(400);
 
           });
           // TODO 400 or 404

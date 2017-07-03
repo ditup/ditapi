@@ -4,6 +4,9 @@ const parametersDictionary = {
   'page': {
     'limit': 'int',
     'offset': 'int'
+  },
+  'filter': {
+    'tag': 'array'
   }
 };
 
