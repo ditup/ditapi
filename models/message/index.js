@@ -1,8 +1,7 @@
 const path = require('path');
 
-const schema = require('./schema');
-
-const Model = require(path.resolve('./models/model'));
+const Model = require(path.resolve('./models/model')),
+      schema = require('./schema');
 
 class Message extends Model {
 

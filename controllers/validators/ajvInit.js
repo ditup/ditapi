@@ -6,7 +6,7 @@
  */
 const Ajv = require('ajv');
 
-const schema = require('./schema.json');
+const schema = require('./schema');
 
 const ajv = new Ajv({allErrors: true});
 ajv.addSchema(schema, 'sch');

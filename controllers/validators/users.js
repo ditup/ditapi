@@ -4,7 +4,7 @@ const _ = require('lodash');
 
 const parser = require('./parser'),
       rules = require('./rules'),
-      schema = require('./schema.json'),
+      schema = require('./schema'),
       { ajv } = require('./ajvInit');
 
 exports.postUsers = function (req, res, next) {

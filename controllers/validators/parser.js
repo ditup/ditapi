@@ -15,12 +15,12 @@
  */
 
 const parametersDictionary = {
-  'page': {
-    'limit': 'int',
-    'offset': 'int'
+  page: {
+    limit: 'int',
+    offset: 'int'
   },
-  'filter': {
-    'tag': 'array'
+  filter: {
+    tag: 'array'
   }
 };
 
