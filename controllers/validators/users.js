@@ -1,40 +1,51 @@
 'use strict';
 
-const _ = require('lodash'),
-      rules = require('./rules');
+const _ = require('lodash');
 
+const parser = require('./parser'),
+      rules = require('./rules'),
+      schema = require('./schema'),
+      { ajv } = require('./ajvInit');
 
 exports.postUsers = function (req, res, next) {
-  req.checkBody(_.pick(rules.user, ['username', 'email', 'password']));
+  // req.checkBody(_.pick(rules.user, ['username', 'email', 'password']));
 
-  // prepare and return errors
-  const errors = req.validationErrors();
+  const validate = ajv.compile(schema.postUsers.body);
+  const valid = validate(req.body);
 
-  const errorOutput = { errors: [] };
-
-  if (errors) {
-    for(const e of errors) {
-      errorOutput.errors.push({ meta: e });
-    }
-    return res.status(400).json(errorOutput);
+  if (!valid) {
+    const errorOutput = ajv.errorsText(validate.errors);
+    return res.status(400).json({'errors':errorOutput});
   }
-
   return next();
 };
 
-exports.getUsers = function (req, res, next) {
-  // parse the query like ?filter[tag]=tag1,tag2,tag3
+exports.getUsersWithTags = function (req, res, next) {
 
-  if (_.has(req, 'query.filter.tag')) {
-    req.query.filter.tag = req.query.filter.tag.split(/,\s?/);
+  req.query = parser.parseQuery(req.query, parser.parametersDictionary);
+
+  const validate = ajv.compile(schema.getUsersWithTags.query);
+
+  const valid = validate(req.query);
+
+  if (!valid) {
+    const errorOutput = ajv.errorsText(validate.errors);
+    return res.status(400).json({'errors':errorOutput});
   }
-  // TODO validate the tagnames in req.query.filter.tag
+  return next();
 
+  // TODO validate the tagnames in req.query.filter.tag
+};
+
+exports.getUsersWithMyTags = function (req, res, next) {
   if (_.has(req, 'query.filter.byMyTags')) {
     const filter = req.query.filter;
     filter.byMyTags = (filter.byMyTags === 'true') ? true : false;
   }
+  return next();
+};
 
+exports.getUsersWithLocation = function (req, res, next) {
   // parse the location
   if (_.has(req, 'query.filter.location')) {
 
@@ -119,6 +130,28 @@ exports.patchUser = function (req, res, next) {
 
 exports.getNewUsers = function (req, res, next) {
 
+  // req.query = parser.newUsers(req.query);
+
+  const p = require('./parser');
+
+  req.query = p.parseQuery(req.query, p.parametersDictionary);
+
+  // console.log(p.parseQuery(req.query, parametersDictionary))
+
+  const validate = ajv.compile(schema.newUsers.query);
+  const valid = validate(req.query);
+
+  if (!valid) {
+    const errorOutput = ajv.errorsText(validate.errors);
+
+    return res.status(400).json(errorOutput);
+  }
+
+  return next();
+};
+
+/* exports.getNewUsers = function (req, res, next) {
+
   req.checkQuery(rules.newUsers);
 
   const errors = req.validationErrors();
@@ -133,4 +166,4 @@ exports.getNewUsers = function (req, res, next) {
   }
 
   return next();
-};
+};*/

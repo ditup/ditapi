@@ -10,8 +10,17 @@ const validators = require(path.resolve('./controllers/validators')),
 
 // post a new user
 router.route('/')
-  .post(validators.users.postUsers, userController.postUsers)
-  .get(authorize.onlyLogged, validators.users.getUsers, userController.getUsers);
+  .post(validators.users.postUsers, userController.postUsers);
+//  .get(authorize.onlyLogged, validators.users.getUsers, userController.getUsers);
+
+router.route('/')
+  .get(userController.gotoGetUsersWithMyTags, authorize.onlyLogged, validators.users.getUsersWithMyTags, userController.getUsersWithMyTags);
+
+router.route('/')
+  .get(userController.gotoGetUsersWithTags, authorize.onlyLogged, validators.users.getUsersWithTags, userController.getUsersWithTags);
+
+router.route('/')
+  .get(userController.gotoGetUsersWithLocation, authorize.onlyLogged, validators.users.getUsersWithLocation, userController.getUsersWithLocation);
 
 router.route('/')
   .get(userController.gotoGetNewUsers, authorize.onlyLogged, validators.users.getNewUsers, userController.getNewUsers);

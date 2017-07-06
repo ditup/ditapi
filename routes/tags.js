@@ -10,7 +10,7 @@ const authorize = require(path.resolve('./controllers/authorize'));
 
 router.route('/')
   // post a new tag
-  .post(authorize.onlyLogged, validators.postTags, tagController.postTags)
+  .post(authorize.onlyLogged, validators.tags.postTags, tagController.postTags)
   // get tags like a string
   .get(tagController.gotoGetTagsLike, authorize.onlyLogged, tagController.getTagsLike);
 
@@ -27,6 +27,6 @@ router.route('/')
   .get(tagController.gotoGetRandomTags, authorize.onlyLogged, tagController.getRandomTags);
 
 router.route('/:tagname')
-  .get(validators.getTag, tagController.getTag);
+  .get(validators.tags.getTag, tagController.getTag);
 
 module.exports = router;

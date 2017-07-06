@@ -18,6 +18,17 @@ exports.gotoGetTagsLike = function (req, res, next) {
 };
 
 /*
+ * Does the url query contain 'filter[random]'?
+ */
+exports.gotoGetRandomTags = function (req, res, next) {
+  if (_.has(req, 'query.filter.random')) {
+    return next();
+  }
+
+  return next('route');
+};
+
+/*
  * Does the url query contain 'filter[relatedToMyTags]'?
  */
 exports.gotoRelatedToMyTags = function (req, res, next) {
@@ -41,15 +52,43 @@ exports.gotoRelatedToTags = function (req, res, next) {
 
 
 /*
- * Does the url query contain 'filter[random]'?
+ * Having the url with ?filter[tagname][like]=string query
+ * find the tags matching the provided string
+ *
  */
-exports.gotoGetRandomTags = function (req, res, next) {
-  if (_.has(req, 'query.filter.random')) {
-    return next();
-  }
+exports.getTagsLike = async function (req, res, next) {
+  // get the pattern to search the tags by
+  const filterLike = _.get(req.query, 'filter.tagname.like');
+  try {
 
-  return next('route');
+    const foundTags = await models.tag.filter(filterLike);
+
+    return res.status(200).json(serialize.tag(foundTags));
+  } catch (e) {
+    return next(e);
+  }
 };
+
+/*
+ * Having the url with ?filter[random] query
+ * respond with an array of random tags. (by default 1 tag)
+ */
+exports.getRandomTags = async function (req, res, next) {
+
+  try {
+    // find random tags
+    const foundTags = await models.tag.random(1);
+
+    // define the parameters for self link
+    foundTags.urlParam = encodeURIComponent('filter[random]');
+
+    // serialize and send the results
+    return res.status(200).json(serialize.tag(foundTags));
+  } catch (e) {
+    return next(e);
+  }
+};
+
 
 /*
  * Having the url with ?filter[relatedToMyTags] query
@@ -97,29 +136,10 @@ exports.relatedToTags = async function (req, res, next) {
   } catch (e) {
     return next(e);
   }
-
 };
 
 
-/*
- * Having the url with ?filter[random] query
- * respond with an array of random tags. (by default 1 tag)
- */
-exports.getRandomTags = async function (req, res, next) {
-
-  try {
-    // find random tags
-    const foundTags = await models.tag.random(1);
-
-    // define the parameters for self link
-    foundTags.urlParam = encodeURIComponent('filter[random]');
-
-    // serialize and send the results
-    return res.status(200).json(serialize.tag(foundTags));
-  } catch (e) {
-    return next(e);
-  }
-};
+// functions without goto redirection
 
 
 /**
@@ -168,23 +188,7 @@ exports.postTags = async function (req, res, next) {
   }
 };
 
-/*
- * Having the url with ?filter[tagname][like]=string query
- * find the tags matching the provided string
- *
- */
-exports.getTagsLike = async function (req, res, next) {
-  // get the pattern to search the tags by
-  const filterLike = _.get(req.query, 'filter.tagname.like');
-  try {
 
-    const foundTags = await models.tag.filter(filterLike);
-
-    return res.status(200).json(serialize.tag(foundTags));
-  } catch (e) {
-    return next(e);
-  }
-};
 
 // controller for GET /tags/:tagname
 exports.getTag = async function (req, res, next) {
