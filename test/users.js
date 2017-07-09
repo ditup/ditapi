@@ -695,5 +695,198 @@ describe('/users', function () {
         });
       });
     });
+
+    describe.only('show new users with my tags', function () {
+      let dbData,
+          loggedUser;
+
+      // seed the database with users and some named tags to do filtering on
+      beforeEach(async function () {
+        const data = {
+          users: 12,
+          verifiedUsers: [0, 2, 3, 4, 6, 7, 8, 10, 11],
+          tags: 8,
+          userTag: [
+            // my tags
+            [0, 0, '', 5],
+            [0, 1, '', 5],
+            [0, 2, '', 4],
+            [0, 3, '', 3],
+            [0, 4, '', 2],
+            [0, 5, '', 1],
+            // first user's tags
+            [1, 0, '', 5],
+            [1, 1, '', 4],
+            [1, 2, '', 2],
+            [1, 3, '', 1],
+            // second user's tags
+            [2, 0, '', 1],
+            [2, 2, '', 2],
+            [2, 4, '', 3],
+            [2, 6, '', 4],
+            [2, 7, '', 5],
+            // third user's tags
+            [3, 3, '', 1],
+            [3, 4, '', 4],
+            [3, 5, '', 1],
+            // fourth user's tags don't fit
+            [4, 6, '', 5],
+            [4, 7, '', 5],
+            // fifth user's tags (one tag in common)
+            [5, 1, '', 3],
+            // sixth user's tags (one tag in common)
+            [6, 4, '', 4],
+            [6, 6, '', 1],
+            [6, 7, '', 2],
+            // seventh user's tags
+            [7, 2, '', 4],
+            [7, 3, '', 3],
+            [7, 4, '', 2],
+            [7, 5, '', 1],
+            // eight user's tags don't fit
+            [8, 6, '', 5],
+            [8, 7, '', 5],
+            // nineth user's tags
+            [9, 0, '', 5],
+            [9, 1, '', 5],
+            [9, 2, '', 4],
+            [9, 3, '', 3],
+            [9, 4, '', 2],
+            [9, 5, '', 1],
+            // tenth user's tags
+            [10, 2, '', 4],
+            [10, 3, '', 3],
+            [10, 4, '', 2],
+            [10, 5, '', 1],
+            // eleventh user's tags
+            [11, 2, '', 1],
+            [11, 4, '', 1],                
+          ]
+        };
+      
+        // create data in database
+        dbData = await dbHandle.fill(data);
+
+        [loggedUser] = dbData.users;
+      });
+
+      function testUser(jsonApiUser, { username }) {
+        should(jsonApiUser).have.property('id', username);
+      }
+
+      context('valid data', function () {
+        context('logged in', function () {
+          it('[example 1] show list of 5 new users who share at leats 2 tags with me', async function () {
+            const res = await agent
+              .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(200);
+              should(res.body).have.property('data').Array().length(5);
+
+            const [user1, user2, user3, user4, user5] = res.body.data;
+              testUser(user1, { username: 'user11'});
+              testUser(user2, { username: 'user10'});
+              testUser(user3, { username: 'user7'});
+              testUser(user4, { username: 'user3'});
+              testUser(user5, { username: 'user2'});
+          });
+          it('[example 2] show list of 5 new users who share at leats 10 tags with me', async function () {
+            const res = await agent
+              .get('/users?sort=-created&filter[withMyTags]=10&page[offset]=0&page[limit]=5')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(200);
+              should(res.body).have.property('data').Array().length(0);
+          });
+          it('[example 3] show list of 2 new users who share at leats 3 tags with me', async function () {
+            const res = await agent
+              .get('/users?sort=-created&filter[withMyTags]=3&page[offset]=0&page[limit]=2')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(200);
+              should(res.body).have.property('data').Array().length(2);
+
+              const [user1, user2] = res.body.data;
+              testUser(user1, { username: 'user11'});
+              testUser(user2, { username: 'user10'});
+          });
+          it('[example 4] show list of 20 new users who share at leats 1 tags with me', async function () {
+            const res = await agent
+              .get('/users?sort=-created&filter[withMyTags]=1&page[offset]=0&page[limit]=20')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(200);
+              should(res.body).have.property('data').Array().length(6);
+
+            const [ user1, user2, user3, user4, user5, user6 ] = res.body.data;
+              testUser(user1, { username: 'user11'});
+              testUser(user2, { username: 'user10'});
+              testUser(user3, { username: 'user7'});
+              testUser(user4, { username: 'user6'});
+              testUser(user5, { username: 'user3'});
+              testUser(user6, { username: 'user2'});
+          });
+        });
+        context('not logged in', function () {
+          it('error 403', async function () {
+            const res = await agent
+              .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
+              .set('Content-Type', 'application/vnd.api+json')
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(4043);
+          });
+        });
+      });
+      context('invalid data', function() {
+        it('[invalid \'shareMyTags\' parameter] error 400', async function () {
+          const res = await agent
+            .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=0&page[limit]=5')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+        });
+        it('[invalid \'page.offset\' parameter] parameter is not a number: error 400', async function () {
+          const res = await agent
+            .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=text&page[limit]=5')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+        });
+        it('[lack of \'sort\' parameter] error 404', async function () {
+          const res = await agent
+            .get('/users?filter[withMyTags]=2&page[offset]=0&page[limit]=5')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(404);
+        });
+        it('[lack of \'page.offset\' parameter] error 404', async function () {
+          const res = await agent
+            .get('/users?sort=-created&filter[withMyTags]=2&page[limit]=5')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(404);
+        });
+        // TODO additional parameter
+        it('[additional \'page.size\' parameter] error 400', async function () {
+          const res = await agent
+            .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5&page[size]=5')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(404);
+        });
+      });
+    });
+
+
   });
 });

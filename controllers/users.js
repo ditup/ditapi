@@ -24,6 +24,16 @@ exports.gotoGetUsersWithLocation = function (req, res, next) {
   return next('route');
 };
 
+exports.gotoGetNewUsersWithMyTags = function (req, res, next) {
+  console.log('t1');
+  console.log(req.query);
+  if (_.has(req, 'query.sort') && req.query.sort === '-created' && _.has(req, 'query.filter.withMyTags')) {
+    console.log('tutaj');
+    return next();
+  }
+  return next('route');
+};
+
 exports.gotoGetUsersWithMyTags = function (req, res, next) {
   // TODO DZIK req.query.filter.byMyTags returns string not bool (how was it checked before?)
   if (_.has(req, 'query.filter.byMyTags') && req.query.filter.byMyTags === 'true') {
@@ -71,6 +81,25 @@ exports.getUsersWithLocation = async function (req, res, next) {
     return next(e);
   }
 };
+
+/*
+ * get new users who share my tags
+ */
+exports.newUsersWithMyTags = async function (req, res, next) {
+  try {
+    const auth = _.get(req, 'auth', { logged: false });
+    const me = auth.username;
+    const limit = req.query.limit;
+    const numberOfSharedTags = req.query.filter.withMyTags;
+    const users = await models.user.readNewUsersWithMyTags(me, limit, numberOfSharedTags);
+    console.log('dwa');
+    console.log(users);
+    return res.status(200).json(serialize.user(users));
+    console.log('trzy');
+  } catch(e) {
+    return next(e);
+  }
+}
 
 exports.getUsersWithMyTags = async function (req, res, next) {
   try {

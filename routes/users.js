@@ -14,6 +14,9 @@ router.route('/')
 //  .get(authorize.onlyLogged, validators.users.getUsers, userController.getUsers);
 
 router.route('/')
+  .get(userController.gotoGetNewUsersWithMyTags, userController.newUsersWithMyTags)
+
+router.route('/')
   .get(userController.gotoGetUsersWithMyTags, authorize.onlyLogged, validators.users.getUsersWithMyTags, userController.getUsersWithMyTags);
 
 router.route('/')

@@ -414,6 +414,39 @@ class User extends Model {
     return output;
   }
 
+
+    /**
+   * Find [limit] new users (newlycreated and veryfied)
+   * who has at least [similarTagsNumber] similar tags to mine
+   * @param {int, int} limit, similatTagsNumber
+   * @returns {Promise<Object>}
+   */
+  static async findNewUsersWithMyTags(myUsername, limit, commonTagsNumber) {
+    const query = `
+    FOR similarUser in (
+    FOR u IN users
+    FILTER u.username == @myUsername
+    FILTER TO_BOOL(u.email) == true
+    FOR v,e,p IN 2 OUTBOUND u
+      ANY userTag
+      COLLECT foundUser = v AGGREGATE numberOfCommonTags = COUNT(p[1]) INTO u2 
+      RETURN {foundUser, numberOfCommonTags }
+    )
+
+    
+    SORT similarUser.foundUser.created DESC
+    FILTER TO_BOOL(similarUser.foundUser.email) == true
+    FILTER similarUser.numberOfCommonTags >= @commonTagsNumber
+    LIMIT @limit
+    RETURN {username: similarUser.foundUser.username, commonTagsNumber: similarUser.numberOfCommonTags}
+ 
+    `;
+    const params = { myUsername, limit: parseInt(limit), similarTagsNumber: parseInt(commonTagsNumber) };
+    const output = await (await this.db.query(query, params)).all();
+
+    return output;
+  }
+
   /**
    * counts users
    *
@@ -455,6 +488,15 @@ class User extends Model {
     return output;
   }
 
+  /**
+   * Find [limit] new users (newly created and veryfied)
+   * who share at least[numberOfSharedTags] of my tags
+   * @param {int, int} limit, number
+   * @returns {Promise<Object>}
+   */
+   static async readNewUsersWithMyTags(me, limit, numberOfSharedTags) {
+      
+   }
 
   /**
    * delete unverified users who are created more than ttl ago
