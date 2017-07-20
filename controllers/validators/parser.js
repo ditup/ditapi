@@ -20,8 +20,9 @@ const parametersDictionary = {
     offset: 'int'
   },
   filter: {
-    tag: 'array'
-  }
+    tag: 'array',
+    withMyTags: 'int'
+  },
 };
 
 

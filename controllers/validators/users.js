@@ -131,14 +131,28 @@ exports.patchUser = function (req, res, next) {
 exports.getNewUsers = function (req, res, next) {
 
   // req.query = parser.newUsers(req.query);
-
-  const p = require('./parser');
-
-  req.query = p.parseQuery(req.query, p.parametersDictionary);
+  //TODO where should be parser placed
+  req.query = parser.parseQuery(req.query, parser.parametersDictionary);
 
   // console.log(p.parseQuery(req.query, parametersDictionary))
 
   const validate = ajv.compile(schema.newUsers.query);
+  const valid = validate(req.query);
+
+  if (!valid) {
+    const errorOutput = ajv.errorsText(validate.errors);
+
+    return res.status(400).json(errorOutput);
+  }
+
+  return next();
+};
+
+exports.getNewUsersWithMyTags = function (req, res, next) {
+
+  req.query = parser.parseQuery(req.query, parser.parametersDictionary);
+
+  const validate = ajv.compile(schema.newUsersWithMyTags.query);
   const valid = validate(req.query);
 
   if (!valid) {

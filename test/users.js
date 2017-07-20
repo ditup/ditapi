@@ -760,10 +760,10 @@ describe('/users', function () {
             [10, 5, '', 1],
             // eleventh user's tags
             [11, 2, '', 1],
-            [11, 4, '', 1],                
+            [11, 4, '', 1],
           ]
         };
-      
+
         // create data in database
         dbData = await dbHandle.fill(data);
 
@@ -783,14 +783,14 @@ describe('/users', function () {
               .auth(loggedUser.username, loggedUser.password)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
-              should(res.body).have.property('data').Array().length(5);
+            should(res.body).have.property('data').Array().length(5);
 
             const [user1, user2, user3, user4, user5] = res.body.data;
-              testUser(user1, { username: 'user11'});
-              testUser(user2, { username: 'user10'});
-              testUser(user3, { username: 'user7'});
-              testUser(user4, { username: 'user3'});
-              testUser(user5, { username: 'user2'});
+            testUser(user1, { username: 'user11'});
+            testUser(user2, { username: 'user10'});
+            testUser(user3, { username: 'user7'});
+            testUser(user4, { username: 'user3'});
+            testUser(user5, { username: 'user2'});
           });
           it('[example 2] show list of 5 new users who share at leats 10 tags with me', async function () {
             const res = await agent
@@ -799,7 +799,7 @@ describe('/users', function () {
               .auth(loggedUser.username, loggedUser.password)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
-              should(res.body).have.property('data').Array().length(0);
+            should(res.body).have.property('data').Array().length(0);
           });
           it('[example 3] show list of 2 new users who share at leats 3 tags with me', async function () {
             const res = await agent
@@ -808,11 +808,11 @@ describe('/users', function () {
               .auth(loggedUser.username, loggedUser.password)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
-              should(res.body).have.property('data').Array().length(2);
+            should(res.body).have.property('data').Array().length(2);
 
-              const [user1, user2] = res.body.data;
-              testUser(user1, { username: 'user11'});
-              testUser(user2, { username: 'user10'});
+            const [user1, user2] = res.body.data;
+            testUser(user1, { username: 'user10'});
+            testUser(user2, { username: 'user7'});
           });
           it('[example 4] show list of 20 new users who share at leats 1 tags with me', async function () {
             const res = await agent
@@ -821,30 +821,30 @@ describe('/users', function () {
               .auth(loggedUser.username, loggedUser.password)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
-              should(res.body).have.property('data').Array().length(6);
+            should(res.body).have.property('data').Array().length(6);
 
             const [ user1, user2, user3, user4, user5, user6 ] = res.body.data;
-              testUser(user1, { username: 'user11'});
-              testUser(user2, { username: 'user10'});
-              testUser(user3, { username: 'user7'});
-              testUser(user4, { username: 'user6'});
-              testUser(user5, { username: 'user3'});
-              testUser(user6, { username: 'user2'});
+            testUser(user1, { username: 'user11'});
+            testUser(user2, { username: 'user10'});
+            testUser(user3, { username: 'user7'});
+            testUser(user4, { username: 'user6'});
+            testUser(user5, { username: 'user3'});
+            testUser(user6, { username: 'user2'});
           });
         });
         context('not logged in', function () {
           it('error 403', async function () {
-            const res = await agent
+            await agent
               .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
               .set('Content-Type', 'application/vnd.api+json')
               .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .expect(4043);
+              .expect(403);
           });
         });
       });
       context('invalid data', function() {
         it('[invalid \'shareMyTags\' parameter] error 400', async function () {
-          const res = await agent
+          await agent
             .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=0&page[limit]=5')
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
@@ -852,7 +852,7 @@ describe('/users', function () {
             .expect(400);
         });
         it('[invalid \'page.offset\' parameter] parameter is not a number: error 400', async function () {
-          const res = await agent
+          await agent
             .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=text&page[limit]=5')
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
@@ -860,29 +860,29 @@ describe('/users', function () {
             .expect(400);
         });
         it('[lack of \'sort\' parameter] error 404', async function () {
-          const res = await agent
+          await agent
             .get('/users?filter[withMyTags]=2&page[offset]=0&page[limit]=5')
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(404);
         });
-        it('[lack of \'page.offset\' parameter] error 404', async function () {
-          const res = await agent
+        it('[lack of \'page.offset\' parameter] error 400', async function () {
+          await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[limit]=5')
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(404);
+            .expect(400);
         });
         // TODO additional parameter
         it('[additional \'page.size\' parameter] error 400', async function () {
-          const res = await agent
+          await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5&page[size]=5')
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(404);
+            .expect(400);
         });
       });
     });
