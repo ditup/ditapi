@@ -10,6 +10,10 @@ const config = require(path.resolve('./config/config')),
       models = require(path.resolve('./models')),
       serialize = require(path.resolve('./serializers')).serialize;
 
+/**
+ * goto functions for routing based on request parameters
+ */
+
 exports.gotoGetNewUsers = function (req, res, next) {
   if (_.has(req, 'query.sort')&( req.query.sort === '-created')) {
     return next();
@@ -25,10 +29,7 @@ exports.gotoGetUsersWithLocation = function (req, res, next) {
 };
 
 exports.gotoGetNewUsersWithMyTags = function (req, res, next) {
-  console.log('t1');
-  console.log(req.query);
   if (_.has(req, 'query.sort') && req.query.sort === '-created' && _.has(req, 'query.filter.withMyTags')) {
-    console.log('tutaj');
     return next();
   }
   return next('route');
@@ -48,6 +49,10 @@ exports.gotoGetUsersWithTags = function (req, res, next) {
   }
   return next('route');
 };
+
+/**
+ * controller functions for user requests
+ */
 
 exports.getNewUsers = async function(req, res, next) {
 
@@ -82,24 +87,23 @@ exports.getUsersWithLocation = async function (req, res, next) {
   }
 };
 
-/*
- * get new users who share my tags
- */
-exports.newUsersWithMyTags = async function (req, res, next) {
+exports.getNewUsersWithMyTags = async function (req, res, next) {
+  // parameters from query
+  const auth = _.get(req, 'auth', { logged: false });
+  const me = auth.username;
+  const limit = req.query.page.limit;
+  const numberOfTagsInCommon = req.query.filter.withMyTags;
+
   try {
-    const auth = _.get(req, 'auth', { logged: false });
-    const me = auth.username;
-    const limit = req.query.limit;
-    const numberOfSharedTags = req.query.filter.withMyTags;
-    const users = await models.user.readNewUsersWithMyTags(me, limit, numberOfSharedTags);
-    console.log('dwa');
-    console.log(users);
-    return res.status(200).json(serialize.user(users));
-    console.log('trzy');
+    // get users from database
+    const users = await models.user.findNewUsersWithMyTags(me, limit, numberOfTagsInCommon);
+    // serialize and send the results
+    return res.status(200).json(users);
   } catch(e) {
+    // unhandled exceptions
     return next(e);
   }
-}
+};
 
 exports.getUsersWithMyTags = async function (req, res, next) {
   try {
