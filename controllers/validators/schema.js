@@ -81,7 +81,7 @@ module.exports = {
       properties:{
         sort: {
           type: 'string',
-          pattern: '^-created$'
+          const: '-created'
         },
         filter: {
           properties: {

@@ -447,11 +447,7 @@ class User extends Model {
     SORT similarUser.foundUser.created DESC
     FILTER similarUser.numberOfSimilarTags >= @minNumberOfTagsInCommon
     LIMIT @limit
-<<<<<<< HEAD
-    RETURN {username: similarUser.foundUser.username, tags: similarUser.tagsInCommon}
-=======
-    RETURN {username: similarUser.foundUser.username, tags: similarUser.tagsInCommon, numberOfSimilarTags}
->>>>>>> query-new-users-with-my-tags
+    RETURN {username: similarUser.foundUser.username, tags: similarUser.tagsInCommon, numberOfSimilarTags: similarUser.numberOfSimilarTags}
     `;
     newQuery;
 
@@ -481,6 +477,7 @@ class User extends Model {
     LIMIT @limit
     RETURN {username: similarUser.foundUser.username, commonTags: similarUser.numberOfTagsInCommon}
     `;
+
     const params = { myUsername, limit: parseInt(limit), minNumberOfTagsInCommon: parseInt(numberOfTagsInCommon) };
     const output = await (await this.db.query(query, params)).all();
     return output;
