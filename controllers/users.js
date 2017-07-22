@@ -98,7 +98,7 @@ exports.getNewUsersWithMyTags = async function (req, res, next) {
     // get users from database
     const users = await models.user.findNewUsersWithMyTags(me, limit, numberOfTagsInCommon);
     // serialize and send the results
-    return res.status(200).json(users);
+    return res.status(200).json(serialize.user(users));
   } catch(e) {
     // unhandled exceptions
     return next(e);

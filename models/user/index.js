@@ -424,8 +424,8 @@ class User extends Model {
    * @returns {Promise<Object>}
    */
   static async findNewUsersWithMyTags(myUsername, limit, numberOfTagsInCommon) {
-    
-    const query = `
+
+    const newQuery = `
     FOR similarUser in (
     FOR u IN users
         FILTER u.username == @myUsername
@@ -447,12 +447,15 @@ class User extends Model {
     SORT similarUser.foundUser.created DESC
     FILTER similarUser.numberOfSimilarTags >= @minNumberOfTagsInCommon
     LIMIT @limit
+<<<<<<< HEAD
     RETURN {username: similarUser.foundUser.username, tags: similarUser.tagsInCommon}
+=======
+    RETURN {username: similarUser.foundUser.username, tags: similarUser.tagsInCommon, numberOfSimilarTags}
+>>>>>>> query-new-users-with-my-tags
     `;
+    newQuery;
 
-
-
-    const query2 = `
+    const query = `
     FOR similarUser in (
       // find vertex of myUsername
       FOR u IN users
@@ -464,13 +467,9 @@ class User extends Model {
           // filter verified users
           FILTER TO_BOOL(v.email) == true
           // count number of tags in common, return user and number of tags in common
-          COLLECT foundUser = v 
-              
-              //AGGREGATE numberOfTagsInCommon = p[1] 
-          INTO u2 //COUNT(p[1]) INTO u2 
+          COLLECT foundUser = v AGGREGATE numberOfTagsInCommon = COUNT(p[1]) INTO u2 
 
-
-          RETURN {foundUser, numberOfTagsInCommon }
+        RETURN {foundUser, numberOfTagsInCommon }
       )
     // filter minimal amount of tags in common
     FILTER similarUser.numberOfTagsInCommon >= @minNumberOfTagsInCommon
@@ -484,7 +483,6 @@ class User extends Model {
     `;
     const params = { myUsername, limit: parseInt(limit), minNumberOfTagsInCommon: parseInt(numberOfTagsInCommon) };
     const output = await (await this.db.query(query, params)).all();
-    console.log(output);
     return output;
   }
 

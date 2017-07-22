@@ -696,7 +696,7 @@ describe('/users', function () {
       });
     });
 
-    describe.only('show new users with my tags', function () {
+    describe('show new users with my tags', function () {
       let dbData,
           loggedUser;
 
@@ -853,7 +853,7 @@ describe('/users', function () {
         });
         it('[invalid \'page.offset\' parameter] parameter is not a number: error 400', async function () {
           await agent
-            .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=text&page[limit]=5')
+            .get('/users?sort=-created&filter[withMyTags]=2&randomparameter[offset]=text&page[limit]=5')
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect('Content-Type', /^application\/vnd\.api\+json/)

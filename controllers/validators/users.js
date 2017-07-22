@@ -131,7 +131,7 @@ exports.patchUser = function (req, res, next) {
 exports.getNewUsers = function (req, res, next) {
 
   // req.query = parser.newUsers(req.query);
-  //TODO where should be parser placed
+  // TODO where should be parser placed
   req.query = parser.parseQuery(req.query, parser.parametersDictionary);
 
   // console.log(p.parseQuery(req.query, parametersDictionary))
