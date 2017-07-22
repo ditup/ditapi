@@ -425,7 +425,7 @@ class User extends Model {
    */
   static async findNewUsersWithMyTags(myUsername, limit, numberOfTagsInCommon) {
 
-    const newQuery = `
+    const query = `
     FOR similarUser in (
     FOR u IN users
         FILTER u.username == @myUsername
@@ -453,9 +453,9 @@ class User extends Model {
     RETURN {username: similarUser.foundUser.username, tags: similarUser.tagsInCommon, numberOfSimilarTags}
 >>>>>>> query-new-users-with-my-tags
     `;
-    newQuery;
+    
 
-    const query = `
+    const oldQuery = `
     FOR similarUser in (
       // find vertex of myUsername
       FOR u IN users
@@ -481,6 +481,7 @@ class User extends Model {
     LIMIT @limit
     RETURN {username: similarUser.foundUser.username, commonTags: similarUser.numberOfTagsInCommon}
     `;
+    oldQuery;
     const params = { myUsername, limit: parseInt(limit), minNumberOfTagsInCommon: parseInt(numberOfTagsInCommon) };
     const output = await (await this.db.query(query, params)).all();
     return output;
