@@ -414,6 +414,79 @@ class User extends Model {
     return output;
   }
 
+
+  /**
+   * Find newest users having tags in common with me
+   *
+   * Find [limit] new users (newlycreated and veryfied)
+   * who has at least [numberOfTagsInCommon] common tags with me
+   * @param {string, int, int} myUsername, limit, numberOfTagsInCommon
+   * @returns {Promise<Object>}
+   */
+  static async findNewUsersWithMyTags(myUsername, limit, numberOfTagsInCommon) {
+
+    const query = `
+    FOR similarUser in (
+    FOR u IN users
+        FILTER u.username == @myUsername
+        FILTER TO_BOOL(u.email) == true
+        FOR v,e,p IN 2 OUTBOUND u
+          ANY userTag
+          FILTER TO_BOOL(v.email) == true
+          COLLECT foundUser = v  AGGREGATE numberOfSimilarTags = COUNT(p[1]) INTO connectionData
+          RETURN {
+                foundUser: foundUser,
+                numberOfSimilarTags,
+                tagsInCommon: ( FOR item in connectionData
+                                    COLLECT tag = item.p.vertices[1].tagname INTO tetagi
+                                    SORT tag
+                                    RETURN tag
+                )
+          }
+        )
+    SORT similarUser.foundUser.created DESC
+    FILTER similarUser.numberOfSimilarTags >= @minNumberOfTagsInCommon
+    LIMIT @limit
+<<<<<<< HEAD
+    RETURN {username: similarUser.foundUser.username, tags: similarUser.tagsInCommon}
+=======
+    RETURN {username: similarUser.foundUser.username, tags: similarUser.tagsInCommon, numberOfSimilarTags}
+>>>>>>> query-new-users-with-my-tags
+    `;
+    
+
+    const oldQuery = `
+    FOR similarUser in (
+      // find vertex of myUsername
+      FOR u IN users
+        FILTER u.username == @myUsername
+        FILTER TO_BOOL(u.email) == true
+        // find all users who have any tags in common with me
+        FOR v,e,p IN 2 OUTBOUND u
+          ANY userTag
+          // filter verified users
+          FILTER TO_BOOL(v.email) == true
+          // count number of tags in common, return user and number of tags in common
+          COLLECT foundUser = v AGGREGATE numberOfTagsInCommon = COUNT(p[1]) INTO u2 
+
+        RETURN {foundUser, numberOfTagsInCommon }
+      )
+    // filter minimal amount of tags in common
+    FILTER similarUser.numberOfTagsInCommon >= @minNumberOfTagsInCommon
+    // filter verified users
+    //FILTER TO_BOOL(similarUser.foundUser.email) == true
+    // sort found users by creation date, from newest
+    SORT similarUser.foundUser.created DESC
+    // take @limit newest users
+    LIMIT @limit
+    RETURN {username: similarUser.foundUser.username, commonTags: similarUser.numberOfTagsInCommon}
+    `;
+    oldQuery;
+    const params = { myUsername, limit: parseInt(limit), minNumberOfTagsInCommon: parseInt(numberOfTagsInCommon) };
+    const output = await (await this.db.query(query, params)).all();
+    return output;
+  }
+
   /**
    * counts users
    *
@@ -454,7 +527,6 @@ class User extends Model {
 
     return output;
   }
-
 
   /**
    * delete unverified users who are created more than ttl ago
