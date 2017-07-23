@@ -770,12 +770,16 @@ describe('/users', function () {
         [loggedUser] = dbData.users;
       });
 
-      function testUser(jsonApiUser, { username }) {
+      function testUser(jsonApiUser, { username }, tagCount) {
         should(jsonApiUser).have.property('id', username);
+        if (typeof(tagCount) === 'number') {
+          should(jsonApiUser.relationships.tags.data).length(tagCount);
+        }
       }
 
       context('valid data', function () {
         context('logged in', function () {
+
           it('[example 1] show list of 5 new users who share at leats 2 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
@@ -786,12 +790,13 @@ describe('/users', function () {
             should(res.body).have.property('data').Array().length(5);
 
             const [user1, user2, user3, user4, user5] = res.body.data;
-            testUser(user1, { username: 'user11'});
-            testUser(user2, { username: 'user10'});
-            testUser(user3, { username: 'user7'});
-            testUser(user4, { username: 'user3'});
-            testUser(user5, { username: 'user2'});
+            testUser(user1, { username: 'user11'}, 2);
+            testUser(user2, { username: 'user10'}, 4);
+            testUser(user3, { username: 'user7'}, 4);
+            testUser(user4, { username: 'user3'}, 3);
+            testUser(user5, { username: 'user2'}, 3);
           });
+
           it('[example 2] show list of 5 new users who share at leats 10 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=10&page[offset]=0&page[limit]=5')
@@ -801,6 +806,7 @@ describe('/users', function () {
               .expect(200);
             should(res.body).have.property('data').Array().length(0);
           });
+
           it('[example 3] show list of 2 new users who share at leats 3 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=3&page[offset]=0&page[limit]=2')
@@ -811,9 +817,10 @@ describe('/users', function () {
             should(res.body).have.property('data').Array().length(2);
 
             const [user1, user2] = res.body.data;
-            testUser(user1, { username: 'user10'});
-            testUser(user2, { username: 'user7'});
+            testUser(user1, { username: 'user10' }, 4);
+            testUser(user2, { username: 'user7' }, 4);
           });
+
           it('[example 4] show list of 20 new users who share at leats 1 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=1&page[offset]=0&page[limit]=20')
@@ -824,15 +831,17 @@ describe('/users', function () {
             should(res.body).have.property('data').Array().length(6);
 
             const [ user1, user2, user3, user4, user5, user6 ] = res.body.data;
-            testUser(user1, { username: 'user11'});
-            testUser(user2, { username: 'user10'});
-            testUser(user3, { username: 'user7'});
-            testUser(user4, { username: 'user6'});
-            testUser(user5, { username: 'user3'});
-            testUser(user6, { username: 'user2'});
+            testUser(user1, { username: 'user11'}, 2);
+            testUser(user2, { username: 'user10'}, 4);
+            testUser(user3, { username: 'user7'}, 4);
+            testUser(user4, { username: 'user6'}, 1);
+            testUser(user5, { username: 'user3'}, 3);
+            testUser(user6, { username: 'user2'}, 3);
           });
         });
+
         context('not logged in', function () {
+
           it('error 403', async function () {
             await agent
               .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
@@ -840,9 +849,12 @@ describe('/users', function () {
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(403);
           });
+
         });
       });
+
       context('invalid data', function() {
+
         it('[invalid \'shareMyTags\' parameter] error 400', async function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=0&page[limit]=5')
@@ -851,6 +863,7 @@ describe('/users', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
+
         it('[invalid \'page.offset\' parameter] parameter is not a number: error 400', async function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=text&page[limit]=5')
@@ -859,6 +872,7 @@ describe('/users', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
+
         it('[lack of \'sort\' parameter] error 404', async function () {
           await agent
             .get('/users?filter[withMyTags]=2&page[offset]=0&page[limit]=5')
@@ -867,6 +881,7 @@ describe('/users', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(404);
         });
+
         it('[lack of \'page.offset\' parameter] error 400', async function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[limit]=5')
@@ -875,7 +890,7 @@ describe('/users', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
-        // TODO additional parameter
+
         it('[additional \'page.size\' parameter] error 400', async function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5&page[size]=5')
@@ -884,9 +899,9 @@ describe('/users', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
+
       });
     });
-
 
   });
 });

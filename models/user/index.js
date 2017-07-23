@@ -425,34 +425,7 @@ class User extends Model {
    */
   static async findNewUsersWithMyTags(myUsername, limit, numberOfTagsInCommon) {
 
-    const newQuery = `
-    FOR similarUser in (
-    FOR u IN users
-        FILTER u.username == @myUsername
-        FILTER TO_BOOL(u.email) == true
-        FOR v,e,p IN 2 OUTBOUND u
-          ANY userTag
-          FILTER TO_BOOL(v.email) == true
-          COLLECT foundUser = v  AGGREGATE numberOfSimilarTags = COUNT(p[1]) INTO connectionData
-          RETURN {
-                foundUser: foundUser,
-                numberOfSimilarTags,
-                tagsInCommon: ( FOR item in connectionData
-                                    COLLECT tag = item.p.vertices[1].tagname INTO tetagi
-                                    SORT tag
-                                    RETURN tag
-                )
-          }
-        )
-    SORT similarUser.foundUser.created DESC
-    FILTER similarUser.numberOfSimilarTags >= @minNumberOfTagsInCommon
-    LIMIT @limit
-    RETURN {username: similarUser.foundUser.username, tags: similarUser.tagsInCommon, numberOfSimilarTags: similarUser.numberOfSimilarTags}
-    `;
-    newQuery;
-
     const query = `
-    FOR similarUser in (
       // find vertex of myUsername
       FOR u IN users
         FILTER u.username == @myUsername
@@ -462,20 +435,21 @@ class User extends Model {
           ANY userTag
           // filter verified users
           FILTER TO_BOOL(v.email) == true
-          // count number of tags in common, return user and number of tags in common
-          COLLECT foundUser = v AGGREGATE numberOfTagsInCommon = COUNT(p[1]) INTO u2 
-
-        RETURN {foundUser, numberOfTagsInCommon }
-      )
-    // filter minimal amount of tags in common
-    FILTER similarUser.numberOfTagsInCommon >= @minNumberOfTagsInCommon
-    // filter verified users
-    //FILTER TO_BOOL(similarUser.foundUser.email) == true
-    // sort found users by creation date, from newest
-    SORT similarUser.foundUser.created DESC
-    // take @limit newest users
-    LIMIT @limit
-    RETURN {username: similarUser.foundUser.username, commonTags: similarUser.numberOfTagsInCommon}
+          LET tag = p.vertices[1]
+          // put userTag & tag into a variable
+          LET userTag = MERGE(e, { tag: p.vertices[1] })
+          // collect tags of each user together
+        COLLECT foundUser = v INTO connectionData KEEP userTag
+          LET userTags = connectionData[*].userTag
+          LET numberOfSimilarTags = COUNT(userTags)
+          // filter minimal amount of tags in common
+          FILTER numberOfSimilarTags >= @minNumberOfTagsInCommon
+          // sort found users by creation date, from newest
+          SORT foundUser.created DESC
+          // take @limit newest users
+          LIMIT @limit
+          // return array of user objects including userTags as expected by jsonapi serializer
+          RETURN MERGE(foundUser, foundUser.profile, { userTags, numberOfSimilarTags })
     `;
 
     const params = { myUsername, limit: parseInt(limit), minNumberOfTagsInCommon: parseInt(numberOfTagsInCommon) };

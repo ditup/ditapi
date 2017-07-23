@@ -170,3 +170,5 @@ exports.usersByMyTags = function (users) {
 
   return serialized;
 };
+
+exports.usersWithTags = exports.usersByMyTags;
