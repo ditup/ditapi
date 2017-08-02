@@ -3,53 +3,9 @@
 const _ = require('lodash');
 const rules = require('./rules');
 
-exports.post = function (req, res, next) {
-  let errors = [];
+const validateBySchema = require('./validate-by-schema');
 
-  // check that only valid attributes are present
-  const fields = ['story', 'relevance', 'tag'];
-  const invalidAttrs = _.difference(Object.keys(req.body), fields);
-  if (invalidAttrs.length > 0) {
-    errors.push({
-      param: 'attributes',
-      msg: 'unexpected attribute'
-    });
-  }
-
-  // check that no required attributes are missing
-  const missingAttrs = _.difference(fields, Object.keys(req.body));
-  if (missingAttrs.length > 0) {
-    errors.push({
-      param: 'attributes',
-      msg: 'missing attribute'
-    });
-  }
-
-  // validate tagname
-  req.body.tagname = _.get(req.body, 'tag.tagname');
-  req.checkBody(_.pick(rules.tag, ['tagname']));
-  delete req.body.tagname;
-
-  // validate story
-  req.checkBody(_.pick(rules.userTag, ['story']));
-
-  // validate relevance
-  if (!validateRelevance(req.body.relevance)) {
-    errors.push({
-      param: 'relevance',
-      msg: 'relevance should be a number 1, 2, 3, 4 or 5',
-      value: req.body.relevance
-    });
-  }
-
-  errors = errors.concat(req.validationErrors() || []);
-
-  if (errors.length === 0) {
-    return next();
-  }
-
-  return next(errors);
-};
+exports.post = validateBySchema('postUserTags');
 
 exports.patch = function (req, res, next) {
   let errors = [];

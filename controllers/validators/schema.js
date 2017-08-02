@@ -36,6 +36,15 @@ module.exports = {
         minLength: 1,
         pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
       }
+    },
+    userTag: {
+      story: {
+        type: 'string',
+        maxLength: 1024
+      },
+      relevance: {
+        enum: [1, 2, 3, 4, 5]
+      }
     }
   },
   postUsers: {
@@ -127,5 +136,26 @@ module.exports = {
       required: ['filter'],
       additionalProperties: false
     }
+  },
+  postUserTags: {
+    id: 'postUserTags',
+    properties: {
+      body: {
+        properties: {
+          tag: {
+            properties: {
+              tagname: {
+                $ref: 'sch#/definitions/tag/tagname'
+              }
+            }
+          },
+          story: { $ref: 'sch#/definitions/userTag/story' },
+          relevance: { $ref: 'sch#/definitions/userTag/relevance' }
+        },
+        additionalProperties: false,
+        required: ['tag', 'story', 'relevance']
+      }
+    },
+    required: ['body']
   }
 };
