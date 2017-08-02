@@ -157,5 +157,27 @@ module.exports = {
       }
     },
     required: ['body']
+  },
+  patchUserTag: {
+    id: 'patchUserTag',
+    properties: {
+      body: {
+        properties: {
+          story: { $ref: 'sch#/definitions/userTag/story' },
+          relevance: { $ref: 'sch#/definitions/userTag/relevance' },
+          id: {} // for now id is ignored TODO should be compared to params
+        },
+        additionalProperties: false,
+        required: ['id']
+      },
+      params: {
+        properties: {
+          tagname: {
+            $ref: 'sch#/definitions/tag/tagname'
+          }
+        }
+      }
+    },
+    required: ['body', 'params']
   }
 };

@@ -8,7 +8,6 @@ exports.contacts = require('./contacts');
 exports.messages = require('./messages');
 exports.account = require('./account');
 exports.users = require('./users');
-exports.userTags = require('./userTags');
 exports.tags = require('./tags');
 
 
