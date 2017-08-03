@@ -414,6 +414,49 @@ class User extends Model {
     return output;
   }
 
+
+  /**
+   * Find newest users having tags in common with me
+   *
+   * Find [limit] new users (newlycreated and veryfied)
+   * who has at least [numberOfTagsInCommon] common tags with me
+   * @param {string, int, int} myUsername, limit, numberOfTagsInCommon
+   * @returns {Promise<Object>}
+   */
+  static async findNewUsersWithMyTags(myUsername, limit, numberOfTagsInCommon) {
+
+    const query = `
+      // find vertex of myUsername
+      FOR u IN users
+        FILTER u.username == @myUsername
+        FILTER TO_BOOL(u.email) == true
+        // find all users who have any tags in common with me
+        FOR v,e,p IN 2 OUTBOUND u
+          ANY userTag
+          // filter verified users
+          FILTER TO_BOOL(v.email) == true
+          LET tag = p.vertices[1]
+          // put userTag & tag into a variable
+          LET userTag = MERGE(e, { tag: p.vertices[1] })
+          // collect tags of each user together
+        COLLECT foundUser = v INTO connectionData KEEP userTag
+          LET userTags = connectionData[*].userTag
+          LET numberOfSimilarTags = COUNT(userTags)
+          // filter minimal amount of tags in common
+          FILTER numberOfSimilarTags >= @minNumberOfTagsInCommon
+          // sort found users by creation date, from newest
+          SORT foundUser.created DESC
+          // take @limit newest users
+          LIMIT @limit
+          // return array of user objects including userTags as expected by jsonapi serializer
+          RETURN MERGE(foundUser, foundUser.profile, { userTags, numberOfSimilarTags })
+    `;
+
+    const params = { myUsername, limit: parseInt(limit), minNumberOfTagsInCommon: parseInt(numberOfTagsInCommon) };
+    const output = await (await this.db.query(query, params)).all();
+    return output;
+  }
+
   /**
    * counts users
    *
@@ -454,7 +497,6 @@ class User extends Model {
 
     return output;
   }
-
 
   /**
    * delete unverified users who are created more than ttl ago

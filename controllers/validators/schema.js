@@ -75,6 +75,40 @@ module.exports = {
       additionalProperties: false
     }
   },
+  newUsersWithMyTags: {
+    id: 'newUsersWithMyTags',
+    query:{
+      properties:{
+        sort: {
+          type: 'string',
+          const: '-created'
+        },
+        filter: {
+          properties: {
+            withMyTags: {
+              type: 'number',
+            }
+          },
+          required: ['withMyTags'],
+          additionalProperties: false
+        },
+        page: {
+          properties: {
+            offset: {
+              type: 'number'
+            },
+            limit: {
+              type: 'number'
+            }
+          },
+          required: ['offset', 'limit'],
+          additionalProperties: false
+        }
+      },
+      required: ['sort', 'filter', 'page'],
+      additionalProperties: false
+    }
+  },
   getUsersWithTags: {
     id: 'getUsersWithTags',
     query: {

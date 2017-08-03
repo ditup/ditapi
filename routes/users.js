@@ -11,20 +11,28 @@ const validators = require(path.resolve('./controllers/validators')),
 // post a new user
 router.route('/')
   .post(validators.users.postUsers, userController.postUsers);
-//  .get(authorize.onlyLogged, validators.users.getUsers, userController.getUsers);
 
+// get new users who have common tags with me
+router.route('/')
+  .get(userController.gotoGetNewUsersWithMyTags, authorize.onlyLogged, validators.users.getNewUsersWithMyTags, userController.getNewUsersWithMyTags);
+
+// get users who have common tags with me
 router.route('/')
   .get(userController.gotoGetUsersWithMyTags, authorize.onlyLogged, validators.users.getUsersWithMyTags, userController.getUsersWithMyTags);
 
+// get users who have given tags
 router.route('/')
   .get(userController.gotoGetUsersWithTags, authorize.onlyLogged, validators.users.getUsersWithTags, userController.getUsersWithTags);
 
+// get users from given location
 router.route('/')
   .get(userController.gotoGetUsersWithLocation, authorize.onlyLogged, validators.users.getUsersWithLocation, userController.getUsersWithLocation);
 
+// get new users
 router.route('/')
   .get(userController.gotoGetNewUsers, authorize.onlyLogged, validators.users.getNewUsers, userController.getNewUsers);
 
+// get and patch user profile
 router.route('/:username')
   .get(validators.users.getUser, userController.getUser)
   .patch(authorize.onlyLoggedMe, validators.users.patchUser, userController.patchUser, userController.getUser);
