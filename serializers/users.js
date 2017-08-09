@@ -51,12 +51,21 @@ exports.userTag = function (data) {
 
 // serialize userTags
 const userTagsSerializer = new Serializer('user-tags', {
-  attributes: ['username', 'tagname', 'story', 'relevance', 'tag'],
+  attributes: ['username', 'tagname', 'story', 'relevance', 'user', 'tag'],
+  keyForAttribute: 'camelCase',
   tag: {
     ref: 'tagname',
     attributes: ['tagname'],
     includedLinks: {
       self: ({ tagname }) => `${config.url.all}/tags/${tagname}`
+    },
+    relationshipLinks: {}
+  },
+  user: {
+    ref: 'username',
+    attributes: ['givenName', 'familyName', 'username', 'description', 'location'],
+    includedLinks: {
+      self: ({ username }) => `${config.url.all}/users/${username}`
     },
     relationshipLinks: {}
   }

@@ -114,8 +114,15 @@ describe('Tags of user', function () {
         const [firstTag] = userTags.data;
 
         should(firstTag).have.propertyByPath('relationships', 'tag');
+        should(firstTag).have.propertyByPath('relationships', 'user');
 
+        const user = firstTag.relationships.user;
         const tag = firstTag.relationships.tag;
+
+        should(user).have.property('data').deepEqual({
+          type: 'users',
+          id: 'user1'
+        });
 
         should(tag).have.property('data').deepEqual({
           type: 'tags',
@@ -127,11 +134,23 @@ describe('Tags of user', function () {
         should(userTags).have.property('included');
 
         should(userTags.included).containDeep([{
+          type: 'users',
+          id: 'user1',
+          attributes: {
+            username: 'user1',
+            givenName: '',
+            familyName: ''
+          },
+          links: {
+            self: `${config.url.all}/users/user1`
+          }
+        }]);
+
+        should(userTags.included).containDeep([{
           type: 'tags',
           id: 'tag4',
           attributes: {
-            tagname: dbData.tags[4].tagname,
-            description: dbData.tags[4].description
+            tagname: dbData.tags[4].tagname
           },
           links: {
             self: `${config.url.all}/tags/tag4`
@@ -489,6 +508,7 @@ describe('Tags of user', function () {
   });
 
   describe('/users/:username/tags/:tagname', function () {
+    // TODO include tag & user as relationships and included to the response
     describe('GET', function () {
       let loggedUser, taggedUser;
 
