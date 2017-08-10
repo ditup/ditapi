@@ -210,26 +210,30 @@ describe('Tags of user', function () {
           userTag.should.have.property('links');
           // userTag.should.have.property('meta');
 
-          const data = userTag.data;
-          const links = userTag.links;
-          // let meta = userTag.meta;
+          const { data, links, included } = userTag;
 
           data.should.have.property('type', 'user-tags');
-          data.should.have.property('id',
-            `${loggedUser.username}--${tag.tagname}`);
+          data.should.have.property('id', `${loggedUser.username}--${tag.tagname}`);
 
           links.should.have.property('self', `${config.url.all}/users/${loggedUser.username}/tags/${tag.tagname}`);
           // links.should.have.property('related', `${config.url.all}/users/${loggedUser.username}/tags/${newUserTag.tagname}`);
 
           data.should.have.property('attributes');
 
-          const attributes = data.attributes;
+          const { attributes, relationships } = data;
 
-          attributes.should.have.property('story', 'a new testing story');
-          attributes.should.have.property('relevance', 3);
+          should(attributes).containDeep({ story: 'a new testing story', relevance: 3 });
+          should(relationships).containDeep({
+            user: { data: { type: 'users', id: loggedUser.username } },
+            tag: { data: { type: 'tags', id: tag.tagname } }
+          });
 
-          const userTagDb = await models.userTag.read(loggedUser.username,
-            tag.tagname);
+          should(included).containDeep([
+            { type: 'tags', id: tag.tagname },
+            { type: 'users', id: loggedUser.username }
+          ]);
+
+          const userTagDb = await models.userTag.read(loggedUser.username, tag.tagname);
           userTagDb.should.have.property('story', 'a new testing story');
           // userTagDb.should.have.property('relevance', newUserTag.relevance);
           userTagDb.should.have.property('user');
@@ -417,6 +421,7 @@ describe('Tags of user', function () {
 
           should(response.body).have.propertyByPath('errors', '0', 'title').eql('invalid relevance');
         });
+
         it('[invalid attributes present] 400', async function () {
 
           const [tag] = dbData.tags;
