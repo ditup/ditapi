@@ -244,7 +244,7 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 type: 'users',
                 id: loggedUser.username,
                 attributes: {
-                  location: ''
+                  location: null
                 }
               }
             })

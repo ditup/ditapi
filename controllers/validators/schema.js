@@ -1,3 +1,44 @@
+const paths = {
+  username: { $ref : 'sch#/definitions/user/username' },
+  givenName: { $ref : 'sch#/definitions/user/givenName' },
+  familyName: { $ref : 'sch#/definitions/user/familyName' },
+  description: { $ref : 'sch#/definitions/user/desc' },
+  location: { $ref : 'sch#/definitions/user/location' },
+};
+
+const getUser = {
+  id: 'getUser',
+  properties: {
+    params: {
+      properties: {
+        username: paths.username
+      }
+    }
+  }
+};
+
+const patchUser = {
+  id: 'patchUser',
+  properties: {
+    params: {
+      properties: {
+        username: paths.username
+      }
+    },
+    body: {
+      properties: {
+        id: paths.username,
+        givenName: paths.givenName,
+        familyName: paths.familyName,
+        description: paths.description,
+        location: paths.location
+      },
+      required: ['id'],
+      additionalProperties: false
+    }
+  }
+};
+
 module.exports = {
   definitions: {
     user: {
@@ -12,17 +53,45 @@ module.exports = {
         pattern: '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$'
       },
       givenName: {
+        type: 'string',
         maxLength: 128
       },
       familyName: {
+        type: 'string',
         maxLength: 128
       },
-      desc: {
+      desc: { // description
+        type: 'string',
         maxLength: 2048
       },
       password: {
+        type: 'string',
         maxLength: 512,
         minLength: 8
+      },
+      location: {
+        oneOf: [
+          {
+            type: 'null'
+          },
+          {
+            type: 'array',
+            minItems: 2,
+            maxItems: 2,
+            items: [
+              {
+                type: 'number',
+                minimum: -90,
+                maximum: 90
+              },
+              {
+                type: 'number',
+                minimum: -180,
+                maximum: 180
+              }
+            ]
+          }
+        ]
       },
       code: {
         type: 'string',
@@ -54,8 +123,8 @@ module.exports = {
         email: {
           $ref : 'sch#/definitions/user/email'
         },
-        username: { $ref : 'sch#/definitions/user/username'},
-        password: { '$ref': 'sch#/definitions/user/password'}
+        username: paths.username,
+        password: { $ref: 'sch#/definitions/user/password'}
       }
     }
   },
@@ -165,7 +234,7 @@ module.exports = {
         properties: {
           story: { $ref: 'sch#/definitions/userTag/story' },
           relevance: { $ref: 'sch#/definitions/userTag/relevance' },
-          id: {} // for now id is ignored TODO should be compared to params
+          id: {}
         },
         additionalProperties: false,
         required: ['id']
@@ -179,5 +248,6 @@ module.exports = {
       }
     },
     required: ['body', 'params']
-  }
+  },
+  getUser, patchUser
 };

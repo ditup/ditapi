@@ -3,9 +3,10 @@
 const _ = require('lodash');
 
 const parser = require('./parser'),
-      rules = require('./rules'),
       schema = require('./schema'),
       { ajv } = require('./ajvInit');
+
+const validate = require('./validate-by-schema');
 
 exports.postUsers = function (req, res, next) {
   // req.checkBody(_.pick(rules.user, ['username', 'email', 'password']));
@@ -62,71 +63,11 @@ exports.getUsersWithLocation = function (req, res, next) {
   return next();
 };
 
-exports.getUser = function (req, res, next) {
-  req.checkParams(_.pick(rules.user, ['username']));
+const get = validate('getUser');
+const patch = validate('patchUser');
 
-  const errors = req.validationErrors();
-
-  const errorOutput = { errors: [] };
-
-  if (errors) {
-    for(const e of errors) {
-      errorOutput.errors.push({ meta: e });
-    }
-    return res.status(400).json(errorOutput);
-  }
-
-  return next();
-};
-
-exports.patchUser = function (req, res, next) {
-  req.checkParams(_.pick(rules.user, ['username']));
-  req.checkBody(_.pick(rules.user, ['id', 'givenName', 'familyName', 'description']));
-  let errors = req.validationErrors();
-
-  const errorOutput = { errors: [] };
-
-  // validate location
-  if (req.body.hasOwnProperty('location')) {
-    const location = req.body.location;
-
-    const locationErrors = [];
-
-    /*
-     * check that the location is an array of 2 numbers in coordinate range
-     * or empty (null, '', false)
-     *
-     *
-     */
-    const isEmpty = !location;
-    const isArrayOf2Numbers = _.isArray(location)
-      && location.length === 2
-      && _.isNumber(location[0])
-      && _.isNumber(location[1])
-      && _.inRange(location[0], -90, 90)
-      && _.inRange(location[1], -180, 180);
-
-
-    if (!(isArrayOf2Numbers || isEmpty)) {
-      locationErrors.push('location should be an array of 2 numbers or falsy');
-    }
-
-    if (locationErrors.length > 0) {
-      errors = (errors)
-        ? errors.concat(locationErrors)
-        : locationErrors;
-    }
-  }
-
-  if (errors) {
-    for(const e of errors) {
-      errorOutput.errors.push({ meta: e });
-    }
-    return res.status(400).json(errorOutput);
-  }
-
-  return next();
-};
+exports.get = get;
+exports.patch = patch;
 
 exports.getNewUsers = function (req, res, next) {
 

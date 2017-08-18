@@ -34,8 +34,8 @@ router.route('/')
 
 // get and patch user profile
 router.route('/:username')
-  .get(validators.users.getUser, userController.getUser)
-  .patch(authorize.onlyLoggedMe, validators.users.patchUser, userController.patchUser, userController.getUser);
+  .get(validators.users.get, userController.getUser)
+  .patch(authorize.onlyLoggedMe, validators.users.patch, userController.patchUser, userController.getUser);
 
 /**
  * Routers for userTags
