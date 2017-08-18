@@ -44,12 +44,10 @@ module.exports = {
     user: {
       username: {
         type: 'string',
-        minLength: 1,
         pattern: '^(?=.{2,32}$)[a-z0-9]+([\\_\\-\\.][a-z0-9]+)*$'
       },
       email: {
         type: 'string',
-        minLength: 1,
         pattern: '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$'
       },
       givenName: {
@@ -118,14 +116,18 @@ module.exports = {
   },
   postUsers: {
     id: 'postUsers',
-    body: {
-      properties: {
-        email: {
-          $ref : 'sch#/definitions/user/email'
+    properties: {
+      body: {
+        properties: {
+          email: {
+            $ref : 'sch#/definitions/user/email'
+          },
+          username: paths.username,
+          password: { $ref: 'sch#/definitions/user/password'}
         },
-        username: paths.username,
-        password: { $ref: 'sch#/definitions/user/password'}
-      }
+        required: ['username', 'email', 'password']
+      },
+      required: ['body']
     }
   },
   newUsers: {

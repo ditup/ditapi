@@ -10,7 +10,7 @@ const validators = require(path.resolve('./controllers/validators')),
 
 // post a new user
 router.route('/')
-  .post(validators.users.postUsers, userController.postUsers);
+  .post(validators.users.post, userController.postUsers);
 
 // get new users who have common tags with me
 router.route('/')

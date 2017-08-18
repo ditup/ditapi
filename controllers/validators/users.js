@@ -8,19 +8,6 @@ const parser = require('./parser'),
 
 const validate = require('./validate-by-schema');
 
-exports.postUsers = function (req, res, next) {
-  // req.checkBody(_.pick(rules.user, ['username', 'email', 'password']));
-
-  const validate = ajv.compile(schema.postUsers.body);
-  const valid = validate(req.body);
-
-  if (!valid) {
-    const errorOutput = ajv.errorsText(validate.errors);
-    return res.status(400).json({'errors':errorOutput});
-  }
-  return next();
-};
-
 exports.getUsersWithTags = function (req, res, next) {
 
   req.query = parser.parseQuery(req.query, parser.parametersDictionary);
@@ -63,11 +50,13 @@ exports.getUsersWithLocation = function (req, res, next) {
   return next();
 };
 
+const post = validate('postUsers');
 const get = validate('getUser');
 const patch = validate('patchUser');
 
 exports.get = get;
 exports.patch = patch;
+exports.post = post;
 
 exports.getNewUsers = function (req, res, next) {
 
@@ -104,21 +93,3 @@ exports.getNewUsersWithMyTags = function (req, res, next) {
 
   return next();
 };
-
-/* exports.getNewUsers = function (req, res, next) {
-
-  req.checkQuery(rules.newUsers);
-
-  const errors = req.validationErrors();
-
-  const errorOutput = { errors: [] };
-
-  if (errors) {
-    for(const e of errors) {
-      errorOutput.errors.push({ meta: e });
-    }
-    return res.status(400).json(errorOutput);
-  }
-
-  return next();
-};*/
