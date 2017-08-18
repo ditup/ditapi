@@ -8,8 +8,6 @@ const userController = require(path.resolve('./controllers/users'));
 const validators = require(path.resolve('./controllers/validators')),
       authorize = require(path.resolve('./controllers/authorize'));
 
-const validateBySchema = require(path.resolve('./controllers/validators/validate-by-schema'));
-
 // post a new user
 router.route('/')
   .post(validators.users.postUsers, userController.postUsers);
@@ -43,12 +41,12 @@ router.route('/:username')
  * Routers for userTags
  */
 router.route('/:username/tags')
-  .post(authorize.onlyLoggedMe, validateBySchema('postUserTags'), userController.postUserTags)
+  .post(authorize.onlyLoggedMe, validators.userTags.post, userController.postUserTags)
   .get(userController.getUserTags);
 
 router.route('/:username/tags/:tagname')
   .get(userController.getUserTag)
-  .patch(authorize.onlyLoggedMe, validateBySchema('patchUserTag'), userController.patchUserTag, userController.getUserTag)
+  .patch(authorize.onlyLoggedMe, validators.userTags.patch, userController.patchUserTag, userController.getUserTag)
   .delete(authorize.onlyLoggedMe, userController.deleteUserTag);
 
 router.route('/:username/avatar')

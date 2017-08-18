@@ -9,6 +9,7 @@ exports.messages = require('./messages');
 exports.account = require('./account');
 exports.users = require('./users');
 exports.tags = require('./tags');
+exports.userTags = require('./user-tags');
 
 
 

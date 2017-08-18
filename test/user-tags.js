@@ -642,8 +642,6 @@ describe('Tags of user', function () {
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
-          /*
-           * TODO implement!
           it('[JSON API id doesn\'t match url] 400 and msg', async function () {
             const [me, other] = dbData.users;
             const [userTag] = dbData.userTag;
@@ -670,9 +668,8 @@ describe('Tags of user', function () {
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
             should(response.body).have.propertyByPath('errors', 0, 'meta')
-              .eql('url should match body id');
+              .eql('body.id should match params.username, params.tagname');
           });
-          */
 
           it('[invalid story] 400 and msg', async function () {
             const { userTag: [userTag], users: [me] } = dbData;

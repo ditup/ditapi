@@ -25,7 +25,7 @@ module.exports = function (err, req, res, next) {
       }
 
       return {
-        meta: e.msg || e,
+        meta: e.msg || e.message || e,
         title: (e.param) ? `invalid ${e.param}` : 'invalid',
         detail: e.msg || ''
       };
