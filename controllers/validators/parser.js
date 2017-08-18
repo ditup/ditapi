@@ -21,7 +21,8 @@ const parametersDictionary = {
   },
   filter: {
     tag: 'array',
-    withMyTags: 'int'
+    withMyTags: 'int',
+    location: 'coordinates'
   },
 };
 
@@ -48,6 +49,17 @@ const parseQuery = function (query, parametersDictionary) {
             query[q] = array;
             break;
           }
+          case 'coordinates': {
+            // parse the location
+            const queryString = query[q];
+            const array = queryString.split(',');
+
+            // parse location to numbers
+            const [lat1, lon1, lat2, lon2] = array.map(loc => +loc);
+
+            query[q] = [[lat1, lon1], [lat2, lon2]];
+            break;
+          }
         }
       }
     }
@@ -55,4 +67,9 @@ const parseQuery = function (query, parametersDictionary) {
   return query;
 };
 
-module.exports = { parseQuery, parametersDictionary };
+const parse = function (req, res, next) {
+  req.query = parseQuery(req.query, parametersDictionary);
+  next();
+};
+
+module.exports = { parseQuery, parametersDictionary, parse };

@@ -39,6 +39,30 @@ const patchUser = {
   }
 };
 
+const getUsersWithMyTags = {
+  id: 'getUsersWithMyTags',
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            byMyTags: {
+              enum: ['']
+            }
+          },
+          required: ['byMyTags']
+        }
+      },
+      required: ['filter']
+    },
+  },
+  required: ['query']
+};
+
+const getUsersWithLocation = {
+  id: 'getUsersWithLocation'
+};
+
 module.exports = {
   definitions: {
     user: {
@@ -132,81 +156,89 @@ module.exports = {
   },
   newUsers: {
     id: 'newUsers',
-    query: {
-      properties: {
-        sort: {
-          type: 'string'
-        },
-        page: {
-          type: 'object',
-          properties: {
-            limit: {
-              type: 'number'
-            },
-            offset: {
-              type: 'number'
-            }
+    properties: {
+      query: {
+        properties: {
+          sort: {
+            type: 'string'
           },
-          required: ['limit', 'offset'],
-          additionalProperties: false
-        }
-      },
-      required: ['sort', 'page'],
-      additionalProperties: false
+          page: {
+            type: 'object',
+            properties: {
+              limit: {
+                type: 'number'
+              },
+              offset: {
+                type: 'number'
+              }
+            },
+            required: ['limit', 'offset'],
+            additionalProperties: false
+          }
+        },
+        required: ['sort', 'page'],
+        additionalProperties: false
+      }
     }
   },
   newUsersWithMyTags: {
     id: 'newUsersWithMyTags',
-    query:{
-      properties:{
-        sort: {
-          type: 'string',
-          const: '-created'
-        },
-        filter: {
-          properties: {
-            withMyTags: {
-              type: 'number',
-            }
+    properties: {
+      query:{
+        properties:{
+          sort: {
+            type: 'string',
+            const: '-created'
           },
-          required: ['withMyTags'],
-          additionalProperties: false
-        },
-        page: {
-          properties: {
-            offset: {
-              type: 'number'
+          filter: {
+            properties: {
+              withMyTags: {
+                type: 'number',
+              }
             },
-            limit: {
-              type: 'number'
-            }
+            required: ['withMyTags'],
+            additionalProperties: false
           },
-          required: ['offset', 'limit'],
-          additionalProperties: false
-        }
-      },
-      required: ['sort', 'filter', 'page'],
-      additionalProperties: false
-    }
+          page: {
+            properties: {
+              offset: {
+                type: 'number'
+              },
+              limit: {
+                type: 'number'
+              }
+            },
+            required: ['offset', 'limit'],
+            additionalProperties: false
+          }
+        },
+        required: ['sort', 'filter', 'page'],
+        additionalProperties: false
+      }
+    },
+    required: ['query']
   },
   getUsersWithTags: {
     id: 'getUsersWithTags',
-    query: {
-      properties: {
-        filter: {
-          properties: {
-            tag: {
-              type: 'array',
-              items: { $ref : 'sch#/definitions/tag/tagname' }
-            }
-          },
-          required: ['tag'],
-          additionalProperties : false
-        }
-      },
-      required: ['filter'],
-      additionalProperties: false
-    }
+    properties: {
+      query: {
+        properties: {
+          filter: {
+            properties: {
+              tag: {
+                type: 'array',
+                items: { $ref : 'sch#/definitions/tag/tagname' }
+              }
+            },
+            required: ['tag'],
+            additionalProperties : false
+          }
+        },
+        required: ['filter'],
+        additionalProperties: false
+      }
+    },
+    required: ['query']
   },
   postUserTags: {
     id: 'postUserTags',
@@ -251,5 +283,5 @@ module.exports = {
     },
     required: ['body', 'params']
   },
-  getUser, patchUser
+  getUser, patchUser, getUsersWithMyTags, getUsersWithLocation
 };

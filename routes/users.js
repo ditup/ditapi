@@ -8,13 +8,15 @@ const userController = require(path.resolve('./controllers/users'));
 const validators = require(path.resolve('./controllers/validators')),
       authorize = require(path.resolve('./controllers/authorize'));
 
+const { parse } = require(path.resolve('./controllers/validators/parser'));
+
 // post a new user
 router.route('/')
   .post(validators.users.post, userController.postUsers);
 
 // get new users who have common tags with me
 router.route('/')
-  .get(userController.gotoGetNewUsersWithMyTags, authorize.onlyLogged, validators.users.getNewUsersWithMyTags, userController.getNewUsersWithMyTags);
+  .get(userController.gotoGetNewUsersWithMyTags, authorize.onlyLogged, parse, validators.users.getNewUsersWithMyTags, userController.getNewUsersWithMyTags);
 
 // get users who have common tags with me
 router.route('/')
@@ -22,15 +24,15 @@ router.route('/')
 
 // get users who have given tags
 router.route('/')
-  .get(userController.gotoGetUsersWithTags, authorize.onlyLogged, validators.users.getUsersWithTags, userController.getUsersWithTags);
+  .get(userController.gotoGetUsersWithTags, authorize.onlyLogged, parse, validators.users.getUsersWithTags, userController.getUsersWithTags);
 
 // get users from given location
 router.route('/')
-  .get(userController.gotoGetUsersWithLocation, authorize.onlyLogged, validators.users.getUsersWithLocation, userController.getUsersWithLocation);
+  .get(userController.gotoGetUsersWithLocation, authorize.onlyLogged, parse, validators.users.getUsersWithLocation, userController.getUsersWithLocation);
 
 // get new users
 router.route('/')
-  .get(userController.gotoGetNewUsers, authorize.onlyLogged, validators.users.getNewUsers, userController.getNewUsers);
+  .get(userController.gotoGetNewUsers, authorize.onlyLogged, parse, validators.users.getNewUsers, userController.getNewUsers);
 
 // get and patch user profile
 router.route('/:username')

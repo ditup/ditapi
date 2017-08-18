@@ -455,7 +455,7 @@ describe('/users', function () {
 
       it('list users sorted by relevance weight', async function () {
         const res = await agent
-          .get('/users?filter[byMyTags]=true')
+          .get('/users?filter[byMyTags]')
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
@@ -485,7 +485,7 @@ describe('/users', function () {
 
       it('include user-tag relationships', async function () {
         const res = await agent
-          .get('/users?filter[byMyTags]=true')
+          .get('/users?filter[byMyTags]')
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
@@ -557,6 +557,15 @@ describe('/users', function () {
             self: `${config.url.all}/tags/${futData.tag.tagname}`
           }
         }]);
+      });
+
+      it('[invalid query.filter.byMyTags] should fail with 400', async () => {
+        await agent
+          .get('/users?filter[byMyTags]=asdf')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(400);
       });
     });
 

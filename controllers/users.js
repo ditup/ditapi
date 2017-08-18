@@ -37,7 +37,7 @@ exports.gotoGetNewUsersWithMyTags = function (req, res, next) {
 
 exports.gotoGetUsersWithMyTags = function (req, res, next) {
   // TODO DZIK req.query.filter.byMyTags returns string not bool (how was it checked before?)
-  if (_.has(req, 'query.filter.byMyTags') && req.query.filter.byMyTags === 'true') {
+  if (_.has(req, 'query.filter.byMyTags')) {
     return next();
   }
   return next('route');
@@ -316,23 +316,8 @@ exports.getUser = async function (req, res, next) {
 // edit a user with PATCH request
 // presumption: data in body should already be valid and user should be logged in as herself
 exports.patchUser = async function (req, res, next) {
-  // check that user id in body equals username from url
-  if (req.body.id !== req.params.username) {
-    const e = new Error('username in url parameter and in body don\'t match');
-    e.status = 400;
-    return next(e);
-  }
 
-  // the list of allowed profile fields (subset of these needs to be provided)
   const profileFields = ['givenName', 'familyName', 'description'];
-
-  // check that only profile fields are present in the request body
-  const unwantedParams = _.difference(Object.keys(req.body), _.union(profileFields, ['id', 'location']));
-  if (unwantedParams.length > 0) { // if any unwanted fields are present, error.
-    const e = new Error('The request body contains unexpected attributes');
-    e.status = 400;
-    return next(e);
-  }
 
   // pick only the profile fields from the body of the request
   const profile = _.pick(req.body, profileFields);
