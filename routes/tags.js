@@ -7,10 +7,11 @@ const path = require('path');
 const tagController = require(path.resolve('./controllers/tags'));
 const validators = require(path.resolve('./controllers/validators'));
 const authorize = require(path.resolve('./controllers/authorize'));
+const { parse } = require(path.resolve('./controllers/validators/parser'));
 
 router.route('/')
   // post a new tag
-  .post(authorize.onlyLogged, validators.tags.postTags, tagController.postTags)
+  .post(authorize.onlyLogged, validators.tags.post, tagController.postTags)
   // get tags like a string
   .get(tagController.gotoGetTagsLike, authorize.onlyLogged, tagController.getTagsLike);
 
@@ -20,13 +21,13 @@ router.route('/')
 
 // get tags related to given tags
 router.route('/')
-.get(tagController.gotoRelatedToTags, validators.tags.getTagsRelatedToTags, authorize.onlyLogged, tagController.relatedToTags);
+.get(tagController.gotoRelatedToTags, authorize.onlyLogged, parse, validators.tags.getTagsRelatedToTags, tagController.relatedToTags);
 
 // get random tags
 router.route('/')
   .get(tagController.gotoGetRandomTags, authorize.onlyLogged, tagController.getRandomTags);
 
 router.route('/:tagname')
-  .get(validators.tags.getTag, tagController.getTag);
+  .get(validators.tags.get, tagController.getTag);
 
 module.exports = router;

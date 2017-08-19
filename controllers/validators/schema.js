@@ -4,6 +4,7 @@ const paths = {
   familyName: { $ref : 'sch#/definitions/user/familyName' },
   description: { $ref : 'sch#/definitions/user/desc' },
   location: { $ref : 'sch#/definitions/user/location' },
+  tagname: { $ref : 'sch#/definitions/tag/tagname' },
 };
 
 const getUser = {
@@ -61,6 +62,55 @@ const getUsersWithMyTags = {
 
 const getUsersWithLocation = {
   id: 'getUsersWithLocation'
+};
+
+const postTags = {
+  id: 'postTags',
+  properties: {
+    body: {
+      properties: {
+        tagname: paths.tagname
+      },
+      required: ['tagname'],
+      additionalProperties: false
+    }
+  },
+  required: ['body']
+};
+
+const getTag = {
+  id: 'getTag',
+  properties: {
+    params: {
+      properties: {
+        tagname: paths.tagname
+      },
+      required: ['tagname'],
+      additionalProperties: false
+    }
+  },
+  required: ['params']
+};
+
+const getTagsRelatedToTags = {
+  id: 'getTagsRelatedToTags',
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            relatedToTags: {
+              type: 'array',
+              items: paths.tagname
+            }
+          },
+          required: ['relatedToTags']
+        }
+      },
+      required: ['filter']
+    }
+  },
+  required: ['query']
 };
 
 module.exports = {
@@ -124,7 +174,8 @@ module.exports = {
     tag: {
       tagname: {
         type: 'string',
-        minLength: 1,
+        minLength: 2,
+        maxLength: 64,
         pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
       }
     },
@@ -227,7 +278,7 @@ module.exports = {
             properties: {
               tag: {
                 type: 'array',
-                items: { $ref : 'sch#/definitions/tag/tagname' }
+                items: paths.tagname
               }
             },
             required: ['tag'],
@@ -247,9 +298,7 @@ module.exports = {
         properties: {
           tag: {
             properties: {
-              tagname: {
-                $ref: 'sch#/definitions/tag/tagname'
-              }
+              tagname: paths.tagname
             }
           },
           story: { $ref: 'sch#/definitions/userTag/story' },
@@ -275,13 +324,12 @@ module.exports = {
       },
       params: {
         properties: {
-          tagname: {
-            $ref: 'sch#/definitions/tag/tagname'
-          }
+          tagname: paths.tagname
         }
       }
     },
     required: ['body', 'params']
   },
-  getUser, patchUser, getUsersWithMyTags, getUsersWithLocation
+  getUser, patchUser, getUsersWithMyTags, getUsersWithLocation,
+  postTags, getTag, getTagsRelatedToTags
 };

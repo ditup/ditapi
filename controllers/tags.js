@@ -122,11 +122,11 @@ exports.relatedToMyTags = async function (req, res, next) {
  */
 exports.relatedToTags = async function (req, res, next) {
 
-  const tagsArray = req.query.filter.relatedToTags.split(',');
+  const tags = req.query.filter.relatedToTags;
 
-  try{
+  try {
     // get tags from database
-    const foundTags = await models.tag.findTagsRelatedToTags(tagsArray);
+    const foundTags = await models.tag.findTagsRelatedToTags(tags);
 
     // define the parameters for self link
     foundTags.urlParam = encodeURIComponent('filter[relatedToTags]');
