@@ -61,7 +61,24 @@ const getUsersWithMyTags = {
 };
 
 const getUsersWithLocation = {
-  id: 'getUsersWithLocation'
+  id: 'getUsersWithLocation',
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            location: {
+              type: 'array',
+              items: paths.location
+            }
+          },
+          require: ['location']
+        }
+      },
+      require: ['filter']
+    }
+  },
+  require: ['query']
 };
 
 const postTags = {

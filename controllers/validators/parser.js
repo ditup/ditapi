@@ -55,10 +55,12 @@ const parseQuery = function (query, parametersDictionary) {
             const queryString = query[q];
             const array = queryString.split(',');
 
-            // parse location to numbers
-            const [lat1, lon1, lat2, lon2] = array.map(loc => +loc);
+            // create a location from every pair of coordinates, and return array of such locations
+            query[q] = [];
+            for(let i = 0, len = array.length; i < len; i = i + 2) {
+              query[q].push([+array[i], +array[i + 1]]);
+            }
 
-            query[q] = [[lat1, lon1], [lat2, lon2]];
             break;
           }
         }

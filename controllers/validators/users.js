@@ -4,7 +4,9 @@ const validate = require('./validate-by-schema');
 
 const getUsersWithTags = validate('getUsersWithTags');
 const getNewUsersWithMyTags = validate('newUsersWithMyTags');
-const getUsersWithLocation = validate('getUsersWithLocation');
+const getUsersWithLocation = validate('getUsersWithLocation', [['query.filter.location[0]', 'query.filter.location[1]', ([loc00, loc01], [loc10, loc11]) => {
+  return loc00 < loc10 && loc01 < loc11;
+}]]);
 const post = validate('postUsers');
 const get = validate('getUser');
 const patch = validate('patchUser', [['params.username', 'body.id']]);
