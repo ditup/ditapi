@@ -693,7 +693,7 @@ describe('Tags of user', function () {
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
             should(response.body).have.propertyByPath('errors', 0, 'meta')
-              .eql('body.id should match params.username, params.tagname');
+              .eql('url should match body id');
           });
 
           it('[invalid story] 400 and msg', async function () {
@@ -718,8 +718,8 @@ describe('Tags of user', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(response.body).have.propertyByPath('errors', 0, 'title')
-              .eql('invalid story');
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('userTag story can be at most 1024 characters long');
           });
 
           it('[invalid relevance] 400 and msg', async function () {
@@ -744,8 +744,8 @@ describe('Tags of user', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(response.body).have.propertyByPath('errors', 0, 'title')
-              .eql('invalid relevance');
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('relevance should be a number 1, 2, 3, 4 or 5');
 
           });
 
@@ -772,8 +772,8 @@ describe('Tags of user', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(response.body).have.propertyByPath('errors', 0, 'title')
-              .match('invalid tagname');
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .match(/Invalid Tagname/);
 
           });
 
@@ -827,8 +827,8 @@ describe('Tags of user', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(response.body).have.propertyByPath('errors', 0, 'title')
-              .eql('invalid attributes');
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('invalid attributes: invalid');
 
           });
         });

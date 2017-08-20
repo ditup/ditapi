@@ -12,8 +12,7 @@ const path = require('path'),
 exports.postMessages = async function (req, res, next) {
   try {
     // message body and receiver should be provided
-    const { body: rawBody, to: { username: to } } = req.body;
-    const body = rawBody.trim();
+    const { body, to: { username: to } } = req.body;
 
     // message sender is the authorized user
     const from = req.auth.username;
