@@ -4,15 +4,13 @@
 const express = require('express'),
       bodyParser = require('body-parser'),
       passport = require('passport'),
-      helmet = require('helmet'),
-      expressValidator = require('express-validator');
+      helmet = require('helmet');
 
 // load internal dependencies
 const models = require('./models'),
       config = require('./config'),
       authenticate = require('./controllers/authenticate'),
-      deserialize = require('./controllers/deserialize'),
-      customValidators = require('./controllers/validators/custom');
+      deserialize = require('./controllers/deserialize');
 
 
 // configure the database for all the models
@@ -57,10 +55,6 @@ app.use(deserialize);
 // authentication with passport
 app.use(passport.initialize());
 app.use(authenticate);
-
-app.use(expressValidator({
-  customValidators: customValidators
-}));
 
 // we set Content-Type header of all requests to JSON API
 app.use(function (req, res, next) {

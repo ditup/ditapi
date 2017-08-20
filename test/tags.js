@@ -296,19 +296,6 @@ describe('/tags', function () {
 
           });
 
-          it('[example 4] respond with tags related to the list of tags', async function() {
-            const [loggedUser] = dbData.users;
-            const resp = await agent
-              .get('/tags?filter[relatedToTags]=tag0,tag1,tag2,tag3,tag4,tag5,tag6')
-              .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
-              .expect(200)
-              .expect('Content-Type', /^application\/vnd\.api\+json/);
-
-            should(resp.body).have.property('data').Array().length(0);
-
-          });
-
           it('[example 5] respond with tags related to the list of tags', async function() {
             const [loggedUser] = dbData.users;
             const resp = await agent
@@ -323,6 +310,19 @@ describe('/tags', function () {
           });
 
           it('[example 6] respond with tags related to the list of tags', async function() {
+            const [loggedUser] = dbData.users;
+            const resp = await agent
+              .get('/tags?filter[relatedToTags]=tag0,tag1,tag2,tag3,tag4,tag5,tag6')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp.body).have.property('data').Array().length(0);
+
+          });
+
+          it('[example 7] respond with tags related to the list of tags', async function() {
             const [loggedUser] = dbData.users;
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag3,tag4,tag4')
@@ -441,6 +441,26 @@ describe('/tags', function () {
         await agent
           .post('/tags')
           .send(serializedInvalidTagname)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+
+      it('[too short tagname] should error with 400', async function () {
+        await agent
+          .post('/tags')
+          .send({ data: { type: 'tags', attributes: { tagname: 'a' } } })
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+
+      it('[too long tagname] should error with 400', async function () {
+        await agent
+          .post('/tags')
+          .send({ data: { type: 'tags', attributes: { tagname: 'a'.repeat(65) } } })
           .set('Content-Type', 'application/vnd.api+json')
           .auth(loggedUser.username, loggedUser.password)
           .expect(400)
