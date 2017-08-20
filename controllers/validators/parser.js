@@ -46,7 +46,8 @@ const parseQuery = function (query, parametersDictionary) {
           }
           case 'array': {
             const queryString = query[q];
-            const array = queryString.split(',');
+            // empty string to empty array
+            const array = (queryString) ? queryString.split(',') : [];
             query[q] = array;
             break;
           }

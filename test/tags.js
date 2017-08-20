@@ -72,6 +72,36 @@ describe('/tags', function () {
       });
       // i.e. name matches name, namespace, named, namel, first-name, tag-name
       // doesn't match tagname, username, firstname
+
+      it('limit the output', async () => {
+        const response = await agent
+          .get('/tags?filter[tagname][like]=tag&page[offset]=0&page[limit]=3')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(200)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+        const foundTags = response.body;
+        should(foundTags).have.property('data').Array().length(3);
+      });
+
+      it('[too high limit] respond 400', async () => {
+        await agent
+          .get('/tags?filter[tagname][like]=tag&page[offset]=0&page[limit]=21')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+
+      it('[query.page[offset] different from 0] respond 400', async () => {
+        await agent
+          .get('/tags?filter[tagname][like]=tag&page[offset]=2&page[limit]=5')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
     });
 
     describe('/tags?filter[relatedToMyTags]', function () {
@@ -135,6 +165,50 @@ describe('/tags', function () {
           testTag(tagD, { tagname: 'tag4'});
           testTag(tagE, { tagname: 'tag8'});
         });
+
+        it('limit the output', async function () {
+          const [me] = dbData.users;
+
+          const resp = await agent
+            .get('/tags?filter[relatedToMyTags]&page[offset]=0&page[limit]=3')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(resp.body).have.property('data').Array().length(3);
+        });
+
+        it('offset the output', async function () {
+          const [me] = dbData.users;
+
+          const resp = await agent
+            .get('/tags?filter[relatedToMyTags]&page[offset]=2&page[limit]=10')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(resp.body).have.property('data').Array().length(3);
+          const [tagC, tagD, tagE] = resp.body.data;
+
+          testTag(tagC, { tagname: 'tag6'});
+          testTag(tagD, { tagname: 'tag4'});
+          testTag(tagE, { tagname: 'tag8'});
+        });
+
+        context('invalid', function () {
+          it('[too high query.page[limit]] 400', async function () {
+            const [me] = dbData.users;
+
+            await agent
+              .get('/tags?filter[relatedToMyTags]&page[offset]=0&page[limit]=21')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(me.username, me.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+        });
       });
 
       context('not logged', function () {
@@ -177,6 +251,30 @@ describe('/tags', function () {
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
           should(resp.body).have.property('data').Array().length(1);
+        });
+
+        it('[pagination] respond array with {page[limit]} elements', async function () {
+          const [me] = dbData.users;
+
+          const resp = await agent
+            .get('/tags?filter[random]&page[offset]=0&page[limit]=7')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(resp.body).have.property('data').Array().length(7);
+        });
+
+        it('[too high page[limit]] 400', async function () {
+          const [me] = dbData.users;
+
+          await agent
+            .get('/tags?filter[random]&page[offset]=0&page[limit]=21')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(me.username, me.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
       });
 
@@ -337,6 +435,22 @@ describe('/tags', function () {
             testTag(tagC, { tagname: 'tag0'});
 
           });
+
+          it('[offset and limit] respond with tags related to the list of tags', async function () {
+            const [loggedUser] = dbData.users;
+            const resp = await agent
+              .get('/tags?filter[relatedToTags]=tag1&page[limit]=2&page[offset]=1')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            should(resp.body).have.property('data').Array().length(2);
+            const [tagB, tagC] = resp.body.data;
+
+            testTag(tagB, { tagname: 'tag5'});
+            testTag(tagC, { tagname: 'tag0'});
+          });
         });
 
         context('invalid data', function () {
@@ -375,6 +489,16 @@ describe('/tags', function () {
             testTag(tagC, { tagname: 'tag4'});
           });
 
+          it('[too high page[limit]] 400', async function () {
+            const [loggedUser] = dbData.users;
+            await agent
+              .get('/tags?filter[relatedToTags]=tag1&page[limit]=21&page[offset]=0')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(400)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          });
 
         });
       });

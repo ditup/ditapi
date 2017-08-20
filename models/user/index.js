@@ -337,7 +337,7 @@ class User extends Model {
   }
 
   // TODO optionally filter out unverified users
-  static async readUsersByTags(tagnames) {
+  static async readUsersByTags(tagnames, { offset, limit }) {
     const query = `
       // find users by tags
       //
@@ -354,9 +354,10 @@ class User extends Model {
           // sort the users by the sum of relevances of found tags
           LET relevanceSum = SUM(asdf[*].ut.relevance)
           SORT relevanceSum DESC
+          LIMIT @offset, @limit
           RETURN { user, relevanceSum, tags: asdf[*].t, userTags: asdf[*].ut }
     `;
-    const params = { tagnames };
+    const params = { tagnames, limit, offset };
     const cursor = await this.db.query(query, params);
     const output = await cursor.all();
 
@@ -369,7 +370,7 @@ class User extends Model {
    * @returns {Promise<Objec>}
    *
    */
-  static async readUsersByMyTags(username) {
+  static async readUsersByMyTags(username, { offset, limit }) {
     const query = `
       FOR u IN users FILTER u.username==@username
         FOR v,e,p IN 2 OUTBOUND u
@@ -382,9 +383,10 @@ class User extends Model {
           COLLECT user=finalUser INTO asdf KEEP relevanceWeight, tag, utag
           LET weightSum = SUM(asdf[*].relevanceWeight)
           SORT weightSum DESC
+          LIMIT @offset, @limit
           RETURN { user, relevance: weightSum, tags: asdf[*].tag, userTags: asdf[*].utag }
     `;
-    const params = { username };
+    const params = { username, offset, limit };
     const cursor = await this.db.query(query, params);
     const output = await cursor.all();
 

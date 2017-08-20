@@ -8,7 +8,8 @@ const config = require(path.resolve('./config/config')),
       Identicon = require('identicon.js'),
       mailer = require(path.resolve('./services/mailer')),
       models = require(path.resolve('./models')),
-      serialize = require(path.resolve('./serializers')).serialize;
+      serialize = require(path.resolve('./serializers')).serialize,
+      { getPage } = require('./helpers');
 
 /**
  * controller functions for user requests
@@ -78,7 +79,10 @@ exports.getUsersWithMyTags = async function (req, res, next) {
     const auth = _.get(req, 'auth', { logged: false });
     const me = auth.username;
 
-    const users = await models.user.readUsersByMyTags(me);
+
+    const { offset, limit } = getPage(req, { offset: 0, limit: 10 });
+
+    const users = await models.user.readUsersByMyTags(me, { offset, limit });
 
     // remap users to a proper format for serializing
     const remappedUsers = _.map(users, function (ubt) {
@@ -110,8 +114,11 @@ exports.getUsersWithTags = async function (req, res, next) {
   try {
   // get array of tagnames from query (?filter[tag]=tag1,tag2)
     const tags = req.query.filter.tag;
+
+    const { offset, limit } = getPage(req, { offset: 0, limit: 10 });
+
     // read users from database
-    let usersByTags = await models.user.readUsersByTags(tags);
+    let usersByTags = await models.user.readUsersByTags(tags, { offset, limit });
 
     // remap users to a proper format for serializing
     usersByTags = _.map(usersByTags, function (ubt) {

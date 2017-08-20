@@ -280,7 +280,9 @@ describe('/users', function () {
             [1, 3, '', 2],
             [1, 4, '', 1],
             [2, 0, '', 5],
-            [2, 1, '', 5]
+            [2, 1, '', 5],
+            [3, 2, '', 3],
+            [4, 2, '', 2]
           ]
         };
         // create data in database
@@ -300,7 +302,7 @@ describe('/users', function () {
         should(res.body).have.property('data');
         const data = res.body.data;
 
-        should(data).have.length(2);
+        should(data).have.length(4);
 
         should(data).have.propertyByPath(0, 'id').eql('user1');
         should(data).have.propertyByPath(0, 'type').eql('users');
@@ -316,6 +318,33 @@ describe('/users', function () {
           username: 'user2',
           givenName: '',
           familyName: ''
+        });
+      });
+
+      it('limit the output', async () => {
+        const res = await agent
+          .get('/users?filter[tag]=tag1,tag2&page[limit]=3&page[offset]=0')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(200);
+
+        should(res.body).have.property('data').Array().length(3);
+      });
+
+      it('offset the output', async () => {
+        const res = await agent
+          .get('/users?filter[tag]=tag1,tag2&page[limit]=5&page[offset]=2')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(200);
+
+        should(res.body).have.property('data').Array().length(2);
+        const { data } = res.body;
+        should(data[0]).match({
+          type: 'users',
+          id: 'user3'
         });
       });
 
@@ -395,17 +424,59 @@ describe('/users', function () {
         }]);
       });
       context('invalid data', function () {
-        it('[invalid tagnames in a list]: error 400', async function () {
-          await agent
+        it('[invalid tagnames in a list] error 400', async function () {
+          const res = await agent
             .get('/users?filter[tag]=t*,11')
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
+          should(res.body).have.propertyByPath('errors', '0', 'title')
+            .eql('invalid tag[0]');
+        });
+
+        it('[too many tags provided] error 400', async () => {
+          // query with 11 provided tags (limit 10)
+          const res = await agent
+            .get('/users?filter[tag]=tag0,tag1,tag2,tag3,tag4,tag5,tag6,tag7,tag8,tag9,tag10')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+          should(res.body).have.propertyByPath('errors', '0', 'title')
+            .eql('invalid tag');
+
+          should(res.body).have.propertyByPath('errors', '0', 'meta')
+            .eql('should NOT have more than 10 items');
+        });
+
+        it('[no tags provided] error 400', async () => {
+          const res = await agent
+            .get('/users?filter[tag]=')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+          should(res.body).have.propertyByPath('errors', '0', 'title')
+            .eql('invalid tag');
+          should(res.body).have.propertyByPath('errors', '0', 'meta')
+            .eql('should NOT have less than 1 items');
+        });
+
+        it('[too high query.page[limit]] error 400', async () => {
+          const res = await agent
+            .get('/users?filter[tag]=tag1&page[offset]=0&page[limit]=21')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+          should(res.body).have.propertyByPath('errors', '0', 'title')
+            .eql('invalid limit');
+          should(res.body).have.propertyByPath('errors', '0', 'meta')
+            .eql('should be <= 20');
         });
       });
-      // TODO how should it be done
-      it('limit amount of tags to search by to prevend DoS');
+
     });
 
     describe('show users with my tags', function () {
@@ -559,6 +630,38 @@ describe('/users', function () {
         }]);
       });
 
+      it('limit the output', async () => {
+        const res = await agent
+          .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=2')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(200);
+
+        should(res.body).have.property('data');
+        const data = res.body.data;
+
+        should(data).have.length(2);
+
+      });
+
+      it('offset the output', async () => {
+        const res = await agent
+          .get('/users?filter[byMyTags]&page[offset]=2&page[limit]=5')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(200);
+
+        should(res.body).have.property('data').Array().length(1);
+
+        should(res.body.data[0]).match({
+          type: 'users',
+          id: 'user3'
+        });
+
+      });
+
       it('[invalid query.filter.byMyTags] should fail with 400', async () => {
         await agent
           .get('/users?filter[byMyTags]=asdf')
@@ -566,6 +669,19 @@ describe('/users', function () {
           .auth(loggedUser.username, loggedUser.password)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(400);
+      });
+
+      it('[too high query.page[limit]] error 400', async () => {
+        const res = await agent
+          .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=21')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect('Content-Type', /^application\/vnd\.api\+json/)
+          .expect(400);
+        should(res.body).have.propertyByPath('errors', '0', 'title')
+          .eql('invalid limit');
+        should(res.body).have.propertyByPath('errors', '0', 'meta')
+          .eql('should be <= 20');
       });
     });
 
@@ -652,6 +768,7 @@ describe('/users', function () {
               .expect(400);
 
           });
+
           it('[lack of limit data in the query] error 400', async function() {
             await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=')
@@ -661,7 +778,7 @@ describe('/users', function () {
               .expect(400);
 
           });
-          // TODO 400 or 404
+
           it('[lack of \'page.offset\' parameter in the query] error 404', async function() {
             await agent
               .get('/users?sort=-created&page[limit]=5')
@@ -671,7 +788,7 @@ describe('/users', function () {
               .expect(400);
 
           });
-          // TODO 400 or 404
+
           it('[lack of \'pagination\' parameter in the query] error 404', async function() {
             await agent
               .get('/users?sort=-created')
@@ -691,8 +808,22 @@ describe('/users', function () {
               .expect(400);
 
           });
+
+          it('[too high query.page[limit]] error 400', async () => {
+            const res = await agent
+              .get('/users?sort=-created&page[offset]=0&page[limit]=21')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(400);
+            should(res.body).have.propertyByPath('errors', '0', 'title')
+              .eql('invalid limit');
+            should(res.body).have.propertyByPath('errors', '0', 'meta')
+              .eql('should be <= 20');
+          });
         });
       });
+
       context('not logged in', function () {
         // TODO reaction for not logged in 403?
         it('error 403', async function() {
@@ -907,6 +1038,19 @@ describe('/users', function () {
             .auth(loggedUser.username, loggedUser.password)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
+        });
+
+        it('[too high query.page[limit]] error 400', async () => {
+          const res = await agent
+            .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=21')
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+          should(res.body).have.propertyByPath('errors', '0', 'title')
+            .eql('invalid limit');
+          should(res.body).have.propertyByPath('errors', '0', 'meta')
+            .eql('should be <= 20');
         });
 
       });
