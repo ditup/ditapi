@@ -249,7 +249,7 @@ describe('/account', function () {
             .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
-          should(resp.body).have.propertyByPath('errors', 0, 'title').eql('invalid id');
+          should(resp.body).have.propertyByPath('errors', 0, 'meta', 'value').eql('invalid username');
         });
 
         it('[nonexistent username] 404', async function () {
@@ -302,8 +302,8 @@ describe('/account', function () {
             .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
-          should(resp.body).have.propertyByPath('errors', 0, 'title')
-            .eql('invalid code');
+          should(resp.body).have.propertyByPath('errors', 0, 'meta', 'msg')
+            .eql('code is invalid');
         });
 
         it('[wrong code] 400', async function () {
@@ -383,7 +383,7 @@ describe('/account', function () {
             .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
-          should(resp.body).have.propertyByPath('errors', 0, 'title').eql('invalid password');
+          should(resp.body).have.propertyByPath('errors', 0, 'meta', 'msg').eql('Password should be 8-512 characters long');
         });
       });
     });
@@ -564,7 +564,7 @@ describe('/account', function () {
             .expect(403);
         });
 
-        it('[auth.username vs. req.body.id mismatch] 400', async function () {
+        it('[auth.username vs. req.body.id mismatch] 403', async function () {
           const [{ username, password }] = dbData.users;
 
           const patchBody = {
@@ -583,7 +583,7 @@ describe('/account', function () {
             .send(patchBody)
             .set('Content-Type', 'application/vnd.api+json')
             .auth(username, password)
-            .expect(400);
+            .expect(403);
         });
       });
     });
@@ -692,7 +692,7 @@ describe('/account', function () {
           .expect(400);
 
         should(response.body).have.propertyByPath('errors', 0, 'title')
-          .eql('invalid id');
+          .eql('invalid username');
 
       });
 
@@ -716,7 +716,11 @@ describe('/account', function () {
           .expect(400);
 
         should(response.body).have.propertyByPath('errors', 0, 'title')
-          .eql('invalid emailVerificationCode');
+          .eql('invalid code');
+
+        should(response.body).have.propertyByPath('errors', 0, 'detail')
+          .eql('code is invalid');
+
       });
 
       it('[wrong code] should error', async function () {
