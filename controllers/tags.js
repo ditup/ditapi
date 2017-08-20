@@ -7,51 +7,6 @@ const path = require('path'),
       _ = require('lodash');
 
 /*
- * Does the url query contain 'filter[tagname][like]=pattern'?
- */
-exports.gotoGetTagsLike = function (req, res, next) {
-  if (_.has(req, 'query.filter.tagname.like')) {
-    return next();
-  }
-
-  return next('route');
-};
-
-/*
- * Does the url query contain 'filter[random]'?
- */
-exports.gotoGetRandomTags = function (req, res, next) {
-  if (_.has(req, 'query.filter.random')) {
-    return next();
-  }
-
-  return next('route');
-};
-
-/*
- * Does the url query contain 'filter[relatedToMyTags]'?
- */
-exports.gotoRelatedToMyTags = function (req, res, next) {
-  if (_.has(req, 'query.filter.relatedToMyTags')) {
-    return next();
-  }
-
-  return next('route');
-};
-
-/*
-* Does the url query contain 'filter[relatedToTags]=tag1,tag2,tag3'?
-*/
-exports.gotoRelatedToTags = function (req, res, next) {
-  if (_.has(req, 'query.filter.relatedToTags')) {
-    return next();
-  }
-
-  return next('route');
-};
-
-
-/*
  * Having the url with ?filter[tagname][like]=string query
  * find the tags matching the provided string
  *
