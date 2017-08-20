@@ -1,10 +1,20 @@
+'use strict';
+
 const paths = {
   username: { $ref : 'sch#/definitions/user/username' },
+  email: { $ref : 'sch#/definitions/user/email' },
+  password: { $ref : 'sch#/definitions/user/password' },
+  code: { $ref : 'sch#/definitions/user/code' },
   givenName: { $ref : 'sch#/definitions/user/givenName' },
   familyName: { $ref : 'sch#/definitions/user/familyName' },
   description: { $ref : 'sch#/definitions/user/desc' },
   location: { $ref : 'sch#/definitions/user/location' },
   tagname: { $ref : 'sch#/definitions/tag/tagname' },
+  trust: { $ref : 'sch#/definitions/contact/trust' },
+  contactMessage: { $ref : 'sch#/definitions/contact/message' },
+  reference: { $ref : 'sch#/definitions/contact/reference' },
+  messageBody: { $ref : 'sch#/definitions/message/body' },
+  messageId: { $ref : 'sch#/definitions/message/messageId' },
 };
 
 const getUser = {
@@ -130,6 +140,196 @@ const getTagsRelatedToTags = {
   required: ['query']
 };
 
+const resetPassword = {
+  id: 'resetPassword',
+  properties: {
+    body: {
+      type: 'object',
+      properties: {
+        id: {
+          anyOf: [paths.username, paths.email]
+        }
+      },
+      required: ['id'],
+      additionalProperties: false
+    }
+  },
+  required: ['body']
+};
+
+const updateResetPassword = {
+  id: 'updateResetPassword',
+  properties: {
+    body: {
+      properties: {
+        id: paths.username,
+        code: paths.code,
+        password: paths.password
+      }
+    }
+  },
+  required: ['body']
+};
+
+const updateUnverifiedEmail = {
+  id: 'updateUnverifiedEmail',
+  properties: {
+    body: {
+      properties: {
+        email: paths.email,
+        password: paths.password,
+        id: paths.username
+      },
+      required: ['email', 'password', 'id'],
+      additionalProperties: false
+    }
+  },
+  required: ['body']
+};
+
+const verifyEmail = {
+  id: 'verifyEmail',
+  properties: {
+    body: {
+      properties: {
+        emailVerificationCode: paths.code,
+        id: paths.username
+      },
+      required: ['emailVerificationCode', 'id'],
+      additionalProperties: false // untested
+    }
+  },
+  required: ['body']
+};
+
+const changePassword = {
+  id: 'changePassword',
+  properties: {
+    body: {
+      properties: {
+        password: paths.password,
+        oldPassword: {
+          type: 'string',
+          maxLength: 512
+        },
+        id: paths.username
+      },
+      required: ['password', 'oldPassword', 'id'],
+      additionalProperties: false
+    }
+  },
+  required: ['body']
+};
+
+const postContacts = {
+  id: 'postContacts',
+  properties: {
+    body: {
+      properties: {
+        trust: paths.trust,
+        to: {
+          properties: {
+            username: paths.username
+          },
+          required: ['username']
+        },
+        message: paths.contactMessage,
+        reference: paths.reference
+      },
+      required: ['trust', 'to'],
+      additionalProperties: false
+    }
+  },
+  required: ['body']
+};
+
+const patchConfirmContact = {
+  id: 'patchConfirmContacts',
+  properties: {
+    body: {
+      properties: {
+        trust: paths.trust,
+        reference: paths.reference,
+        isConfirmed: {
+          enum: [true]
+        },
+        id: {}
+      },
+      required: ['id', 'isConfirmed', 'trust', 'reference'],
+      additionalProperties: false
+    },
+    params: {
+      properties: {
+        from: paths.username,
+        to: paths.username
+      },
+      required: ['from', 'to']
+    }
+  },
+  required: ['body', 'params']
+};
+
+const patchUpdateContact = {
+  id: 'patchUpdateContact',
+  properties: {
+    body: {
+      properties: {
+        trust: paths.trust,
+        reference: paths.reference,
+        message: paths.contactMessage,
+        id: {}
+      },
+      additionalProperties: false
+    }
+  }
+};
+
+const getContact = {
+  properties: {
+    params: {
+      properties: {
+        from: paths.username,
+        to: paths.username
+      },
+      required: ['from', 'to']
+    }
+  },
+  required: ['params']
+};
+
+const postMessages = {
+  properties: {
+    body: {
+      properties: {
+        body: paths.messageBody,
+        to: {
+          properties: {
+            username: paths.username
+          },
+          required: ['username']
+        }
+      },
+      required: ['body', 'to']
+    }
+  }
+};
+
+const patchMessage = {
+  properties: {
+    body: {
+      properties: {
+        read: {
+          enum: [true]
+        },
+        id: paths.messageId
+      },
+      required: ['id', 'read'],
+      additionalProperties: false
+    }
+  },
+  required: ['body']
+};
+
 module.exports = {
   definitions: {
     user: {
@@ -155,8 +355,8 @@ module.exports = {
       },
       password: {
         type: 'string',
-        maxLength: 512,
-        minLength: 8
+        minLength: 8,
+        maxLength: 512
       },
       location: {
         oneOf: [
@@ -184,7 +384,6 @@ module.exports = {
       },
       code: {
         type: 'string',
-        minLength: 1,
         pattern: '^[0-9a-f]{32}$'
       }
     },
@@ -203,6 +402,30 @@ module.exports = {
       },
       relevance: {
         enum: [1, 2, 3, 4, 5]
+      }
+    },
+    contact: {
+      trust: {
+        enum: [1, 2, 4, 8]
+      },
+      message: {
+        type: 'string',
+        maxLength: 2048
+      },
+      reference: {
+        type: 'string',
+        maxLength: 2048
+      },
+    },
+    message: {
+      body: {
+        type: 'string',
+        minLength: 1,
+        maxLength: 2048,
+        pattern: '\\S' // at least one non-space character
+      },
+      messageId: {
+        type: 'string'
       }
     }
   },
@@ -234,10 +457,10 @@ module.exports = {
             type: 'object',
             properties: {
               limit: {
-                type: 'number'
+                type: 'integer'
               },
               offset: {
-                type: 'number'
+                type: 'integer'
               }
             },
             required: ['limit', 'offset'],
@@ -270,10 +493,10 @@ module.exports = {
           page: {
             properties: {
               offset: {
-                type: 'number'
+                type: 'integer'
               },
               limit: {
-                type: 'number'
+                type: 'integer'
               }
             },
             required: ['offset', 'limit'],
@@ -299,7 +522,7 @@ module.exports = {
               }
             },
             required: ['tag'],
-            additionalProperties : false
+            additionalProperties: false
           }
         },
         required: ['filter'],
@@ -348,5 +571,8 @@ module.exports = {
     required: ['body', 'params']
   },
   getUser, patchUser, getUsersWithMyTags, getUsersWithLocation,
-  postTags, getTag, getTagsRelatedToTags
+  postTags, getTag, getTagsRelatedToTags,
+  resetPassword, updateResetPassword, updateUnverifiedEmail, verifyEmail, changePassword,
+  postContacts, patchConfirmContact, patchUpdateContact, getContact,
+  postMessages, patchMessage
 };
