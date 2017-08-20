@@ -12,6 +12,13 @@ const agent = supertest.agent(app);
 
 let dbData;
 
+/*
+const nonexistentUser = {
+  username: 'nonexistent-user',
+  email: 'nonexistent-email@example.com',
+};
+*/
+
 describe('Location of people, tags, ideas, projects, ...', function () {
   let sandbox;
 
@@ -237,7 +244,7 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 type: 'users',
                 id: loggedUser.username,
                 attributes: {
-                  location: null
+                  location: ''
                 }
               }
             })
@@ -335,6 +342,7 @@ describe('Location of people, tags, ideas, projects, ...', function () {
       });
 
       it('limit the size of the rectangle');
+      it('TODO should we filter only verified users?'); // well, only verified people can have location in the first place
 
       it('don\'t leak the preciseLocation', async function () {
         const res = await agent
@@ -350,32 +358,8 @@ describe('Location of people, tags, ideas, projects, ...', function () {
       });
 
       context('invalid location', function () {
-        it('[wrong corners] error with 400', async function () {
-          await agent
-            .get('/users?filter[location]=-5.1,15.1,5.1,4.9')
-            .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-        });
-
-        it('[wrong amount of coordinates] error with 400', async function () {
-          await agent
-            .get('/users?filter[location]=-5,5,5,15,0')
-            .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-        });
-
-        it('[out of range] error with 400', async () => {
-          await agent
-            .get('/users?filter[location]=-91,5,-80,15')
-            .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-        });
+        it('[wrong corners] error with 400');
+        it('[wrong amount of coordinates] error with 400');
       });
 
     });

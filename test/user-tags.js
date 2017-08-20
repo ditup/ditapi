@@ -114,8 +114,15 @@ describe('Tags of user', function () {
         const [firstTag] = userTags.data;
 
         should(firstTag).have.propertyByPath('relationships', 'tag');
+        should(firstTag).have.propertyByPath('relationships', 'user');
 
+        const user = firstTag.relationships.user;
         const tag = firstTag.relationships.tag;
+
+        should(user).have.property('data').deepEqual({
+          type: 'users',
+          id: 'user1'
+        });
 
         should(tag).have.property('data').deepEqual({
           type: 'tags',
@@ -127,11 +134,23 @@ describe('Tags of user', function () {
         should(userTags).have.property('included');
 
         should(userTags.included).containDeep([{
+          type: 'users',
+          id: 'user1',
+          attributes: {
+            username: 'user1',
+            givenName: '',
+            familyName: ''
+          },
+          links: {
+            self: `${config.url.all}/users/user1`
+          }
+        }]);
+
+        should(userTags.included).containDeep([{
           type: 'tags',
           id: 'tag4',
           attributes: {
-            tagname: dbData.tags[4].tagname,
-            description: dbData.tags[4].description
+            tagname: dbData.tags[4].tagname
           },
           links: {
             self: `${config.url.all}/tags/tag4`
@@ -191,26 +210,30 @@ describe('Tags of user', function () {
           userTag.should.have.property('links');
           // userTag.should.have.property('meta');
 
-          const data = userTag.data;
-          const links = userTag.links;
-          // let meta = userTag.meta;
+          const { data, links, included } = userTag;
 
           data.should.have.property('type', 'user-tags');
-          data.should.have.property('id',
-            `${loggedUser.username}--${tag.tagname}`);
+          data.should.have.property('id', `${loggedUser.username}--${tag.tagname}`);
 
           links.should.have.property('self', `${config.url.all}/users/${loggedUser.username}/tags/${tag.tagname}`);
           // links.should.have.property('related', `${config.url.all}/users/${loggedUser.username}/tags/${newUserTag.tagname}`);
 
           data.should.have.property('attributes');
 
-          const attributes = data.attributes;
+          const { attributes, relationships } = data;
 
-          attributes.should.have.property('story', 'a new testing story');
-          attributes.should.have.property('relevance', 3);
+          should(attributes).containDeep({ story: 'a new testing story', relevance: 3 });
+          should(relationships).containDeep({
+            user: { data: { type: 'users', id: loggedUser.username } },
+            tag: { data: { type: 'tags', id: tag.tagname } }
+          });
 
-          const userTagDb = await models.userTag.read(loggedUser.username,
-            tag.tagname);
+          should(included).containDeep([
+            { type: 'tags', id: tag.tagname },
+            { type: 'users', id: loggedUser.username }
+          ]);
+
+          const userTagDb = await models.userTag.read(loggedUser.username, tag.tagname);
           userTagDb.should.have.property('story', 'a new testing story');
           // userTagDb.should.have.property('relevance', newUserTag.relevance);
           userTagDb.should.have.property('user');
@@ -398,6 +421,7 @@ describe('Tags of user', function () {
 
           should(response.body).have.propertyByPath('errors', '0', 'title').eql('invalid relevance');
         });
+
         it('[invalid attributes present] 400', async function () {
 
           const [tag] = dbData.tags;
@@ -489,6 +513,7 @@ describe('Tags of user', function () {
   });
 
   describe('/users/:username/tags/:tagname', function () {
+    // TODO include tag & user as relationships and included to the response
     describe('GET', function () {
       let loggedUser, taggedUser;
 
@@ -668,7 +693,7 @@ describe('Tags of user', function () {
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
             should(response.body).have.propertyByPath('errors', 0, 'meta')
-              .eql('body.id should match params.username, params.tagname');
+              .eql('url should match body id');
           });
 
           it('[invalid story] 400 and msg', async function () {
@@ -693,8 +718,8 @@ describe('Tags of user', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(response.body).have.propertyByPath('errors', 0, 'title')
-              .eql('invalid story');
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('userTag story can be at most 1024 characters long');
           });
 
           it('[invalid relevance] 400 and msg', async function () {
@@ -719,8 +744,8 @@ describe('Tags of user', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(response.body).have.propertyByPath('errors', 0, 'title')
-              .eql('invalid relevance');
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('relevance should be a number 1, 2, 3, 4 or 5');
 
           });
 
@@ -747,8 +772,8 @@ describe('Tags of user', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(response.body).have.propertyByPath('errors', 0, 'title')
-              .match('invalid tagname');
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .match(/Invalid Tagname/);
 
           });
 
@@ -802,8 +827,8 @@ describe('Tags of user', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(response.body).have.propertyByPath('errors', 0, 'title')
-              .eql('invalid attributes');
+            should(response.body).have.propertyByPath('errors', 0, 'meta')
+              .eql('invalid attributes: invalid');
 
           });
         });

@@ -34,24 +34,19 @@ exports.newUserTag = function (data) {
   return newUserTagSerializer.serialize(data);
 };
 
-// serialize userTag
-const userTagSerializer = new Serializer('user-tags', {
-  attributes: ['username', 'tagname', 'story', 'relevance'],
-  topLevelLinks: {
-    self: ({ user, tag }) => `${config.url.all}/users/${user.username}/tags/${tag.tagname}`
-  }
-});
-exports.userTag = function (data) {
-  data.id = `${data.user.username}--${data.tag.tagname}`;
-  data.username = data.user.username;
-  data.tagname = data.tag.tagname;
-
-  return userTagSerializer.serialize(data);
-};
 
 // serialize userTags
 const userTagsSerializer = new Serializer('user-tags', {
-  attributes: ['username', 'tagname', 'story', 'relevance', 'tag'],
+  attributes: ['username', 'tagname', 'story', 'relevance', 'user', 'tag'],
+  keyForAttribute: 'camelCase',
+  topLevelLinks: {
+    self(data) {
+      if(!Array.isArray(data)) {
+        const { user: { username }, tag: { tagname } } = data;
+        return `${config.url.all}/users/${username}/tags/${tagname}`;
+      }
+    }
+  },
   tag: {
     ref: 'tagname',
     attributes: ['tagname'],
@@ -59,9 +54,26 @@ const userTagsSerializer = new Serializer('user-tags', {
       self: ({ tagname }) => `${config.url.all}/tags/${tagname}`
     },
     relationshipLinks: {}
+  },
+  user: {
+    ref: 'username',
+    attributes: ['givenName', 'familyName', 'username', 'description', 'location'],
+    includedLinks: {
+      self: ({ username }) => `${config.url.all}/users/${username}`
+    },
+    relationshipLinks: {}
   }
 
 });
+
+exports.userTag = function (data) {
+  data.id = `${data.user.username}--${data.tag.tagname}`;
+  data.username = data.user.username;
+  data.tagname = data.tag.tagname;
+
+  return userTagsSerializer.serialize(data);
+};
+
 exports.userTags = function ({ username, userTags }) {
 
   for (const userTag of userTags) {

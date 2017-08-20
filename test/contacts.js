@@ -863,7 +863,7 @@ describe('contacts', function () {
         });
 
         context('bad data', function () {
-          it('[contact not from me] 400', async function () {
+          it('[contact not from me] 403', async function () {
             const [userA, userB, me] = dbData.users;
             await agent
               .patch(`/contacts/${userA.username}/${userB.username}`)
@@ -879,7 +879,7 @@ describe('contacts', function () {
               })
               .set('Content-Type', 'application/vnd.api+json')
               .auth(me.username, me.password)
-              .expect(400)
+              .expect(403)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
@@ -903,7 +903,7 @@ describe('contacts', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(resp).have.propertyByPath('body', 'errors', 0, 'title').eql('invalid attributes');
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('invalid attributes provided');
 
           });
 
@@ -926,7 +926,7 @@ describe('contacts', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(resp).have.propertyByPath('body', 'errors', 0, 'title').eql('invalid');
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('id doesn\'t match url');
           });
 
           it('[invalid trust] 400', async function () {
@@ -947,7 +947,7 @@ describe('contacts', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(resp).have.propertyByPath('body', 'errors', 0, 'title').eql('invalid trust');
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('trust is invalid');
           });
 
           it('[invalid reference] 400', async function () {
@@ -968,7 +968,7 @@ describe('contacts', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(resp).have.propertyByPath('body', 'errors', 0, 'title').eql('invalid reference');
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('reference is invalid');
           });
 
           it('[invalid message] 400', async function () {
@@ -989,7 +989,7 @@ describe('contacts', function () {
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-            should(resp).have.propertyByPath('body', 'errors', 0, 'title').eql('invalid message');
+            should(resp).have.propertyByPath('body', 'errors', 0, 'meta').eql('message is invalid (too long)');
           });
 
           it('[provided message when already confirmed] 400', async function () {

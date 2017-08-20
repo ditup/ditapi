@@ -241,7 +241,7 @@ describe('/messages', function () {
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-          should(response.body).have.propertyByPath('errors', 0, 'title').eql('invalid attributes');
+          should(response.body).have.propertyByPath('errors', 0, 'title').eql('invalid username');
         });
 
       }); // end of context invalid data
