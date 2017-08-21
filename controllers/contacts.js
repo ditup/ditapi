@@ -5,18 +5,6 @@ const path = require('path'),
       serialize = require(path.resolve('./serializers')).serialize,
       models = require(path.resolve('./models'));
 
-/**
- * Find out whether the request wants to confirm a contact
- * The alternative is just updating the contact
- */
-exports.gotoPatchConfirmContact = function (req, res, next) {
-  if (_.has(req, 'body.isConfirmed')) {
-    return next();
-  }
-  return next('route');
-};
-
-
 exports.patchConfirmContact = async function (req, res, next) {
   const [from, to] = req.body.id.split('--');
 

@@ -1,24 +1,7 @@
 const path = require('path'),
       mailer = require(path.resolve('./services/mailer')),
       models = require(path.resolve('./models')),
-      _ = require('lodash'),
       config = require(path.resolve('./config'));
-
-exports.gotoResertPassword = function (req, res, next) {
-  if (req.query.hasOwnProperty('reset-password')) {
-    return next();
-  }
-
-  return next('route');
-};
-
-exports.gotoUpdateResetPassword = function (req, res, next) {
-  if (req.body.hasOwnProperty('password') && req.body.hasOwnProperty('code')) {
-    return next();
-  }
-
-  return next('route');
-};
 
 exports.resetPassword = async function (req, res, next) {
 
@@ -108,23 +91,6 @@ exports.updateUnverifiedEmail = async function (req, res) {
   return res.status(204).end();
 };
 
-exports.gotoUpdateUnverifiedEmail = function (req, res, next) {
-  const attrs = Object.keys(req.body);
-  if (_.includes(attrs, 'email')) {
-    return next();
-  }
-
-  return next('route');
-};
-
-exports.gotoVerifyEmail = function (req, res, next) {
-  if (_.has(req.body, 'emailVerificationCode')) {
-    return next();
-  }
-
-  return next('route');
-};
-
 exports.verifyEmail = async function (req, res, next) {
   try {
     const { id: username, emailVerificationCode: code } = req.body;
@@ -136,14 +102,6 @@ exports.verifyEmail = async function (req, res, next) {
   } catch (e) {
     return next([e]);
   }
-};
-
-exports.gotoChangePassword = function (req, res, next) {
-  if (_.has(req.body, 'password') && _.has(req.body, 'oldPassword')) {
-    return next();
-  }
-
-  return next('route');
 };
 
 exports.changePassword = async function (req, res) {

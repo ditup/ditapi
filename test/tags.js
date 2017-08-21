@@ -26,8 +26,6 @@ describe('/tags', function () {
   });
 
   describe('GET', function () {
-    it('should show lists of tags');
-
     describe('/tags?filter[tagname][like]=string', function () {
 
       // seed the database with users and some named tags to do filtering on

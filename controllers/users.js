@@ -11,46 +11,6 @@ const config = require(path.resolve('./config/config')),
       serialize = require(path.resolve('./serializers')).serialize;
 
 /**
- * goto functions for routing based on request parameters
- */
-
-exports.gotoGetNewUsers = function (req, res, next) {
-  if (_.has(req, 'query.sort')&( req.query.sort === '-created')) {
-    return next();
-  }
-  return next('route');
-};
-
-exports.gotoGetUsersWithLocation = function (req, res, next) {
-  if (_.has(req, 'query.filter.location')) {
-    return next();
-  }
-  return next('route');
-};
-
-exports.gotoGetNewUsersWithMyTags = function (req, res, next) {
-  if (_.has(req, 'query.sort') && req.query.sort === '-created' && _.has(req, 'query.filter.withMyTags')) {
-    return next();
-  }
-  return next('route');
-};
-
-exports.gotoGetUsersWithMyTags = function (req, res, next) {
-  // TODO DZIK req.query.filter.byMyTags returns string not bool (how was it checked before?)
-  if (_.has(req, 'query.filter.byMyTags')) {
-    return next();
-  }
-  return next('route');
-};
-
-exports.gotoGetUsersWithTags = function (req, res, next) {
-  if (_.has(req, 'query.filter.tag')) {
-    return next();
-  }
-  return next('route');
-};
-
-/**
  * controller functions for user requests
  */
 
