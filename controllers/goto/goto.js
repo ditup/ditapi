@@ -14,22 +14,18 @@ ajv.addSchema(schema, 'go');
 /**
  * choose a route based on req.query, req.body etc
  * @param {string[]} paths - check existence of the provided paths on req object
- * @param {string} [schema] - check against the provided schema
+ * @param {string} [schema] - check req against the provided schema
  *
  * @returns express middleware
  */
 module.exports = function (paths, schema) {
   return function (req, res, next) {
-    let go = true;
-    paths.forEach(path => {
-      go = go && _.has(req, path);
-    });
+    let go = paths.every(path => _.has(req, path));
 
     // checking validity with schema
     // for success, schema is either not provided, or request is valid against it
     if (go && typeof(schema) === 'string') {
-      const isSchemaValid = ajv.validate(`go#/${schema}`, req);
-      go = go && isSchemaValid;
+      go = ajv.validate(`go#/${schema}`, req);
     }
 
     // we're in the right router. continue...
