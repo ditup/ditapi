@@ -17,7 +17,7 @@ const config = require(path.resolve('./config/config')),
 
 exports.getNewUsers = async function(req, res, next) {
 
-  const limit = req.query.page.limit;
+  const { limit } = req.query.page;
 
   try {
 
@@ -49,9 +49,9 @@ exports.getUsersWithLocation = async function (req, res, next) {
 };
 
 exports.getNewUsersWithMyTags = async function (req, res, next) {
+  const { auth: { username: me } } = req;
+
   // parameters from query
-  const auth = _.get(req, 'auth', { logged: false });
-  const me = auth.username;
   const limit = req.query.page.limit;
   const numberOfTagsInCommon = req.query.filter.withMyTags;
 
@@ -69,15 +69,14 @@ exports.getNewUsersWithMyTags = async function (req, res, next) {
   }
 };
 
+/**
+ * Search users who are related to me by tags
+ *
+ *
+ */
 exports.getUsersWithMyTags = async function (req, res, next) {
   try {
-    /*
-     * Search users who are related to me by tags
-     *
-     *
-     */
-    const auth = _.get(req, 'auth', { logged: false });
-    const me = auth.username;
+    const { auth: { username: me } } = req;
 
 
     const { offset, limit } = getPage(req, { offset: 0, limit: 10 });
@@ -153,7 +152,7 @@ exports.getUsersWithTags = async function (req, res, next) {
 
 exports.postUsers = async function (req, res, next) {
   try {
-    const { username, email } = req.body;
+    const { username, email, password } = req.body;
 
     // check the uniqueness of username and email (among verified email addresses)
     const usernameExists = await models.user.exists(username);
@@ -166,17 +165,13 @@ exports.postUsers = async function (req, res, next) {
 
     // validating the data should be already done
     // save users
-    const user = await models.user.create({
-      username: req.body.username,
-      password: req.body.password,
-      email: req.body.email
-    });
+    const user = await models.user.create({ username, password, email });
 
     // send a link for email verification to the provided email address
     await mailer.verifyEmail({
       username,
       url: `${config.appUrl.all}${config.appUrl.verifyEmail(username, user.emailVerifyCode)}`,
-      email: req.body.email,
+      email,
       code: user.emailVerifyCode
     });
 
@@ -185,8 +180,8 @@ exports.postUsers = async function (req, res, next) {
     return res.status(201)
       .set('Location', selfLink)
       .json(serialize.user({
-        id: req.body.username,
-        username: req.body.username
+        id: username,
+        username
       }));
 
   } catch (e) {
@@ -243,7 +238,7 @@ exports.getUser = async function (req, res, next) {
 
     const auth = _.get(req, 'auth', { logged: false });
 
-    const username = req.params.username;
+    const { username } = req.params;
     const user = await models.user.read(username);
 
     if (user) {
@@ -284,6 +279,9 @@ exports.getUser = async function (req, res, next) {
 // presumption: data in body should already be valid and user should be logged in as herself
 exports.patchUser = async function (req, res, next) {
 
+  // user to patch
+  const { username } = req.params;
+
   const profileFields = ['givenName', 'familyName', 'description'];
 
   // pick only the profile fields from the body of the request
@@ -291,18 +289,18 @@ exports.patchUser = async function (req, res, next) {
 
   // update the location if provided
   if (req.body.hasOwnProperty('location')) {
-    await models.user.updateLocation(req.params.username, req.body.location);
+    await models.user.updateLocation(username, req.body.location);
   }
 
   // update the profile with the new values
-  await models.user.update(req.params.username, profile);
+  await models.user.update(username, profile);
   return next();
 };
 
 exports.postUserTags = async function (req, res, next) {
   try {
     // should be already validated
-    const username = req.params.username;
+    const { username } = req.params;
     const { story, relevance, tag: { tagname } } = req.body;
 
     const exists = await models.userTag.exists(username, tagname);
@@ -336,7 +334,7 @@ exports.postUserTags = async function (req, res, next) {
 exports.getUserTags = async function (req, res, next) {
   try {
     // should be already validated
-    const username = req.params.username;
+    const { username } = req.params;
 
     const userTags = await models.user.readTags(username);
 
