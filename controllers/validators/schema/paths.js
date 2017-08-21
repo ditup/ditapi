@@ -17,4 +17,6 @@ module.exports = {
   messageId: { $ref : 'sch#/definitions/message/messageId' },
   story: { $ref: 'sch#/definitions/userTag/story' },
   relevance: { $ref: 'sch#/definitions/userTag/relevance' },
+  page: { $ref: 'sch#/definitions/query/page' },
+  pageOffset0: { $ref: 'sch#/definitions/query/page0' }, // page with offset = 0
 };

@@ -1,6 +1,6 @@
 'use strict';
 
-const { username, givenName, familyName, description, location, tagname } = require('./paths');
+const { username, givenName, familyName, description, location, tagname, page, pageOffset0 } = require('./paths');
 
 const getUser = {
   id: 'getUser',
@@ -47,9 +47,11 @@ const getUsersWithMyTags = {
             }
           },
           required: ['byMyTags']
-        }
+        },
+        page
       },
-      required: ['filter']
+      required: ['filter'],
+      additionalProperties: false
     },
   },
   required: ['query']
@@ -101,19 +103,7 @@ const newUsers = {
         sort: {
           type: 'string'
         },
-        page: {
-          type: 'object',
-          properties: {
-            limit: {
-              type: 'integer'
-            },
-            offset: {
-              type: 'integer'
-            }
-          },
-          required: ['limit', 'offset'],
-          additionalProperties: false
-        }
+        page: pageOffset0
       },
       required: ['sort', 'page'],
       additionalProperties: false
@@ -139,18 +129,7 @@ const newUsersWithMyTags = {
           required: ['withMyTags'],
           additionalProperties: false
         },
-        page: {
-          properties: {
-            offset: {
-              type: 'integer'
-            },
-            limit: {
-              type: 'integer'
-            }
-          },
-          required: ['offset', 'limit'],
-          additionalProperties: false
-        }
+        page: pageOffset0
       },
       required: ['sort', 'filter', 'page'],
       additionalProperties: false
@@ -168,12 +147,15 @@ const getUsersWithTags = {
           properties: {
             tag: {
               type: 'array',
-              items: tagname
+              items: tagname,
+              maxItems: 10,
+              minItems: 1
             }
           },
           required: ['tag'],
           additionalProperties: false
-        }
+        },
+        page
       },
       required: ['filter'],
       additionalProperties: false

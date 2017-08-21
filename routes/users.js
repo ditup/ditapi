@@ -22,7 +22,7 @@ router.route('/')
 
 // get users who have common tags with me
 router.route('/')
-  .get(go.get.withMyTags, authorize.onlyLogged, validators.users.getUsersWithMyTags, userController.getUsersWithMyTags);
+  .get(go.get.withMyTags, authorize.onlyLogged, parse, validators.users.getUsersWithMyTags, userController.getUsersWithMyTags);
 
 // get users who have given tags
 router.route('/')

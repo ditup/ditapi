@@ -79,15 +79,16 @@ class Tag extends Model {
    * Get tags which start with likeTagname string
    * @param {string} likeTagname
    */
-  static async filter(likeTagname) {
+  static async filter(likeTagname, { offset, limit }) {
     const query = `
       FOR t IN tags
         FILTER t.tagname LIKE CONCAT(@likeTagname, '%')
         OR     t.tagname LIKE CONCAT('%-', @likeTagname, '%')
+        LIMIT @offset, @limit
         RETURN KEEP(t, 'username', 'tagname', 'created')`;
     // % serves as a placeholder for multiple characters in arangodb LIKE
     // _ serves as a placeholder for a single character
-    const params = { likeTagname };
+    const params = { likeTagname, offset, limit };
     const out = await (await this.db.query(query, params)).all();
 
     const formatted = [];
@@ -104,7 +105,7 @@ class Tag extends Model {
    * @param {string} username - username of the user
    * @returns Promise<object[]> - array of the found tags (including relevance parameter)
    */
-  static async findTagsRelatedToTagsOfUser(username) {
+  static async findTagsRelatedToTagsOfUser(username, { offset, limit }) {
     const query = `
       FOR u IN users FILTER u.username == @username
 
@@ -125,10 +126,10 @@ class Tag extends Model {
           // sum the relevance of found paths
           LET weightSum = SUM(asdf[*].relevanceWeight)
           SORT weightSum DESC
-          LIMIT 5
+          LIMIT @offset, @limit
           RETURN MERGE(finalTag, { relevance: weightSum })
     `;
-    const params = { username };
+    const params = { username, offset, limit };
     const out = await (await this.db.query(query, params)).all();
 
     return out;
@@ -139,7 +140,7 @@ class Tag extends Model {
    * @param {array} givenTags - tags given in tagsArray in request
    * @returns Promise<object[]> - array of the found tags (including relevance parameter)
    */
-  static async findTagsRelatedToTags(tagsArray) {
+  static async findTagsRelatedToTags(tagsArray, { offset, limit }) {
     const query = `
       FOR sortedTag in (
         FOR t in tags FILTER t.tagname IN @givenTags // filter out given tags
@@ -158,9 +159,10 @@ class Tag extends Model {
       )
       FILTER sortedTag.tagname NOT IN @givenTags // filter out given tags from rsults
       SORT sortedTag.relevance DESC, sortedTag.tagname ASC // sort by relevance-similarity and by tagname if equal
+      LIMIT @offset, @limit
       RETURN sortedTag
     `;
-    const params = { givenTags: tagsArray };
+    const params = { givenTags: tagsArray, offset, limit };
     const out = await (await this.db.query(query, params)).all();
     return out;
   }

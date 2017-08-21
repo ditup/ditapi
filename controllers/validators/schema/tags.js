@@ -1,6 +1,6 @@
 'use strict';
 
-const { tagname } = require('./paths');
+const { tagname, page, pageOffset0 } = require('./paths');
 
 const postTags = {
   id: 'postTags',
@@ -43,7 +43,8 @@ const getTagsRelatedToTags = {
             }
           },
           required: ['relatedToTags']
-        }
+        },
+        page
       },
       required: ['filter']
     }
@@ -51,4 +52,37 @@ const getTagsRelatedToTags = {
   required: ['query']
 };
 
-module.exports = { postTags, getTag, getTagsRelatedToTags };
+const getTagsRelatedToMyTags = {
+  properties: {
+    query: {
+      properties: {
+        page
+      }
+    }
+  },
+  required: ['query']
+};
+
+const getTagsLike = {
+  properties: {
+    query: {
+      properties: {
+        page: pageOffset0
+      }
+    }
+  },
+  required: ['query']
+};
+
+const randomTags = {
+  properties: {
+    query: {
+      properties: {
+        page: pageOffset0
+      }
+    }
+  },
+  required: ['query']
+};
+
+module.exports = { postTags, getTag, getTagsRelatedToTags, getTagsRelatedToMyTags, getTagsLike, randomTags };

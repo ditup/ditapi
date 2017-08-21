@@ -96,5 +96,34 @@ module.exports = {
     messageId: {
       type: 'string'
     }
+  },
+  query: {
+    page: {
+      properties: {
+        offset: {
+          type: 'number'
+        },
+        limit: {
+          type: 'number',
+          maximum: 20
+        }
+      },
+      required: ['offset', 'limit'],
+      additionalProperties: false
+    },
+    page0: {
+      properties: {
+        offset: {
+          type: 'number',
+          enum: [0]
+        },
+        limit: {
+          type: 'number',
+          maximum: 20
+        }
+      },
+      required: ['offset', 'limit'],
+      additionalProperties: false
+    }
   }
 };

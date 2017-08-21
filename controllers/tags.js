@@ -4,7 +4,8 @@ const path = require('path'),
       config = require(path.resolve('./config/config')),
       serialize = require(path.resolve('./serializers')).serialize,
       models = require(path.resolve('./models')),
-      _ = require('lodash');
+      _ = require('lodash'),
+      { getPage } = require('./helpers');
 
 /*
  * Having the url with ?filter[tagname][like]=string query
@@ -14,9 +15,10 @@ const path = require('path'),
 exports.getTagsLike = async function (req, res, next) {
   // get the pattern to search the tags by
   const filterLike = _.get(req.query, 'filter.tagname.like');
-  try {
+  const { offset, limit } = getPage(req, { offset: 0, limit: 10 });
 
-    const foundTags = await models.tag.filter(filterLike);
+  try {
+    const foundTags = await models.tag.filter(filterLike, { offset, limit });
 
     return res.status(200).json(serialize.tag(foundTags));
   } catch (e) {
@@ -30,9 +32,11 @@ exports.getTagsLike = async function (req, res, next) {
  */
 exports.getRandomTags = async function (req, res, next) {
 
+  const { limit } = getPage(req, { limit: 1 });
+
   try {
     // find random tags
-    const foundTags = await models.tag.random(1);
+    const foundTags = await models.tag.random(limit);
 
     // define the parameters for self link
     foundTags.urlParam = encodeURIComponent('filter[random]');
@@ -54,10 +58,11 @@ exports.getRandomTags = async function (req, res, next) {
 exports.relatedToMyTags = async function (req, res, next) {
   // this is me
   const { username } = req.auth;
+  const { offset, limit } = getPage(req, { offset: 0, limit: 10 });
 
   try {
     // find tags which are related to my tags
-    const foundTags = await models.tag.findTagsRelatedToTagsOfUser(username);
+    const foundTags = await models.tag.findTagsRelatedToTagsOfUser(username, { offset, limit});
 
     // define the parameters for self link
     foundTags.urlParam = encodeURIComponent('filter[relatedToMyTags]');
@@ -79,9 +84,11 @@ exports.relatedToTags = async function (req, res, next) {
 
   const tags = req.query.filter.relatedToTags;
 
+  const { offset, limit } = getPage(req, { offset: 0, limit: 10 });
+
   try {
     // get tags from database
-    const foundTags = await models.tag.findTagsRelatedToTags(tags);
+    const foundTags = await models.tag.findTagsRelatedToTags(tags, { offset, limit });
 
     // define the parameters for self link
     foundTags.urlParam = encodeURIComponent('filter[relatedToTags]');
@@ -142,8 +149,6 @@ exports.postTags = async function (req, res, next) {
     return next(e);
   }
 };
-
-
 
 // controller for GET /tags/:tagname
 exports.getTag = async function (req, res, next) {
