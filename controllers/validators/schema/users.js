@@ -1,6 +1,6 @@
 'use strict';
 
-const { username, givenName, familyName, description, location, tagname, page, page0 } = require('./paths');
+const { username, givenName, familyName, description, location, tagname, page, pageOffset0 } = require('./paths');
 
 const getUser = {
   id: 'getUser',
@@ -103,7 +103,7 @@ const newUsers = {
         sort: {
           type: 'string'
         },
-        page: page0
+        page: pageOffset0
       },
       required: ['sort', 'page'],
       additionalProperties: false
@@ -129,7 +129,7 @@ const newUsersWithMyTags = {
           required: ['withMyTags'],
           additionalProperties: false
         },
-        page: page0
+        page: pageOffset0
       },
       required: ['sort', 'filter', 'page'],
       additionalProperties: false

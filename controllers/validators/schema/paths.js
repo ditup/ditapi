@@ -18,5 +18,5 @@ module.exports = {
   story: { $ref: 'sch#/definitions/userTag/story' },
   relevance: { $ref: 'sch#/definitions/userTag/relevance' },
   page: { $ref: 'sch#/definitions/query/page' },
-  page0: { $ref: 'sch#/definitions/query/page0' }, // page with offset = 0
+  pageOffset0: { $ref: 'sch#/definitions/query/page0' }, // page with offset = 0
 };

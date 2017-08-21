@@ -1,6 +1,6 @@
 'use strict';
 
-const { tagname, page, page0 } = require('./paths');
+const { tagname, page, pageOffset0 } = require('./paths');
 
 const postTags = {
   id: 'postTags',
@@ -67,7 +67,7 @@ const getTagsLike = {
   properties: {
     query: {
       properties: {
-        page: page0
+        page: pageOffset0
       }
     }
   },
@@ -78,7 +78,7 @@ const randomTags = {
   properties: {
     query: {
       properties: {
-        page: page0
+        page: pageOffset0
       }
     }
   },
