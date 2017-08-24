@@ -1,6 +1,8 @@
 const supertest = require('supertest'),
       should = require('should'),
+      fs = require('fs'),
       crypto = require('crypto'),
+      q = require('q'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
@@ -75,7 +77,7 @@ describe('/users/:username/avatar', function () {
 
         });
 
-        it('[png uploaded] responds with 200 and a png image');
+        it('[png uploaded] responds with 200 and a jpeg image');
 
         it('[jpeg uploaded] responds with 200 and a jpeg image');
 
@@ -114,9 +116,25 @@ describe('/users/:username/avatar', function () {
 
       context('good data type (png, jpeg)', function () {
 
-        it('[png] responds with 200 and saves the image');
+        it('[png] responds with 200 and saves the image as jpg');
 
-        it('[jpeg] responds with 200 and saves the image');
+        it('[jpeg] responds with 200 and saves the image', async () => {
+          await agent
+            .patch(`/users/${loggedUser.username}/avatar`)
+            .attach('avatar', './test/img/avatar.jpg')
+            .auth(loggedUser.username, loggedUser.password)
+            .set('Content-Type', 'image/jpeg')
+            .expect(204);
+
+          const stat = q.denodeify(fs.stat);
+
+          const expectedSizes = [16, 32, 64, 128, 256, 512];
+          const imagePromises = expectedSizes.map(size => stat(path.resolve(`./files/avatars/${loggedUser.username}/${size}`)));
+
+          await Promise.all(imagePromises);
+        });
+
+        it('deletes the temporary file from ./uploads');
 
         it('crops and resizes the image to square 512x512px before saving');
 
@@ -124,16 +142,25 @@ describe('/users/:username/avatar', function () {
 
       });
 
-      context('bad data type', function () {
+      context('bad data', function () {
 
-        it('responds with 400 bad data');
+        it('[bad data type] 400');
+
+        it('[too large image] 400');
 
       });
     });
 
     context('not logged as :username', function () {
 
-      it('responds with 403');
+      it('responds with 403', async () => {
+        await agent
+          .patch(`/users/${otherUser.username}/avatar`)
+          .attach('avatar', './test/img/avatar.jpg')
+          .auth(loggedUser.username, loggedUser.password)
+          .set('Content-Type', 'image/jpeg')
+          .expect(403);
+      });
 
     });
 
