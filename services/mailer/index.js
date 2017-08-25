@@ -2,7 +2,6 @@
 
 const path = require('path'),
       nodemailer = require('nodemailer'),
-      smtpTransport = require('nodemailer-smtp-transport'),
       EmailTemplate = require('email-templates').EmailTemplate;
 
 const config = require(path.resolve('./config'));
@@ -10,11 +9,11 @@ const config = require(path.resolve('./config'));
 const dataNotProvided = new Error('data not provided');
 
 exports.general = async function ({ email, from, subject, html, text }) {
-  let transport;
+  let transporter;
   try {
     if(!email) throw dataNotProvided;
 
-    transport = nodemailer.createTransport(smtpTransport(config.mailer));
+    transporter = nodemailer.createTransport(config.mailer);
 
     const emailOptions = {
       from: from ? `<${from}>` : 'info@ditup.org <info@ditup.org>',
@@ -25,18 +24,18 @@ exports.general = async function ({ email, from, subject, html, text }) {
     };
 
     const info = await new Promise(function (resolve, reject) {
-      transport.sendMail(emailOptions, function (err, response) {
+      transporter.sendMail(emailOptions, function (err, response) {
         if(err) return reject(err);
         return resolve(response);
       });
     });
 
-    transport.close();
+    transporter.close();
     return info;
 
   } catch (e) {
     /* handle error */
-    transport.close();
+    transporter.close();
     throw e;
   }
 };
