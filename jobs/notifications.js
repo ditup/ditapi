@@ -2,8 +2,7 @@
 
 const path = require('path'),
       models = require(path.resolve('./models')),
-      mailer = require(path.resolve('./services/mailer')),
-      _ = require('lodash');
+      mailer = require(path.resolve('./services/mailer'));
 
 /*
  * sends notifications about new (unread, unnotified) messages
@@ -21,7 +20,7 @@ async function messages() {
   }
 
   // mark the messages as notified
-  await models.message.updateNotified(_.map(unnotified, msg => msg.id));
+  await models.message.updateNotified(unnotified.map(msg => msg.id));
 }
 
 async function contactRequests() {

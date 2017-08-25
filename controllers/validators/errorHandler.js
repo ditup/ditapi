@@ -1,13 +1,11 @@
-const _ = require('lodash');
-
 /**
  * @param {Array} err - err should be an array of error objects ready to display
  */
 
 module.exports = function (err, req, res, next) {
-  if (_.isArray(err)) {
+  if (Array.isArray(err)) {
 
-    const errors = _.map(err, (e) => {
+    const errors = err.map((e) => {
 
       // remapping errors from json-schema (ajv) validation (and TODO make it a default when validation is fully refactored)
       if (e.hasOwnProperty('dataPath')) { // is this an ajv json-schema error?
