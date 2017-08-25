@@ -56,6 +56,6 @@ router.route('/:username/tags/:tagname')
 
 router.route('/:username/avatar')
   .get(authorize.onlyLogged, userController.getAvatar)
-  .patch(authorize.onlyLoggedMe, avatarController.parseAvatar, avatarController.patch);
+  .patch(authorize.onlyLoggedMe, validators.users.patchAvatarHeaders, avatarController.parseAvatar, validators.users.patchAvatarFile, validators.users.patchAvatarFileType, avatarController.patch, avatarController.removeTemporaryFileOnError);
 
 module.exports = router;
