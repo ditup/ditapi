@@ -66,71 +66,106 @@ describe('/users/:username/avatar', function () {
 
     context('logged', function () {
 
-      context(':username exists', function () {
+      context('valid data', () => {
 
-        // parse binary html response to buffer
-        function binaryParser(res, callback) {
-          res.setEncoding('binary');
-          res.data = '';
-          res.on('data', function (chunk) {
-            res.data += chunk;
+        context(':username exists', function () {
+
+          // parse binary html response to buffer
+          function binaryParser(res, callback) {
+            res.setEncoding('binary');
+            res.data = '';
+            res.on('data', function (chunk) {
+              res.data += chunk;
+            });
+            res.on('end', function () {
+              callback(null, new Buffer(res.data, 'binary'));
+            });
+          }
+
+          it('[nothing uploaded] responds with 200 and a default svg identicon (identicon.js)', async function () {
+
+            const response = await agent
+              .get(`/users/${otherUser.username}/avatar`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .buffer()
+              .parse(binaryParser)
+              .expect(200)
+              .expect('Content-Type', /^image\/svg\+xml/);
+
+            const data = response.body.toString('base64');
+            const hash = crypto.createHash('sha256').update(data).digest('hex');
+            should(hash).eql('42ddb19216529586c520c7b42e2c4c2dfc68e82a2c1602391bd43be728c94758');
+
           });
-          res.on('end', function () {
-            callback(null, new Buffer(res.data, 'binary'));
+
+          it('[image uploaded] responds with 200 and a jpeg image', async () => {
+            const dest = path.resolve(`./files/avatars/${otherUser.username}/512`);
+            const src = path.resolve('./test/img/avatar/512');
+
+            await fs.copy(src, dest);
+
+            const response = await agent
+              .get(`/users/${otherUser.username}/avatar?filter[size]=512`)
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .buffer()
+              .parse(binaryParser)
+              .expect(200)
+              .expect('Content-Type', /^image\/jpeg/);
+
+            const data = response.body.toString('base64');
+            const hash = crypto.createHash('sha256').update(data).digest('hex');
+            should(hash).eql('59693cafa42e530693e9c8c0bf2ff2adcc15a4ef2a1e33d8264a87f45d35484b');
+
           });
-        }
-
-        it('[nothing uploaded] responds with 200 and a default svg identicon (identicon.js)', async function () {
-
-          const response = await agent
-            .get(`/users/${otherUser.username}/avatar`)
-            .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
-            .buffer()
-            .parse(binaryParser)
-            .expect(200)
-            .expect('Content-Type', /^image\/svg\+xml/);
-
-          const data = response.body.toString('base64');
-          const hash = crypto.createHash('sha256').update(data).digest('hex');
-          should(hash).eql('42ddb19216529586c520c7b42e2c4c2dfc68e82a2c1602391bd43be728c94758');
 
         });
 
-        it('[image uploaded] responds with 200 and a jpeg image', async () => {
-          const dest = path.resolve(`./files/avatars/${otherUser.username}/512`);
-          const src = path.resolve('./test/img/avatar/512');
+        context(':username doesn\'t exist', function () {
 
-          await fs.copy(src, dest);
-
-          const response = await agent
-            .get(`/users/${otherUser.username}/avatar`)
-            .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
-            .buffer()
-            .parse(binaryParser)
-            .expect(200)
-            .expect('Content-Type', /^image\/jpeg/);
-
-          const data = response.body.toString('base64');
-          const hash = crypto.createHash('sha256').update(data).digest('hex');
-          should(hash).eql('59693cafa42e530693e9c8c0bf2ff2adcc15a4ef2a1e33d8264a87f45d35484b');
+          it('responds with 404', async function () {
+            await agent
+              .get('/users/nonexistent-user/avatar')
+              .set('Content-Type', 'application/vnd.api+json')
+              .auth(loggedUser.username, loggedUser.password)
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
 
         });
+
       });
 
-      context(':username doesn\'t exist', function () {
+      context('invalid data', function () {
 
-        it('responds with 404', async function () {
+        it('[invalid size] 400', async function () {
           await agent
-            .get('/users/nonexistent-user/avatar')
+            .get(`/users/${otherUser.username}/avatar?filter[size]=511`)
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
-            .expect(404)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+
+        it('[unexpected parameters] 400', async function () {
+          await agent
+            .get(`/users/${otherUser.username}/avatar?page[limit]=5`)
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+
+        it('[invalid username] 400', async function () {
+          await agent
+            .get('/users/invalid--username/avatar')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
 
       });
+
     });
 
     context('not logged', function () {

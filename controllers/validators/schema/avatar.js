@@ -1,3 +1,5 @@
+const { username } = require('./paths');
+
 /**
  * The first validation on receiving image
  *
@@ -21,4 +23,32 @@ const patchAvatarFile = {
   required: ['file']
 };
 
-module.exports = { patchAvatarHeaders, patchAvatarFile };
+const getAvatar = {
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            size: {
+              enum: [16, 32, 64, 128, 256, 512]
+            }
+          },
+          additionalProperties: false,
+          required: ['size']
+        }
+      },
+      additionalProperties: false
+    },
+    params: {
+      properties: {
+        username
+      },
+      required: ['username'],
+      additionalProperties: false
+    }
+  },
+  required: ['params']
+
+};
+
+module.exports = { patchAvatarHeaders, patchAvatarFile, getAvatar };
