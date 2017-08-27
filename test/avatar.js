@@ -1,10 +1,9 @@
 const supertest = require('supertest'),
       should = require('should'),
-      fs = require('fs'),
+      fs = require('fs-extra'),
       crypto = require('crypto'),
       { promisify } = require('util'),
       path = require('path'),
-      rimraf = promisify(require('rimraf')),
       sizeOf = promisify(require('image-size')),
       typeOf = require('image-type');
 
@@ -30,6 +29,24 @@ describe('/users/:username/avatar', function () {
     });
   }
 
+  // clear ./uploads/ folder
+  afterEach(async () => {
+    const uploadsPath = path.resolve('./uploads');
+    await fs.remove(uploadsPath);
+    await fs.mkdir(uploadsPath);
+
+    should(await fs.readdir(uploadsPath)).Array().length(0);
+  });
+
+  // clear ./files/avatars/
+  afterEach(async () => {
+    const avatarsPath = path.resolve('./files/avatars');
+    await fs.remove(avatarsPath);
+    await fs.mkdir(avatarsPath);
+
+    should(await fs.readdir(avatarsPath)).Array().length(0);
+  });
+
   let loggedUser, otherUser;
 
   beforeEachPopulate({
@@ -41,50 +58,65 @@ describe('/users/:username/avatar', function () {
     [loggedUser, otherUser] = dbData.users;
   });
 
+  describe('create default image identicon on email confirmation', () => {
+    it('create the svg image');
+  });
+
   describe('GET', function () {
 
     context('logged', function () {
 
       context(':username exists', function () {
 
-        it('[nothing uploaded] responds with 200 and a default identicon (identicon.js)', async function () {
+        // parse binary html response to buffer
+        function binaryParser(res, callback) {
+          res.setEncoding('binary');
+          res.data = '';
+          res.on('data', function (chunk) {
+            res.data += chunk;
+          });
+          res.on('end', function () {
+            callback(null, new Buffer(res.data, 'binary'));
+          });
+        }
+
+        it('[nothing uploaded] responds with 200 and a default svg identicon (identicon.js)', async function () {
+
           const response = await agent
             .get(`/users/${otherUser.username}/avatar`)
             .set('Content-Type', 'application/vnd.api+json')
             .auth(loggedUser.username, loggedUser.password)
+            .buffer()
+            .parse(binaryParser)
             .expect(200)
-            .expect('Content-Type', /^application\/vnd\.api\+json/);
+            .expect('Content-Type', /^image\/svg\+xml/);
 
-          // the request returns a json:
-          // {
-          //    data: {
-          //      type: 'user-avatars'
-          //      id: username
-          //      attributes: {
-          //        format,
-          //        base64
-          //      }
-          //    }
-          // }
-          // check the proper format attribute
-
-          should(response).have.propertyByPath('body', 'data', 'type').eql('user-avatars');
-          should(response).have.propertyByPath('body', 'data', 'id').eql('user1');
-          should(response).have.propertyByPath('body', 'data', 'attributes', 'format').eql('png');
-          should(response).have.propertyByPath('body', 'data', 'attributes', 'base64');
-
-          // compare hash of the base64 image representation
-          const data = response.body.data.attributes.base64;
+          const data = response.body.toString('base64');
           const hash = crypto.createHash('sha256').update(data).digest('hex');
-
-          should(hash).equal('7d76d24aee7faf11a3494ae91b577d94cbb5320cec1b2fd04187fff1197915bb');
+          should(hash).eql('42ddb19216529586c520c7b42e2c4c2dfc68e82a2c1602391bd43be728c94758');
 
         });
 
-        it('[png uploaded] responds with 200 and a jpeg image');
+        it('[image uploaded] responds with 200 and a jpeg image', async () => {
+          const dest = path.resolve(`./files/avatars/${otherUser.username}/512`);
+          const src = path.resolve('./test/img/avatar/512');
 
-        it('[jpeg uploaded] responds with 200 and a jpeg image');
+          await fs.copy(src, dest);
 
+          const response = await agent
+            .get(`/users/${otherUser.username}/avatar`)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .buffer()
+            .parse(binaryParser)
+            .expect(200)
+            .expect('Content-Type', /^image\/jpeg/);
+
+          const data = response.body.toString('base64');
+          const hash = crypto.createHash('sha256').update(data).digest('hex');
+          should(hash).eql('59693cafa42e530693e9c8c0bf2ff2adcc15a4ef2a1e33d8264a87f45d35484b');
+
+        });
       });
 
       context(':username doesn\'t exist', function () {
@@ -116,40 +148,6 @@ describe('/users/:username/avatar', function () {
 
   describe('PATCH', function () {
 
-
-    // fs functions changed to promise
-    const stat = promisify(fs.stat);
-    const readdir = promisify(fs.readdir);
-    const unlink = promisify(fs.unlink);
-    const readFile = promisify(fs.readFile);
-    const fsp = { // fs promisified
-      open: promisify(fs.open),
-      close: promisify(fs.close)
-    };
-
-    // clear ./uploads/ folder
-    afterEach(async () => {
-      const files = await readdir(path.resolve('./uploads'));
-      const filePromises = files.map(file => unlink(path.resolve(`./uploads/${file}`)));
-      await Promise.all(filePromises);
-      const filesAfter = await readdir(path.resolve('./uploads'));
-
-      // check that the /uploads folder is empty
-      should(filesAfter).Array().length(0);
-    });
-
-    // clear ./files/avatars/
-    afterEach(async () => {
-
-      const avatarsDir = path.resolve('./files/avatars');
-      const folders = await readdir(avatarsDir);
-      const delPromises = folders.map(folder => rimraf(`./files/avatars/${folder}`));
-      await Promise.all(delPromises);
-
-      // check that the /files/avatars folder is empty
-      should(await readdir(avatarsDir)).Array().length(0);
-    });
-
     context('logged as :username', function () {
 
       context('good data type (png, jpeg)', function () {
@@ -164,11 +162,11 @@ describe('/users/:username/avatar', function () {
 
           // check images' existence
           const expectedSizes = [16, 32, 64, 128, 256, 512];
-          const imagePromises = expectedSizes.map(size => stat(path.resolve(`./files/avatars/${loggedUser.username}/${size}`)));
+          const imagePromises = expectedSizes.map(size => fs.stat(path.resolve(`./files/avatars/${loggedUser.username}/${size}`)));
 
           await Promise.all(imagePromises);
 
-          const buffer512 = await readFile(path.resolve(`./files/avatars/${loggedUser.username}/512`));
+          const buffer512 = await fs.readFile(path.resolve(`./files/avatars/${loggedUser.username}/512`));
           should(typeOf(buffer512)).deepEqual({ ext: 'jpg', mime: 'image/jpeg' });
         });
 
@@ -182,7 +180,7 @@ describe('/users/:username/avatar', function () {
 
           // check images' existence
           const expectedSizes = [16, 32, 64, 128, 256, 512];
-          const imagePromises = expectedSizes.map(size => stat(path.resolve(`./files/avatars/${loggedUser.username}/${size}`)));
+          const imagePromises = expectedSizes.map(size => fs.stat(path.resolve(`./files/avatars/${loggedUser.username}/${size}`)));
 
           await Promise.all(imagePromises);
         });
@@ -195,7 +193,7 @@ describe('/users/:username/avatar', function () {
             .set('Content-Type', 'image/jpeg')
             .expect(204);
 
-          const files = await readdir(path.resolve('./uploads'));
+          const files = await fs.readdir(path.resolve('./uploads'));
           should(files).Array().length(0);
 
         });
@@ -249,7 +247,7 @@ describe('/users/:username/avatar', function () {
             .set('Content-Type', 'image/jpeg')
             .expect(400);
 
-          const files = await readdir(path.resolve('./uploads'));
+          const files = await fs.readdir(path.resolve('./uploads'));
           should(files).Array().length(0);
         });
 
@@ -274,17 +272,17 @@ describe('/users/:username/avatar', function () {
         const uploads = path.resolve('./uploads');
 
         // first there should be some files
-        const filePromises = [0, 1, 2, 3, 4].map(async name => fsp.close(await fsp.open(path.resolve(`./uploads/${name}`), 'w')));
+        const filePromises = [0, 1, 2, 3, 4].map(async name => fs.close(await fs.open(path.resolve(`./uploads/${name}`), 'w')));
         await Promise.all(filePromises);
 
-        const files = await readdir(uploads);
+        const files = await fs.readdir(uploads);
         should(files).Array().length(5);
 
         // then we run the job
         await clearTemporary();
 
         // then there should be no files
-        const filesAfter = await readdir(uploads);
+        const filesAfter = await fs.readdir(uploads);
         should(filesAfter).Array().length(0);
       });
     });

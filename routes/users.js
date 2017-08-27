@@ -55,7 +55,7 @@ router.route('/:username/tags/:tagname')
   .delete(authorize.onlyLoggedMe, userController.deleteUserTag);
 
 router.route('/:username/avatar')
-  .get(authorize.onlyLogged, userController.getAvatar)
+  .get(authorize.onlyLogged, avatarController.get)
   .patch(authorize.onlyLoggedMe, validators.users.patchAvatarHeaders, avatarController.parseAvatar, validators.users.patchAvatarFile, validators.users.patchAvatarFileType, avatarController.patch, avatarController.removeTemporaryFileOnError);
 
 module.exports = router;
