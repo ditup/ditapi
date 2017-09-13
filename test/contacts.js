@@ -36,7 +36,7 @@ describe('contacts', function () {
     sandbox.restore();
   });
 
-  describe('POST /contacts', function () {
+  describe.only('POST /contacts', function () {
     beforeEach(async function () {
       // create data in database
       dbData = await dbHandle.fill({

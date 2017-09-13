@@ -277,7 +277,7 @@ describe('/messages', function () {
 
   }); // end of describe POST
 
-  describe('email notifications', function () {
+  describe.only('email notifications', function () {
 
     // create some conversations
     beforeEachPopulate({

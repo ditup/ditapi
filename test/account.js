@@ -46,7 +46,7 @@ describe('/account', function () {
     let dbData,
         sandbox;
 
-    describe('send email with reset code: PATCH /account?reset-password', function () {
+    describe.only('send email with reset code: PATCH /account?reset-password', function () {
       beforeEach(function () {
         // check that the mail was sent
         sandbox.stub(mailer, 'general');
@@ -389,7 +389,7 @@ describe('/account', function () {
     });
   });
 
-  describe('change email', function () {
+  describe.only('change email', function () {
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
 

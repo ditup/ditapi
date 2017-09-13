@@ -1,7 +1,0 @@
-Hello <%= to.username %>,
-
-<%= from.username %> sent you <%= (messages.length > 1) ? messages.length : 'a' %> new message<%= (messages.length > 1) ? 's' : '' %> on ditup. Go to <%= url %> to read them.
-
-<% for (const msg of messages) { %>
-<%= msg.body %>
-<% } %>

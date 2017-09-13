@@ -18,9 +18,9 @@ exports.general = async function ({ email, from, subject, html, text }) {
     const emailOptions = {
       from: from ? `<${from}>` : 'info@ditup.org <info@ditup.org>',
       to: `<${email}>`,
-      subject: subject,
-      html: html,
-      text: text
+      subject,
+      html,
+      text
     };
 
     const info = await new Promise(function (resolve, reject) {
@@ -48,7 +48,7 @@ exports.notifyMessages = async function ({ messages, from, to }) {
 
   const url = `${config.appUrl.all}/messages/${from.username}`;
 
-  const { html, text } = await template.render({ from, to, messages, url });
+  const { html, text } = await template.render({ from, to, messages, url, isMore: messages.length > 1 });
 
   const toSend = {
     email: to.email,

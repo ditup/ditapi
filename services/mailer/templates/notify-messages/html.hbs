@@ -1,0 +1,13 @@
+Hello {{to.username}},
+
+{{from.username}} sent you
+{{#if isMore}}
+  {{messages.length}}
+  {{else}}
+  a
+{{/if}}
+new message{{#if isMore}}s{{/if}} on ditup. Go to {{url}} to read them.
+
+{{#each messages}}
+{{this.body}}
+{{/each}}
