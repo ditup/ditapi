@@ -9,6 +9,10 @@ const router = express.Router();
 
 const serializers = require(path.resolve('./serializers'));
 
+/**
+ * Make sure we don't try to deserialize multipart/form-data requests
+ * Especially useful for avatar and other file uploads
+ */
 function notMultipart(req, res, next) {
   // if the request is multipart/form-data, don't deserialize.
   const isMultipart = /^multipart\/form-data/.test(req.headers['content-type']);

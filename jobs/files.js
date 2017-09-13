@@ -1,14 +1,7 @@
 'use strict';
 
 const path = require('path'),
-      { promisify } = require('util'),
-      rimraf = promisify(require('rimraf')),
-      fs = require('fs');
-
-// fs promisified
-const fsp = {
-  mkdir: promisify(fs.mkdir)
-};
+      fs = require('fs-extra');
 
 /**
  * clear the ./uploads folder (temporary files for uploading avatar)
@@ -19,9 +12,9 @@ async function clearTemporary() {
   const temp = path.resolve('./uploads');
 
   // rm -rf the temp folder
-  await rimraf(temp);
+  await fs.remove(temp);
   // recreate the temp folder
-  await fsp.mkdir(temp);
+  await fs.mkdir(temp);
 }
 
 module.exports = { clearTemporary };

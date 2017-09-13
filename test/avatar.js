@@ -58,10 +58,6 @@ describe('/users/:username/avatar', function () {
     [loggedUser, otherUser] = dbData.users;
   });
 
-  describe('create default image identicon on email confirmation', () => {
-    it('create the svg image');
-  });
-
   describe('GET', function () {
 
     context('logged', function () {
@@ -302,7 +298,7 @@ describe('/users/:username/avatar', function () {
 
     });
 
-    describe('job: regularly clear all temp files older than 1 minute', () => {
+    describe('job: regularly clear stale temporary upload files', () => {
       it('should leave the /uploads folder empty', async () => {
         const uploads = path.resolve('./uploads');
 
@@ -320,6 +316,8 @@ describe('/users/:username/avatar', function () {
         const filesAfter = await fs.readdir(uploads);
         should(filesAfter).Array().length(0);
       });
+
+      it('should leave the files less than 1 minute old');
     });
 
   });
