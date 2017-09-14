@@ -22,7 +22,12 @@ const models = require(path.resolve('./models'));
 async function get(req, res, next) {
   const { username } = req.params;
 
-  const usernameExists = await models.user.exists(username);
+  let usernameExists;
+  try {
+    usernameExists = await models.user.exists(username);
+  } catch (e) {
+    return next(e);
+  }
 
   // go to 404 if user was not found
   // TODO perhaps return the error response here, with more specific message

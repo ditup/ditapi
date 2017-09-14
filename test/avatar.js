@@ -4,6 +4,8 @@ const supertest = require('supertest'),
       crypto = require('crypto'),
       { promisify } = require('util'),
       path = require('path'),
+      sinon = require('sinon'),
+      models = require(path.resolve('./models')),
       sizeOf = promisify(require('image-size')),
       typeOf = require('image-type');
 
@@ -16,6 +18,16 @@ const agent = supertest.agent(app);
 describe('/users/:username/avatar', function () {
 
   let dbData;
+  let sandbox;
+
+  // creating sinon sandbox
+  beforeEach(() => {
+    sandbox = sinon.sandbox.create();
+  });
+
+  afterEach(() => {
+    sandbox.restore();
+  });
 
   function beforeEachPopulate(data) {
     // put pre-data into database
@@ -162,6 +174,25 @@ describe('/users/:username/avatar', function () {
 
       });
 
+      context('server errors', () => {
+        it('[models.user.exists throws an error] should error gracefully', async () => {
+          // make the models.user.exists throw
+          sandbox.stub(models.user, 'exists').callsFake(async () => {
+            throw new Error('failed');
+          });
+          // don't log error to test console
+          sandbox.stub(console, 'error');
+
+          const response = await agent
+            .get(`/users/${otherUser.username}/avatar`)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(500);
+
+          should(response.body).have.propertyByPath('errors', 0, 'message').eql('failed');
+        });
+      });
+
     });
 
     context('not logged', function () {
@@ -282,6 +313,28 @@ describe('/users/:username/avatar', function () {
           should(files).Array().length(0);
         });
 
+      });
+
+      context('server errors', () => {
+        it('[missing uploaded temporary file] handle the error gracefully', async () => {
+          // fail reading the file
+          sandbox.stub(fs, 'readFile').callsFake(async () => {
+            const err = new Error('failed');
+            err.code = 'ENOENT';
+            throw err;
+          });
+          // don't log error from default error handler
+          sandbox.stub(console, 'error');
+
+          const response = await agent
+            .patch(`/users/${loggedUser.username}/avatar`)
+            .attach('avatar', './test/img/avatar.png')
+            .auth(loggedUser.username, loggedUser.password)
+            .set('Content-Type', 'image/jpeg')
+            .expect(500);
+
+          should(response.body).have.propertyByPath('errors', 0, 'message').eql('The image upload failed. Try again.');
+        });
       });
     });
 

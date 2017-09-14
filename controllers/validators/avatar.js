@@ -20,8 +20,18 @@ const patchFileType = async function (req, res, next) {
 
   // validate file type
   const filePath = path.resolve(`./${req.file.path}`);
+
   // - read the image
-  const fileBuffer = await fs.readFile(filePath);
+  let fileBuffer;
+  try {
+    fileBuffer = await fs.readFile(filePath);
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      return next(new Error('The image upload failed. Try again.'));
+    }
+    return next(e);
+  }
+
   // - check the image mime type
   const type = typeOf(fileBuffer);
 
