@@ -7,7 +7,7 @@
  */
 
 const cron = require('node-cron'),
-      _ = require('lodash'),
+      files = require('./files'),
       tags = require('./tags'),
       users = require('./users'),
       notifications = require('./notifications');
@@ -19,10 +19,14 @@ exports.start = function () {
   // every day at 4 am delete all abandoned tags
   tasks.push(cron.schedule('0 0 4 * * *', tags.deleteAbandoned));
 
+  // every day at 3 am delete everything in ./uploads
+  // TODO only older than 1 minute
+  tasks.push(cron.schedule('0 0 3 * * *', files.clearTemporary));
+
   // every 5 minutes send notifications about unread messages
   tasks.push(cron.schedule('0 */5 * * * *', notifications.messages));
 
-  // every 2 minutes send notifications about unread messages
+  // every 2 minutes send notifications about contact requests
   tasks.push(cron.schedule('0 */2 * * * *', notifications.contactRequests));
 
   // every 30 minutes delete unverified users
@@ -30,5 +34,5 @@ exports.start = function () {
 };
 
 exports.stop = function () {
-  _.each(tasks, task => { task.destroy(); });
+  tasks.forEach(task => { task.destroy(); });
 };

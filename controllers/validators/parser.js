@@ -23,7 +23,8 @@ const parametersDictionary = {
     tag: 'array',
     withMyTags: 'int',
     location: 'coordinates',
-    relatedToTags: 'array'
+    relatedToTags: 'array',
+    size: 'int'
   },
 };
 

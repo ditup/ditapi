@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-  - 7
+  - 8
 env:
   - NODE_ENV=test CXX="g++-4.8" CC="gcc-4.8"
 services:
@@ -29,6 +29,7 @@ before_script:
   - ./../../setup_arangodb.sh
   - cp ./config/secret/sample.js ./config/secret/test.js
   - npm run init-db-standalone
+  - npm run init
 script:
   - npm run lint
   - npm test

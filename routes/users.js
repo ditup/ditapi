@@ -5,6 +5,7 @@ const router = express.Router();
 const path = require('path');
 
 const userController = require(path.resolve('./controllers/users'));
+const avatarController = require(path.resolve('./controllers/avatar'));
 const validators = require(path.resolve('./controllers/validators')),
       authorize = require(path.resolve('./controllers/authorize'));
 
@@ -54,6 +55,7 @@ router.route('/:username/tags/:tagname')
   .delete(authorize.onlyLoggedMe, userController.deleteUserTag);
 
 router.route('/:username/avatar')
-  .get(authorize.onlyLogged, userController.getAvatar);
+  .get(authorize.onlyLogged, parse, validators.avatar.get, avatarController.get)
+  .patch(authorize.onlyLoggedMe, validators.avatar.patchHeaders, avatarController.parseAvatar, validators.avatar.patchFile, validators.avatar.patchFileType, avatarController.patch, avatarController.removeTemporaryFileOnError);
 
 module.exports = router;

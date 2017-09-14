@@ -8,7 +8,7 @@ Follows [JSON API](http://jsonapi.org) specification.
 
 ## Prerequisities
 
-- Node.js v7.0.1 or later. We use cutting-edge EcmaScript features like [async functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function), which are supported since [v7.0.1](http://node.green/#async-functions).
+- Node.js 8.0.0+. We use cutting-edge EcmaScript features like [async functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function), which are supported since [v7.0.1](http://node.green/#async-functions). We use util.promisify, which is supported since node 8.0.0.
 - npm v?
 - Arangodb v3.0 or later
 - maildev

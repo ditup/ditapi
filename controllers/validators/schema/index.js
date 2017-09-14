@@ -6,7 +6,8 @@ const users = require('./users');
 const account = require('./account');
 const contacts = require('./contacts');
 const messages = require('./messages');
+const avatar = require('./avatar');
 
 const definitions = require('./definitions');
 
-module.exports = Object.assign({ definitions }, account, contacts, messages, tags, userTags, users);
+module.exports = Object.assign({ definitions }, account, contacts, messages, tags, userTags, users, avatar);
