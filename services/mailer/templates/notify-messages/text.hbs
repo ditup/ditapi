@@ -1,6 +1,6 @@
 Hello {{to.username}},
 
-{{from.username}} sent you {{#if isMore}}{{messages.length}}{{else}}a{{/if}} new message{{#if isMore}}s{{/if}} on ditup. Go to {{url}} to read them.
+{{from.username}} sent you {{#if isMore}}{{messages.length}}{{else}}a{{/if}} new message{{#if isMore}}s{{/if}} on ditup. Go to {{url}} to read {{#if isMore}}them{{else}}it{{/if}}.
 
 {{#each messages}}
 {{this.body}}

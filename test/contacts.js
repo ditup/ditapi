@@ -36,7 +36,7 @@ describe('contacts', function () {
     sandbox.restore();
   });
 
-  describe.only('POST /contacts', function () {
+  describe('POST /contacts', function () {
     beforeEach(async function () {
       // create data in database
       dbData = await dbHandle.fill({
@@ -48,7 +48,7 @@ describe('contacts', function () {
     let contactBody;
 
     function checkEmail(email, from, to, message) {
-      should(email).have.property('email', to.email);
+      should(email).have.property('to', `<${to.email}>`);
       should(email).have.property('subject', `${from.username} would like to create a contact with you on ditup`);
 
       const url = `${config.appUrl.all}/user/${to.username}/contact/${from.username}`;

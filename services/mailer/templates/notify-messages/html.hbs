@@ -1,13 +1,20 @@
 Hello {{to.username}},
 
 {{from.username}} sent you
+{{! show a number of messages, or 'a' if 1 }}
 {{#if isMore}}
   {{messages.length}}
   {{else}}
   a
 {{/if}}
-new message{{#if isMore}}s{{/if}} on ditup. Go to {{url}} to read them.
+new message{{#if isMore}}s{{/if}} on ditup. Go to {{url}} to read
+{{! if more messages, show 'them', otherwise 'it' }}
+{{#if isMore~}}
+  them
+  {{~else~}}
+  it
+{{~/if}}.
 
 {{#each messages}}
-{{this.body}}
+{{{markdown this.body}}}
 {{/each}}
