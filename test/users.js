@@ -97,15 +97,14 @@ describe('/users', function () {
           .expect(201);
 
         // check the email
-        sinon.assert.callCount(mailer.general, 1);
+        sinon.assert.calledOnce(mailer.general);
 
         const email = mailer.general.getCall(0).args[0];
-        should(email).have.property('email', 'test@example.com');
+
+        should(email).have.property('to', '<test@example.com>');
         should(email).have.property('subject', 'email verification for ditup.org');
-
-        should(email).have.property('html').match(/^<p>Hello test,<br>\nplease follow this link to verify your email:<br>\n<a href="https:\/\/ditup.org\/user\/test\/verify-email\/[0-9a-f]{32}">https:\/\/ditup.org\/user\/test\/verify-email\/[0-9a-f]{32}<\/a>\n<\/p>\n<p>Or copy-paste your verification code:<br>[0-9a-f]{32}<\/p>\n<p>If you received this email by accident, kindly ignore it, please.<\/p>\n$/m);
-        should(email).have.property('text').match(/^Hello test,\n\nplease follow this link to verify your email:\nhttps:\/\/ditup.org\/user\/test\/verify-email\/[0-9a-f]{32}\n\nOr copy-paste your verification code:\n[0-9a-f]{32}\n\nIf you received this email by accident, kindly ignore it, please.\n$/m);
-
+        should(email).have.property('text').match(new RegExp(`${config.appUrl.all}/user/test/verify-email/[0-9a-f]{32}`));
+        should(email).have.property('html').match(new RegExp(`${config.appUrl.all}/user/test/verify-email/[0-9a-f]{32}`));
       });
     });
 

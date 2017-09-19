@@ -284,7 +284,7 @@ describe('/messages', function () {
       users: 3, // how many users to make
       verifiedUsers: [0, 1, 2], // which  users to make verified
       messages: [
-        [0, 1], [1, 0], [0, 1], [0, 1], [1, 0],
+        [0, 1], [1, 0, 'message0'], [0, 1], [0, 1], [1, 0, '# message1'],
         [1, 2], [1, 2], [2, 1]
       ]
     });
@@ -300,7 +300,21 @@ describe('/messages', function () {
 
       sinon.assert.callCount(mailer.general, 4);
 
-      // TODO test the text of the messages
+      // test the content of the messages
+      const calls = mailer.general.getCalls();
+
+      // find the notification to user0 about user1 messages
+      const callTo0 = calls.find(call => call.args[0].to === '<user0@example.com>');
+
+      should(callTo0).have.propertyByPath('args', 0);
+      const { text, html, to, subject } = callTo0.args[0];
+
+      // message talks about sender, amount of new messages, link to read and reply, text of the messages
+      should(text).match(/user1(.|\n)*2 new messages(.|\n)*https:\/\/ditup\.org\/messages\/user1(.|\n)*message0(.|\n)*message1/);
+      // markdown enabled in the text of the messages
+      should(html).match(/user1(.|\n)*2(\n|\s)*new messages(.|\n)*https:\/\/ditup\.org\/messages\/user1(.|\n)*message0(.|\n)*<h1>message1<\/h1>/);
+      should(to).equal('<user0@example.com>');
+      should(subject).equal('user1 wrote to you on ditup');
     });
 
     it('don\'t notify already notified messages again', async function () {
@@ -310,12 +324,12 @@ describe('/messages', function () {
 
       sinon.assert.callCount(mailer.general, 4);
 
+      // reset count and run the job again
+      mailer.general.reset();
       await notificationJobs.messages();
 
-
-      // second time still just 4 times
-      sinon.assert.callCount(mailer.general, 4);
-
+      // second time called 0 times
+      sinon.assert.callCount(mailer.general, 0);
     });
   });
 

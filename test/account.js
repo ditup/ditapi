@@ -54,13 +54,13 @@ describe('/account', function () {
 
       context('good data', function () {
 
-        function checkEmail(user, email) {
-          should(email).have.property('email', user.email);
-          should(email).have.property('subject', 'reset your password for ditup');
+        function checkEmail(user, mailerData) {
+          should(mailerData).have.property('to', `<${user.email}>`);
+          should(mailerData).have.property('subject', 'reset your password for ditup');
 
-          const url = `https://ditup.org/reset-password/${user.username}/[0-9a-f]{32}`;
-          should(email).have.property('text').match(new RegExp(`^Hello ${user.username},\nsomeone requested to reset your password\.\nIf it was you, please follow this link to finish the process:\n${url}\nThe link is valid for 30 minutes\.\nOtherwise kindly ignore this email, please\.$`, 'm'));
-          should(email).have.property('html').match(new RegExp(`^Hello ${user.username},<br>\nsomeone requested to reset your password\.<br>\nIf it was you, please follow this link to finish the process:<br>\n<a href="${url}">${url}</a><br>\nThe link is valid for 30 minutes\.<br>\nOtherwise kindly ignore this email, please\.$`, 'm'));
+          const url = `${config.appUrl.all}/reset-password/${user.username}/[0-9a-f]{32}`;
+          should(mailerData).have.property('text').match(new RegExp(`${user.username}(.|\n)*${url}`));
+          should(mailerData).have.property('html').match(new RegExp(`${user.username}(.|\n)*${url}`));
         }
 
         it('[username provided] should send an email with reset code (a link) & respond 204', async function () {
@@ -445,7 +445,7 @@ describe('/account', function () {
 
           const email = mailer.general.getCall(0).args[0];
 
-          should(email).have.property('email', 'other.email@example.com');
+          should(email).have.property('to', '<other.email@example.com>');
           should(email).have.property('subject', 'email verification for ditup.org');
           should(email).have.property('text').match(new RegExp(`${config.appUrl.all}/user/user0/verify-email/[0-9a-f]{32}`));
           should(email).have.property('html').match(new RegExp(`${config.appUrl.all}/user/user0/verify-email/[0-9a-f]{32}`));

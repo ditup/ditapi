@@ -1,0 +1,22 @@
+<p>
+Hello {{to.username}},
+<br>
+{{from.username}} sent you
+{{! show a number of messages, or 'a' if 1 }}
+{{#if isMore}}
+  {{messages.length}}
+  {{else}}
+  a
+{{/if}}
+new message{{#if isMore}}s{{/if}} on ditup.
+</p>
+
+<a href="{{url}}" target="_blank" class="action-button">Read and reply</a>
+
+<blockquote>
+  <ul>
+  {{#each messages}}
+    <li>{{{markdown this.body}}}</li>
+  {{/each}}
+  </ul>
+</blockquote>

@@ -1,0 +1,44 @@
+@import "colors";
+
+header {
+  font-size: 1.5em;
+  color: $contrast_color;
+  border: 0.2em solid $main_color;
+  border-radius: 0.2em;
+  line-height: 0em;
+  margin: 1em 0;
+}
+
+.ditup-name {
+  background-color: white;
+  padding: 0.2em;
+  margin-left: 1em;
+}
+
+.content {
+  padding: 1em;
+
+  .action-button {
+    padding: 0.5em;
+    display: inline-block;
+    color: white;
+    background-color: $main_color;
+    border-radius: 0.2em;
+    margin: 1em 0;
+    text-decoration: none;
+  }
+
+  .copy-field {
+    width: 100%;
+  }
+}
+
+footer {
+  color: gray;
+  border-top: 3px solid $main_color;
+  text-align: center;
+
+  a {
+    color: gray;
+  }
+}
