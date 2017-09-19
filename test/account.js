@@ -58,16 +58,9 @@ describe('/account', function () {
           should(mailerData).have.property('to', `<${user.email}>`);
           should(mailerData).have.property('subject', 'reset your password for ditup');
 
-          const url = `https://ditup.org/reset-password/${user.username}/[0-9a-f]{32}`;
-          should(mailerData).have.property('text').match(new RegExp(`^Hello ${user.username},
-
-someone requested to reset your password\.
-If it was you, please follow this link to finish the process:
-
-${url}
-
-The link is valid for 30 minutes\.\nOtherwise kindly ignore this email, please\.$`, 'm'));
-          should(mailerData).have.property('html').match(new RegExp(`^Hello ${user.username},<br>\nsomeone requested to reset your password\.<br>\nIf it was you, please follow this link to finish the process:<br>\n<a href="${url}">${url}</a><br>\nThe link is valid for 30 minutes\.<br>\nOtherwise kindly ignore this email, please\.$`, 'm'));
+          const url = `${config.appUrl.all}/reset-password/${user.username}/[0-9a-f]{32}`;
+          should(mailerData).have.property('text').match(new RegExp(`${user.username}(.|\n)*${url}`));
+          should(mailerData).have.property('html').match(new RegExp(`${user.username}(.|\n)*${url}`));
         }
 
         it('[username provided] should send an email with reset code (a link) & respond 204', async function () {

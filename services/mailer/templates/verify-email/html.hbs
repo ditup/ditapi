@@ -1,6 +1,11 @@
 <p>Hello {{username}},<br>
-please follow this link to verify your email:<br>
-<a href="{{url}}">{{url}}</a>
+please follow this link to verify your email:
 </p>
-<p>Or copy-paste your verification code:<br>{{code}}</p>
+
+<a href="{{url}}" class="action-button" target="_blank">Verify email</a>
+
+<p>Or copy-paste your verification code:</p>
+  
+<input value="{{code}}" disabled class="copy-field">
+
 <p>If you received this email by accident, kindly ignore it, please.</p>

@@ -1,7 +1,13 @@
-Hello {{to.username}},<br><br>
+<p>Hello {{to.username}},<br>
+{{from.username}} would like to create a contact with you on ditup.</p>
 
-{{from.username}} would like to make a contact with you on ditup. Go to {{url}} to confirm or cancel it.<br><br>
+<a href="{{url}}" target="_blank" class="action-button">Confirm or cancel</a>
 
-Here is what {{from.username}} wrote to you:<br><br>
+<p>
+  Here is what {{from.username}} wrote to you:
+  <blockquote>
+    {{message}}
+  </blockquote>
+</p>
 
-{{message}}
+

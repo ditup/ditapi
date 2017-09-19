@@ -52,8 +52,8 @@ describe('contacts', function () {
       should(email).have.property('subject', `${from.username} would like to create a contact with you on ditup`);
 
       const url = `${config.appUrl.all}/user/${to.username}/contact/${from.username}`;
-      should(email).have.property('text').match(new RegExp(`^Hello ${to.username},\n\n${from.username} would like to make a contact with you on ditup\. Go to ${url} to confirm or cancel it\.\n\nHere is what ${from.username} wrote to you:\n\n${message}$`, 'm'));
-      should(email).have.property('html').match(new RegExp(`^Hello ${to.username},<br><br>\n\n${from.username} would like to make a contact with you on ditup\. Go to ${url} to confirm or cancel it\.<br><br>\n\nHere is what ${from.username} wrote to you:<br><br>\n\n${message}$`, 'm'));
+      should(email).have.property('text').match(new RegExp(`${to.username}(.|\\n)*${from.username}(.|\\n)*${url}(.|\\n)*${message}`));
+      should(email).have.property('html').match(new RegExp(`${to.username}(.|\\n)*${from.username}(.|\\n)*${url}(.|\\n)*${message}`));
     }
 
     function generateContactBody(to, { trust, reference, message }) {

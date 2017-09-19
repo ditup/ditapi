@@ -45,12 +45,11 @@ const dataNotProvided = new Error('data not provided');
 
 async function sendMail(type, params, email, subject) {
   const template = new EmailTemplate(path.join(__dirname, 'templates', 'main'));
-  const { html, text } = await template.render({ type, params });
+  const { html, text } = await template.render({ type, params, subject });
 
   const toSend = { to: `<${email}>`, subject, html, text };
 
   return await exports.general(toSend);
-
 }
 
 exports.general = async function ({ to, from='info@ditup.org <info@ditup.org>', subject, html, text }) {
@@ -84,7 +83,7 @@ exports.notifyMessages = async function ({ messages, from, to }) {
   const isMore = messages.length > 1;
 
   const { email } = to;
-  const subject = `${from.username} sent you a new message on ditup`;
+  const subject = `${from.username} wrote to you on ditup`;
 
   return await sendMail('notify-messages', { from, to, messages, url, isMore }, email, subject);
 };
