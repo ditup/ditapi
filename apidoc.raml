@@ -1,0 +1,69 @@
+#%RAML 1.0
+---
+title: rest api for ditup
+baseUri: https://api.ditup.org/{version}
+version: v1
+
+/users:
+  get:
+    queryParameters:
+      filter:
+        tag: 'tag1,tag2'
+        byMyTags:
+        withMyTags:
+      sort: '-created'
+      page:
+        offset:
+        limit:
+    responses:
+      200:
+        body:
+          application/vnd.api+json:
+            example: |
+              {
+              
+              }
+  post:
+  /{username}:
+    get:
+    patch:
+    /avatar:
+      get:
+      patch:
+    /tags:
+      get:
+      post:
+      /{tagname}:
+        get:
+        patch:
+        delete:
+
+/auth:
+
+/account:
+  patch:
+    queryParameters:
+      'reset-password':
+
+
+/contacts:
+  get:
+  post:
+  /{from}:
+    /{to}:
+      get:
+      patch:
+      delete:
+
+/messages:
+  post:
+  get:
+  /{id}:
+    patch:
+
+/tags:
+  get:
+  post:
+  /{tagname}:
+    get:
+
