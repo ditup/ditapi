@@ -1,18 +1,13 @@
 @import "colors";
 
 header {
+  all: initial;
+  display: block;
   font-size: 1.5em;
   color: $contrast_color;
-  border: 0.2em solid $main_color;
-  border-radius: 0.2em;
-  line-height: 0em;
-  margin: 1em 0;
-}
-
-.ditup-name {
-  background-color: white;
-  padding: 0.2em;
-  margin-left: 1em;
+  border-bottom: 3px solid $main_color;
+  margin: 0.5em 0;
+  padding-left: 0.8em;
 }
 
 .content {
@@ -37,6 +32,7 @@ footer {
   color: gray;
   border-top: 3px solid $main_color;
   text-align: center;
+  font-size: smaller;
 
   a {
     color: gray;
