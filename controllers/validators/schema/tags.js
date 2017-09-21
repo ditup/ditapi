@@ -16,20 +16,6 @@ const postTags = {
   required: ['body']
 };
 
-const getTag = {
-  id: 'getTag',
-  properties: {
-    params: {
-      properties: {
-        tagname
-      },
-      required: ['tagname'],
-      additionalProperties: false
-    }
-  },
-  required: ['params']
-};
-
 const getTagsRelatedToTags = {
   id: 'getTagsRelatedToTags',
   properties: {
@@ -85,4 +71,4 @@ const randomTags = {
   required: ['query']
 };
 
-module.exports = { postTags, getTag, getTagsRelatedToTags, getTagsRelatedToMyTags, getTagsLike, randomTags };
+module.exports = { postTags, getTagsRelatedToTags, getTagsRelatedToMyTags, getTagsLike, randomTags };

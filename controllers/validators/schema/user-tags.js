@@ -33,14 +33,9 @@ const patchUserTag = {
       },
       additionalProperties: false,
       required: ['id']
-    },
-    params: {
-      properties: {
-        tagname
-      }
     }
   },
-  required: ['body', 'params']
+  required: ['body']
 };
 
 module.exports = { postUserTags, patchUserTag };

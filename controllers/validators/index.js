@@ -7,3 +7,4 @@ exports.account = require('./account');
 exports.users = require('./users');
 exports.tags = require('./tags');
 exports.userTags = require('./user-tags');
+exports.params = require('./params');

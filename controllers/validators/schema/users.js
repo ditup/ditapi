@@ -2,17 +2,6 @@
 
 const { username, givenName, familyName, description, location, tagname, page, pageOffset0 } = require('./paths');
 
-const getUser = {
-  id: 'getUser',
-  properties: {
-    params: {
-      properties: {
-        username
-      }
-    }
-  }
-};
-
 const patchUser = {
   id: 'patchUser',
   properties: {
@@ -166,7 +155,6 @@ const getUsersWithTags = {
 
 
 module.exports = {
-  getUser,
   patchUser,
   postUsers,
   getUsersWithMyTags,
