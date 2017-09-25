@@ -1,69 +1,334 @@
 #%RAML 1.0
 ---
-title: rest api for ditup
+title: ditup.org REST
 baseUri: https://api.ditup.org/{version}
 version: v1
+mediaType: application/vnd.api+json
+
+types:
+  User:
+    properties:
+      type:
+        enum: [users]
+      id:
+        type: string
+      attributes:
+        properties:
+          givenName:
+          familyName:
+          description:
+          location:
+          email:
+  Tag:
+    properties:
+      type:
+        enum: [tags]
+      id:
+        type: string
 
 /users:
   get:
+    description: |
+      The following data can be received:
+      - new users: `?sort=-created&page[offset]=0&page[limit]=5`
+      - users with my tags `?filter[byMyTags]`
+      - users by tags `?filter[tag]=tag1,tag2,tag3` TODO rename
+      - new users with my tags: `?sort=-created&filter[withMyTags]=2&page[offset]=5&page[limit]=3`
+      - users within a rectangle: `?filter[location]=-1.0,-1.0,1.0,1.0`
     queryParameters:
-      filter:
-        tag: 'tag1,tag2'
-        byMyTags:
-        withMyTags:
-      sort: '-created'
-      page:
-        offset:
-        limit:
+      filter?:
+        properties:
+          tag?:
+            type: string
+            description: a comma separated list of tags to search by
+          byMyTags?:
+            type: nil
+            description: perform a search by tags which i (logged user) have
+          withMyTags?:
+            type: integer
+            description: Amount of tags which found users should have in common with me. Used in connection with sort=-created
+          location?:
+            type: string
+            description: A rectangle to search within - `southWestLatitude,southWestLongitude,northEastLatitude,northEastLongitude`.
+      sort?:
+        description: if sort=-created is specified, new users will be returned
+        enum:
+          - '-created'
+      page?:
+        description: support for pagination
+        properties:
+          offset:
+            type: integer
+            description: offset of the documents to return (which is the first document to return?)
+          limit:
+            type: integer
+            description: amount of documents to return
     responses:
       200:
-        body:
-          application/vnd.api+json:
-            example: |
-              {
-              
-              }
+      400:
   post:
+    description: Create a new user with unverified email. Verification message will be sent to the provided email.
+    body:
+      example:
+        data:
+          type: users
+          attributes:
+            username: user1
+            email: user1@example.com
+            password: correcthorsebatterystaple
+    responses:
+      201:
+        description: Success.
+        body:
+          example:
+            data:
+              type: users
+              id: user1
+              attributes:
+                username: user1
+                givenName:
+                familyName:
+                description:
+                location:
+      400:
+        description: Validation error.
+      409:
+        description: Conflict. Username must be unique.
+
   /{username}:
     get:
+      responses:
+        200:
+          # examples:
+          #   - notLogged:
+          #     data:
+          #       type: users
+          #       id: user1
+          #   - logged:
+          #     data:
+          #       type: users
+          #       id: user1
+          #       attributes:
+          #         givenName: name
+          #         familyName:
+          #         description: this is a description
+          #         location:
+          #   - loggedAsSelf:
+          #     data:
+          #       type: users
+          #       id: user1
+          #       attributes: # TODO
+        404:
+          description: User doesn't exist.
     patch:
+      description: Edit user profile (givenName, familyName, description, location).
+      responses:
+        200:
+        403:
+        400:
     /avatar:
       get:
+        description: Get an avatar image of an user. Specifying size is supported.
+        queryParameters:
+          filter?:
+            properties:
+              size:
+                description: Return avatar of a specified size.
+                enum:
+                  - 16
+                  - 32
+                  - 64
+                  - 128
+                  - 256
+                  - 512
+        responses:
+          200:
+            body:
+              image/svg+xml:
+                description: Default Identicon.js image.
+              image/jpeg:
+                description: Image provided by user.
+          403:
+          404:
       patch:
+        description: Upload avatar image. Maximum size is 2MB.
+        body:
+          multipart/form-data:
+            description: |
+              Supported image types:
+              - jpeg
+              - png
+        responses:
+          200:
+          400:
+          403:
+      # TODO: delete
     /tags:
       get:
+        description: Get a list of user's tags (with story and relevance).
+        responses:
+          200:
+          # TODO 403:
+          # TODO 404:
       post:
+        description: Add a tag to self and specify story and relevance.
+        responses:
+          201:
+          400:
+          403:
+          404:
+          409:
       /{tagname}:
         get:
+          description: Show a tag and user's story and relevance.
+          responses:
+            200:
+            # TODO!!! 403, 404
         patch:
+          description: Update user's story and/or relevance to a tag.
+          responses:
+            200:
+            400:
+            403:
+            404:
         delete:
-
+          description: Remove a tag from a user.
+          responses:
+            204:
+            403:
+            404:
 /auth:
+  # TODO JWT Token
+  # send Basic auth header and receive JWT token
+  # check validity of a given JWT token
+  # remove basic auth
 
 /account:
   patch:
+    description: |
+      The following actions are supported:
+      - send email with code for resetting forgotten password
+      - reset forgotten password with reset code
+      - update unverified email and send verification link
+      - verify email
+      - change password
     queryParameters:
-      'reset-password':
+      reset-password?:
+        type: nil
+        description: Send email with code for resetting forgotten password
 
 
 /contacts:
   get:
+    description: |
+      Show trust and reference which user gave or received.
+      Don't show unconfirmed contacts to 3rd users.
+      Don't show trust and reference to user who received contact request and didn't confirm, yet.
+    queryParameters:
+      filter:
+        properties:
+          from?:
+            type: string
+            description: Read contacts given by the specified user.
+          to?:
+            type: string
+            description: Read contacts given to the specified user.
   post:
-  /{from}:
-    /{to}:
-      get:
-      patch:
-      delete:
-
+    description: Create a contact request.
+    responses:
+      201:
+      400:
+      403:
+      404:
+      409:
+  /{from}/{to}:
+    get:
+      description: |
+        Show a contact between two users including reference and trust given by `:from` to `:to`
+        - the requester should see unconfirmed contact including message
+        - the requested should see only the message of the unconfirmed contact
+        - every other logged user can see only confirmed contacts (trust and reference)
+    patch:
+      description: |
+        The following actions are supported:
+          - confirm a contact request
+          - update a contact from self
+      responses:
+        200:
+        400:
+        403:
+        404:
+    delete:
+      description: Delete a contact.
 /messages:
   post:
+    description: Create a new message to another user.
   get:
+    description: |
+      The following information can be retrieved:
+        - messages with another user
+        - threads
+        - amount of threads with unread messages
+    queryParameters:
+      filter:
+        properties:
+          count:
+            description: Show amount of unread threads.
+            type: nil
+          threads:
+            description: Show last messages of my threads sorted by time.
+            type: nil
+          with:
+            type: string
+            description: Show messages with the given user from newest to oldest.
+    responses:
+      200:
+      403:
+      404:
+      # TODO 400
   /{id}:
     patch:
-
+      description: Set `read` to `true` on the message and all the previous unread messages.
+      responses:
+        200:
+        403:
 /tags:
   get:
+    description: |
+      The following data can be received
+      - tags with names similar to a given string (similarity = one of the words in tagname starts with the given string) (`?filter[tagname][like]=fraction-of-tag-name`)
+      - tags related to my tags `?filter[relatedToMyTags]`
+      - tags related to given tags `?filter[relatedToTags]=tag1,tag2,tag3`
+      - random tags `?filter[random]`
+      TODO: popular tags, new tags (which have some uses)
+    queryParameters:
+      filter:
+        properties:
+          tagname:
+            properties:
+              like:
+                type: string
+          relatedToMyTags:
+            type: nil
+          relatedToTags:
+            description: a comma separated list of tags to search from
+            type: string
+          random:
+            type: nil
+    responses:
+      200:
+      400:
+      403:
   post:
+    description: Create a new tag.
+    responses:
+      201:
+      400:
+      403:
+      409:
   /{tagname}:
     get:
-
+      description: Read a tag.
+      responses:
+        200:
+        404:

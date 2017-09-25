@@ -39,7 +39,7 @@ npm run test:watch
 
 ## Documentation
 
-[API documentation](apidoc.raml) written with [RAML](https://raml.org)
+[API documentation](https://ditup.github.io/apidoc) ([raw](apidoc.raml)) written with [RAML](https://raml.org)
 
 ## Development
 
