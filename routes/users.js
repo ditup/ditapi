@@ -49,11 +49,11 @@ router.route('/:username')
 router.route('/:username/tags')
   .all(validators.params)
   .post(authorize.onlyLoggedMe, validators.userTags.post, userController.postUserTags)
-  .get(userController.getUserTags);
+  .get(authorize.onlyLogged, userController.getUserTags);
 
 router.route('/:username/tags/:tagname')
   .all(validators.params)
-  .get(userController.getUserTag)
+  .get(authorize.onlyLogged, userController.getUserTag)
   .patch(authorize.onlyLoggedMe, validators.userTags.patch, userController.patchUserTag, userController.getUserTag)
   .delete(authorize.onlyLoggedMe, userController.deleteUserTag);
 

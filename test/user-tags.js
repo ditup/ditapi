@@ -64,8 +64,8 @@ describe('Tags of user', function () {
         [loggedUser, taggedUser] = dbData.users;
       });
 
-      it('list of user\'s tags', // (may include user's story about the tag)
-        async function () {
+      context('logged', () => {
+        it('list of user\'s tags', async () => {
           const response = await agent
             .get(`/users/${taggedUser.username}/tags`)
             .set('Content-Type', 'application/vnd.api+json')
@@ -98,67 +98,74 @@ describe('Tags of user', function () {
             username: taggedUser.username,
             tagname: expectedTagname
           });
-
-        }
-      );
-
-      it('should include the tags themselves as relationships', async function () {
-        const response = await agent
-          .get(`/users/${taggedUser.username}/tags`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
-          .expect(200)
-          .expect('Content-Type', /^application\/vnd\.api\+json/);
-
-        const userTags = response.body;
-        const [firstTag] = userTags.data;
-
-        should(firstTag).have.propertyByPath('relationships', 'tag');
-        should(firstTag).have.propertyByPath('relationships', 'user');
-
-        const user = firstTag.relationships.user;
-        const tag = firstTag.relationships.tag;
-
-        should(user).have.property('data').deepEqual({
-          type: 'users',
-          id: 'user1'
         });
 
-        should(tag).have.property('data').deepEqual({
-          type: 'tags',
-          id: 'tag4'
+        it('should include the tags themselves as relationships', async () => {
+          const response = await agent
+            .get(`/users/${taggedUser.username}/tags`)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          const userTags = response.body;
+          const [firstTag] = userTags.data;
+
+          should(firstTag).have.propertyByPath('relationships', 'tag');
+          should(firstTag).have.propertyByPath('relationships', 'user');
+
+          const user = firstTag.relationships.user;
+          const tag = firstTag.relationships.tag;
+
+          should(user).have.property('data').deepEqual({
+            type: 'users',
+            id: 'user1'
+          });
+
+          should(tag).have.property('data').deepEqual({
+            type: 'tags',
+            id: 'tag4'
+          });
+
+          // should(tag).have.property('links');
+
+          should(userTags).have.property('included');
+
+          should(userTags.included).containDeep([{
+            type: 'users',
+            id: 'user1',
+            attributes: {
+              username: 'user1',
+              givenName: '',
+              familyName: ''
+            },
+            links: {
+              self: `${config.url.all}/users/user1`
+            }
+          }]);
+
+          should(userTags.included).containDeep([{
+            type: 'tags',
+            id: 'tag4',
+            attributes: {
+              tagname: dbData.tags[4].tagname
+            },
+            links: {
+              self: `${config.url.all}/tags/tag4`
+            }
+          }]);
         });
-
-        // should(tag).have.property('links');
-
-        should(userTags).have.property('included');
-
-        should(userTags.included).containDeep([{
-          type: 'users',
-          id: 'user1',
-          attributes: {
-            username: 'user1',
-            givenName: '',
-            familyName: ''
-          },
-          links: {
-            self: `${config.url.all}/users/user1`
-          }
-        }]);
-
-        should(userTags.included).containDeep([{
-          type: 'tags',
-          id: 'tag4',
-          attributes: {
-            tagname: dbData.tags[4].tagname
-          },
-          links: {
-            self: `${config.url.all}/tags/tag4`
-          }
-        }]);
-
       });
 
+      context('not logged', () => {
+        it('403', async () => {
+          await agent
+            .get(`/users/${taggedUser.username}/tags`)
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(403)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+      });
     });
 
     describe('POST', function () {
@@ -534,35 +541,49 @@ describe('Tags of user', function () {
         [loggedUser, taggedUser] = dbData.users;
       });
 
-      it('show tag with user\'s story to it', async function () {
-        const userTag = dbData.userTag[2];
+      context('logged', () => {
+        it('show tag with user\'s story to it', async () => {
+          const userTag = dbData.userTag[2];
 
-        const response = await agent
-          .get(`/users/${taggedUser.username}/tags/${userTag.tag.tagname}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
-          .expect(200)
-          .expect('Content-Type', /^application\/vnd\.api\+json/);
+          const response = await agent
+            .get(`/users/${taggedUser.username}/tags/${userTag.tag.tagname}`)
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-        const respUserTag = response.body;
-        respUserTag.should.have.property('data');
-        respUserTag.should.have.property('links');
+          const respUserTag = response.body;
+          respUserTag.should.have.property('data');
+          respUserTag.should.have.property('links');
 
-        const data = respUserTag.data;
-        const links = respUserTag.links;
+          const data = respUserTag.data;
+          const links = respUserTag.links;
 
-        data.should.have.property('type', 'user-tags');
-        data.should.have.property('id',
-          `${taggedUser.username}--${userTag.tag.tagname}`);
+          data.should.have.property('type', 'user-tags');
+          data.should.have.property('id',
+            `${taggedUser.username}--${userTag.tag.tagname}`);
 
-        links.should.have.property('self', `${config.url.all}/users/${userTag.user.username}/tags/${userTag.tag.tagname}`);
+          links.should.have.property('self', `${config.url.all}/users/${userTag.user.username}/tags/${userTag.tag.tagname}`);
 
-        should(data).have.property('attributes');
-        const attributes = data.attributes;
-        should(attributes).have.property('story', userTag.story);
-        should(attributes).have.property('relevance', userTag.relevance);
-        should(attributes).have.property('username', userTag.user.username);
-        should(attributes).have.property('tagname', userTag.tag.tagname);
+          should(data).have.property('attributes');
+          const attributes = data.attributes;
+          should(attributes).have.property('story', userTag.story);
+          should(attributes).have.property('relevance', userTag.relevance);
+          should(attributes).have.property('username', userTag.user.username);
+          should(attributes).have.property('tagname', userTag.tag.tagname);
+        });
+      });
+
+      context('not logged', () => {
+        it('403', async () => {
+          const userTag = dbData.userTag[2];
+
+          await agent
+            .get(`/users/${taggedUser.username}/tags/${userTag.tag.tagname}`)
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(403)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
       });
     });
 
