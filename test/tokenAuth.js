@@ -8,7 +8,8 @@ const jwt = require('jsonwebtoken'),
       should = require('should');
 const app = require(path.resolve('./app')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config'));
+      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
+      validators = require(path.resolve('./controllers/validators'));
 
 const agent = supertest.agent(app);
 
@@ -98,6 +99,29 @@ describe.only('/auth/token', function() {
       });
   	});
 
+    context('request with invalid username', function() {
+      it('should respond with 401', async function() {
+        const resp = await agent
+          .get('/auth/token')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth('2000', verifiedUser.password)
+          .expect(401)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+    });
+
+    context('request with additional parameter', function() {
+      it('should respond with 400', async function() {
+        const resp = await agent
+          .get('/auth/token?filter[tag]=tag1,tag2')
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(verifiedUser.username, verifiedUser.password)
+          .expect(400)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+    });
+
+
   	context('the user has unverified email', function () {
   		// TODO is it needed at this point?
   	});
@@ -105,6 +129,8 @@ describe.only('/auth/token', function() {
   	context('the user has verified email', function () {
   		// TODO is it needed at this point?
   	});
+
+
 
   });
 
