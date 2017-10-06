@@ -18,7 +18,7 @@ exports.onlyLoggedMe = function (req, res, next) {
   const isLogged = req.auth.logged === true;
   const isMe = req.auth.username === req.params.username;
   if (isLogged && isMe === true) return next();
-
+  console.log(res);
   return res.status(403).json({ errors: ['Not Authorized'] });
   // TODO improve the error
 };
