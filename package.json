@@ -55,6 +55,7 @@
     "mocha": "^4.0.1",
     "node-mocks-http": "^1.6.5",
     "proxyquire": "^1.8.0",
+    "rewire": "^2.5.2",
     "should": "^13.1.2",
     "sinon": "^4.0.1",
     "supertest": "^3.0.0"

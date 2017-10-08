@@ -824,7 +824,6 @@ describe('/users', function () {
       });
 
       context('not logged in', function () {
-        // TODO reaction for not logged in 403?
         it('error 403', async function() {
           await agent
             .get('/users?sort=-created&page[offset]=0&page[limit]=20')
