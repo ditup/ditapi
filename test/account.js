@@ -1,21 +1,24 @@
 'use strict';
 
-const supertest = require('supertest'),
+const jwt = require('jsonwebtoken'),
+      path = require('path'),
       should = require('should'),
       sinon = require('sinon'),
-      path = require('path');
+      supertest = require('supertest');
+
 
 const app = require(path.resolve('./app')),
-      models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
-      dbHandle = require(path.resolve('./test/handleDatabase'));
+      dbHandle = require(path.resolve('./test/handleDatabase')),
+      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
+      models = require(path.resolve('./models'));
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
 
 const agent = supertest.agent(app);
 
-describe('/account', function () {
+describe.only('/account', function () {
 
   describe('reset forgotten password', function () {
 
@@ -393,6 +396,7 @@ describe('/account', function () {
   });
 
   describe('change email', function () {
+    let username, password, userToken;
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
 
@@ -412,6 +416,10 @@ describe('/account', function () {
 
       // create data in database
       dbData = await dbHandle.fill(data);
+      [{ username, password }] = dbData.users;
+      const jwtPayload = {username: username};
+      userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
     });
 
     afterEach(async function () {
@@ -422,9 +430,9 @@ describe('/account', function () {
         sandbox;
 
     context('logged in', function () {
+
       context('good data', function () {
         it('save unverified email and send verification message', async function () {
-          const [{ username, password }] = dbData.users;
 
           const patchBody = {
             data: {
@@ -441,7 +449,7 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(username, password)
+            .set('Authorization', 'Bearer ' + userToken)
             .expect(204);
 
           sinon.assert.calledOnce(mailer.general);
@@ -458,7 +466,6 @@ describe('/account', function () {
       context('bad data', function () {
 
         it('[invalid email] 400', async function () {
-          const [{ username, password }] = dbData.users;
 
           const patchBody = {
             data: {
@@ -475,12 +482,11 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(username, password)
+            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
 
         it('[missing password] 400', async function () {
-          const [{ username, password }] = dbData.users;
 
           const patchBody = {
             data: {
@@ -496,12 +502,11 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(username, password)
+            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
 
         it('[unexpected attributes] 400', async function () {
-          const [{ username, password }] = dbData.users;
 
           const patchBody = {
             data: {
@@ -519,12 +524,11 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(username, password)
+            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
 
         it('[invalid password] 400', async function () {
-          const [{ username, password }] = dbData.users;
 
           const patchBody = {
             data: {
@@ -541,12 +545,11 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(username, password)
+            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
 
         it('[wrong password] 403', async function () {
-          const [{ username, password }] = dbData.users;
 
           const patchBody = {
             data: {
@@ -563,12 +566,11 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(username, password)
+            .set('Authorization', 'Bearer ' + userToken)
             .expect(403);
         });
 
         it('[auth.username vs. req.body.id mismatch] 400', async function () {
-          const [{ username, password }] = dbData.users;
 
           const patchBody = {
             data: {
@@ -585,7 +587,7 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(username, password)
+            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
       });
@@ -830,7 +832,7 @@ describe('/account', function () {
   });
 
   describe('change password', function () {
-    let dbData;
+    let dbData, user0, user0Token;
 
     beforeEach(async function () {
       const data = {
@@ -840,6 +842,11 @@ describe('/account', function () {
 
       // create data in database
       dbData = await dbHandle.fill(data);
+
+      [user0] = dbData.users;
+      const jwtPayload = {username: user0.username};
+      user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
     });
 
     afterEach(async function () {
@@ -851,6 +858,8 @@ describe('/account', function () {
       context('good data', function () {
         it('should update the password', async function () {
           const [, user1] = dbData.users;
+          const jwtPayload = {username: user1.username};
+          const user1Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const patchBody = {
             data: {
@@ -867,7 +876,7 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .auth(user1.username, user1.password)
+            .set('Authorization', 'Bearer ' + user1Token)
             .set('Content-Type', 'application/vnd.api+json')
             .expect(204);
 
@@ -882,7 +891,6 @@ describe('/account', function () {
       context('bad data', function () {
 
         it('[logged user doesn\'t match request body data.id] error 400', async function () {
-          const [user0] = dbData.users;
 
           const patchBody = {
             data: {
@@ -898,13 +906,12 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .auth(user0.username, user0.password)
+            .set('Authorization', 'Bearer ' + user0Token)
             .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
 
         it('[wrong old password] should error with 403', async function () {
-          const [user0] = dbData.users;
 
           const patchBody = {
             data: {
@@ -920,13 +927,12 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .auth(user0.username, user0.password)
+            .set('Authorization', 'Bearer ' + user0Token)
             .set('Content-Type', 'application/vnd.api+json')
             .expect(403);
         });
 
         it('[invalid new password] should error with 400', async function () {
-          const [user0] = dbData.users;
 
           const patchBody = {
             data: {
@@ -942,7 +948,7 @@ describe('/account', function () {
           const response = await agent
             .patch('/account')
             .send(patchBody)
-            .auth(user0.username, user0.password)
+            .set('Authorization', 'Bearer ' + user0Token)
             .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
@@ -951,7 +957,6 @@ describe('/account', function () {
         });
 
         it('[unexpected attributes] should error with 400', async function () {
-          const [user0] = dbData.users;
 
           const patchBody = {
             data: {
@@ -969,7 +974,7 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .auth(user0.username, user0.password)
+            .set('Authorization', 'Bearer ' + user0Token)
             .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
@@ -979,7 +984,6 @@ describe('/account', function () {
 
     context('not authorized', function () {
       it('error 403', async function () {
-        const [user0] = dbData.users;
 
         const patchBody = {
           data: {
