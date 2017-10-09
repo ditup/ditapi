@@ -76,12 +76,13 @@ describe.only('token authorization', function() {
       it('should call token.getData() once', async function() {
         // mocking request
         const req = httpMocks.createRequest({headers: {authorization: 'Bearer ' + userToken}});
+        const res = httpMocks.createResponse();
         // set stubing by function returning valid:true
         const tokenStub = sandbox.stub().callsFake(()=>({valid:true}));
         // mocks tokenGetData to call tokenStub (mocking with rewire) (returns function to invert mocking)
         const unset = authorizeController.__set__('tokenGetData', tokenStub);
         // passing empty res and next() returning true
-        await authorizeController.onlyLogged(req,{},()=>true);
+        await authorizeController.onlyLogged(req,res,()=>true);
         should(tokenStub.callCount).equal(1);
         // rewerts change
         unset();
@@ -98,12 +99,13 @@ describe.only('token authorization', function() {
       it('should call token.getData() once', async function() {
         // mocking request
         const req = httpMocks.createRequest({headers: {authorization: 'incorrectheader'}});
+        const res = httpMocks.createResponse();
         // set stubing by function returning valid:true
         const tokenStub = sandbox.stub().callsFake(()=>({valid:true}));
         // mocks tokenGetData to call tokenStub (mocking with rewire) (returns function to invert mocking)
         const unset = authorizeController.__set__('tokenGetData', tokenStub);
         // passing empty res and next() returning true
-        await authorizeController.onlyLogged(req,{},()=>true);
+        await authorizeController.onlyLogged(req,res,()=>true);
         should(tokenStub.callCount).equal(1);
         // rewerts change
         unset();

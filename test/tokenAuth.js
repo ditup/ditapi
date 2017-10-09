@@ -184,7 +184,7 @@ describe.only('authorizing path for logged users', function() {
   });
 });
 describe.only('authorizing path for logged \'as me\'', function () {
-  let loggedUser, otherUser, dbData, userToken, otherUserToken;
+  let loggedUser, otherUser, dbData, userToken;
 
   beforeEach(async function () {
     const data = {
@@ -197,8 +197,6 @@ describe.only('authorizing path for logged \'as me\'', function () {
     [loggedUser, otherUser] = dbData.users;
     const jwtPayload = {username: loggedUser.username};
     userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-    const jwtOtherPayload = {username: otherUser.username};
-    otherUserToken = jwt.sign(jwtOtherPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
   });
 
   afterEach(async function () {
@@ -241,7 +239,7 @@ describe.only('authorizing path for logged \'as me\'', function () {
               }
             }
           })
-          .set('Authorization', 'Bearer ' + otherUserToken)
+          .set('Authorization', 'Bearer ' + userToken)
           .set('Content-Type', 'application/vnd.api+json')
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(403);

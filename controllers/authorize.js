@@ -17,7 +17,9 @@ async function onlyLogged(req, res, next) {
   let token;
   if (_.has(req, 'headers.authorization')){
     token = req.headers.authorization;
-    if ((await tokenGetData(token)).valid) {
+    const check = await tokenGetData(token);
+    if (check.valid && _.has(check, 'data.username')) {
+      req.auth = {username: check.data.username};
       return next();
     }
   }
@@ -40,6 +42,7 @@ async function onlyLoggedMe(req, res, next) {
          _.has(check, 'data.username') &&
          _.has(req, 'params.username') &&
          check.data.username === req.params.username){
+      req.auth = {username: check.data.username};
       return next();
     }
   }
