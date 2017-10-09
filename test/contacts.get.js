@@ -1,13 +1,15 @@
 'use strict';
 
-const supertest = require('supertest'),
+const  _ = require('lodash'),
+      jwt = require('jsonwebtoken'),
+      path = require('path'),
       should = require('should'),
       sinon = require('sinon'),
-      _ = require('lodash'),
-      path = require('path');
+      supertest = require('supertest');
 
 const app = require(path.resolve('./app')),
-      dbHandle = require(path.resolve('./test/handleDatabase'));
+      dbHandle = require(path.resolve('./test/handleDatabase')),
+      jwtConfig = require(path.resolve('./config/secret/jwt-config'));
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
@@ -37,7 +39,7 @@ describe('GET contacts', function () {
     sandbox.restore();
   });
 
-  describe('GET /contacts', function () {
+  describe.only('GET /contacts', function () {
 
     beforeEach(async function () {
       // create data in database
@@ -59,10 +61,13 @@ describe('GET contacts', function () {
         context('everybody', function () {
           it('see only confirmed contacts from username to others (trust & reference which user gave to others)', async function () {
             const [user0,, me] = dbData.users;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
             const response = await agent
               .get(`/contacts?filter[from]=${user0.username}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -103,10 +108,13 @@ describe('GET contacts', function () {
         context('me', function () {
           it('see confirmed and unconfirmed contacts from me to others', async function () {
             const [me] = dbData.users;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
             const response = await agent
               .get(`/contacts?filter[from]=${me.username}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -148,10 +156,13 @@ describe('GET contacts', function () {
         context('everybody', function () {
           it('see only confirmed contacts with trust & reference given to the user', async function () {
             const [user0,, me] = dbData.users;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
             const response = await agent
               .get(`/contacts?filter[to]=${user0.username}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -180,10 +191,13 @@ describe('GET contacts', function () {
         context('me', function () {
           it('see confirmed & unconfirmed contacts with trust & reference given to me', async function () {
             const [me] = dbData.users;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
             const response = await agent
               .get(`/contacts?filter[to]=${me.username}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -239,7 +253,7 @@ describe('GET contacts', function () {
     });
   });
 
-  describe('GET /contacts/:from/:to', function () {
+  describe.only('GET /contacts/:from/:to', function () {
 
     beforeEach(async function () {
       // create data in database
@@ -269,10 +283,13 @@ describe('GET contacts', function () {
       context('confirmed contact exists', function () {
         it('return a contact between :from and :to including trust & reference', async function () {
           const [userA, userB, me] = dbData.users;
+          const jwtPayload = {username: me.username};
+          const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
           const response = await agent
             .get(`/contacts/${userA.username}/${userB.username}`)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -296,10 +313,13 @@ describe('GET contacts', function () {
 
         it('[confirmed contact (opposite direction)] return a contact between :from and :to including trust & reference', async function () {
           const [me, other] = dbData.users;
+          const jwtPayload = {username: me.username};
+          const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
           const response = await agent
             .get(`/contacts/${other.username}/${me.username}`)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -326,10 +346,13 @@ describe('GET contacts', function () {
 
         it('[requester] see the whole unconfirmed contact including message', async function () {
           const [, requester, requested] = dbData.users;
+          const jwtPayload = {username: requester.username};
+          const requesterUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
           const response = await agent
             .get(`/contacts/${requester.username}/${requested.username}`)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(requester.username, requester.password)
+            .set('Authorization', 'Bearer ' + requesterUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -356,10 +379,13 @@ describe('GET contacts', function () {
 
         it('[requested] see contact with message, without trust & reference', async function () {
           const [, requester, requested] = dbData.users;
+          const jwtPayload = {username: requested.username};
+          const requestedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
           const response = await agent
             .get(`/contacts/${requester.username}/${requested.username}`)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(requested.username, requested.password)
+            .set('Authorization', 'Bearer ' + requestedUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -382,10 +408,13 @@ describe('GET contacts', function () {
 
         it('[other] 404', async function () {
           const [other, requester, requested] = dbData.users;
+          const jwtPayload = {username: other.username};
+          const otherUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
           await agent
             .get(`/contacts/${requester.username}/${requested.username}`)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(other.username, other.password)
+            .set('Authorization', 'Bearer ' + otherUserToken)
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -394,10 +423,13 @@ describe('GET contacts', function () {
       context('contact doesn\'t exist', function () {
         it('404', async function () {
           const [me,, other] = dbData.users;
+          const jwtPayload = {username: me.username};
+          const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
           await agent
             .get(`/contacts/${me.username}/${other.username}`)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -406,10 +438,13 @@ describe('GET contacts', function () {
       context('invalid username(s)', function () {
         it('400', async function () {
           const [me] = dbData.users;
+          const jwtPayload = {username: me.username};
+          const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
           await agent
             .get('/contacts/invalid..username/other..invalid..username')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
