@@ -2,12 +2,14 @@
 
 process.env.NODE_ENV = 'test';
 
-const supertest = require('supertest'),
+const jwt = require('jsonwebtoken'),
+      supertest = require('supertest'),
       should = require('should'),
       path = require('path'),
       sinon = require('sinon');
 
 const app = require(path.resolve('./app')),
+      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       mailer = require(path.resolve('./services/mailer')),
@@ -15,7 +17,7 @@ const app = require(path.resolve('./app')),
 
 const agent = supertest.agent(app);
 
-describe('/users', function () {
+describe.only('/users', function () {
   let sandbox;
 
   // clear database after every test
@@ -265,7 +267,8 @@ describe('/users', function () {
     describe('show users with given tags', function () {
 
       let dbData,
-          loggedUser;
+          loggedUser,
+          loggedUserToken;
 
       // seed the database with users and some named tags to do filtering on
       beforeEach(async function () {
@@ -288,13 +291,16 @@ describe('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
+        const jwtPayload = {username: loggedUser.username};
+        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
       });
 
       it('show list of users sorted by userTag relevance', async function () {
         const res = await agent
           .get('/users?filter[tag]=tag1,tag2')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -324,7 +330,7 @@ describe('/users', function () {
         const res = await agent
           .get('/users?filter[tag]=tag1,tag2&page[limit]=3&page[offset]=0')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -335,7 +341,7 @@ describe('/users', function () {
         const res = await agent
           .get('/users?filter[tag]=tag1,tag2&page[limit]=5&page[offset]=2')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -351,7 +357,7 @@ describe('/users', function () {
         const res = await agent
           .get('/users?filter[tag]=tag1,tag2')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -427,7 +433,7 @@ describe('/users', function () {
           const res = await agent
             .get('/users?filter[tag]=t*,11')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
           should(res.body).have.propertyByPath('errors', '0', 'title')
@@ -439,7 +445,7 @@ describe('/users', function () {
           const res = await agent
             .get('/users?filter[tag]=tag0,tag1,tag2,tag3,tag4,tag5,tag6,tag7,tag8,tag9,tag10')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
           should(res.body).have.propertyByPath('errors', '0', 'title')
@@ -453,7 +459,7 @@ describe('/users', function () {
           const res = await agent
             .get('/users?filter[tag]=')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
           should(res.body).have.propertyByPath('errors', '0', 'title')
@@ -466,7 +472,7 @@ describe('/users', function () {
           const res = await agent
             .get('/users?filter[tag]=tag1&page[offset]=0&page[limit]=21')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
           should(res.body).have.propertyByPath('errors', '0', 'title')
@@ -481,7 +487,8 @@ describe('/users', function () {
     describe('show users with my tags', function () {
 
       let dbData,
-          loggedUser;
+          loggedUser,
+          loggedUserToken;
 
       // seed the database with users and some named tags to do filtering on
       beforeEach(async function () {
@@ -521,13 +528,16 @@ describe('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
+        const jwtPayload = {username: loggedUser.username};
+        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
       });
 
       it('list users sorted by relevance weight', async function () {
         const res = await agent
           .get('/users?filter[byMyTags]')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -557,7 +567,7 @@ describe('/users', function () {
         const res = await agent
           .get('/users?filter[byMyTags]')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -633,7 +643,7 @@ describe('/users', function () {
         const res = await agent
           .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=2')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -648,7 +658,7 @@ describe('/users', function () {
         const res = await agent
           .get('/users?filter[byMyTags]&page[offset]=2&page[limit]=5')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -665,7 +675,7 @@ describe('/users', function () {
         await agent
           .get('/users?filter[byMyTags]=asdf')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(400);
       });
@@ -674,7 +684,7 @@ describe('/users', function () {
         const res = await agent
           .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=21')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(400);
         should(res.body).have.propertyByPath('errors', '0', 'title')
@@ -686,7 +696,8 @@ describe('/users', function () {
 
     describe('show new users', function () {
       let dbData,
-          loggedUser;
+          loggedUser,
+          loggedUserToken;
 
       // seed the database with users
       beforeEach(async function () {
@@ -698,6 +709,9 @@ describe('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
+        const jwtPayload = {username: loggedUser.username};
+        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
       });
 
       context('logged in', function () {
@@ -712,7 +726,7 @@ describe('/users', function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=5')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(5);
@@ -729,7 +743,7 @@ describe('/users', function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=20')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(7);
@@ -748,7 +762,7 @@ describe('/users', function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=0')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(0);
@@ -762,7 +776,7 @@ describe('/users', function () {
             await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=str')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -772,7 +786,7 @@ describe('/users', function () {
             await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -782,7 +796,7 @@ describe('/users', function () {
             await agent
               .get('/users?sort=-created&page[limit]=5')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -792,7 +806,7 @@ describe('/users', function () {
             await agent
               .get('/users?sort=-created')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -802,7 +816,7 @@ describe('/users', function () {
             await agent
               .get('/users?sort=-created&includes=true&page[offset]=0&page[limit]=0')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -812,7 +826,7 @@ describe('/users', function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=21')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
             should(res.body).have.propertyByPath('errors', '0', 'title')
@@ -836,7 +850,8 @@ describe('/users', function () {
 
     describe('show new users with my tags', function () {
       let dbData,
-          loggedUser;
+          loggedUser,
+          loggedUserToken;
 
       // seed the database with users and some named tags to do filtering on
       beforeEach(async function () {
@@ -906,6 +921,8 @@ describe('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
+        const jwtPayload = {username: loggedUser.username};
+        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
       });
 
       function testUser(jsonApiUser, { username }, tagCount) {
@@ -922,7 +939,7 @@ describe('/users', function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(5);
@@ -939,7 +956,7 @@ describe('/users', function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=10&page[offset]=0&page[limit]=5')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(0);
@@ -949,7 +966,7 @@ describe('/users', function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=3&page[offset]=0&page[limit]=2')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(2);
@@ -963,7 +980,7 @@ describe('/users', function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=1&page[offset]=0&page[limit]=20')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(6);
@@ -997,7 +1014,7 @@ describe('/users', function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=0&page[limit]=5')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -1006,7 +1023,7 @@ describe('/users', function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=text&page[limit]=5')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -1015,7 +1032,7 @@ describe('/users', function () {
           await agent
             .get('/users?filter[withMyTags]=2&page[offset]=0&page[limit]=5')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(404);
         });
@@ -1024,7 +1041,7 @@ describe('/users', function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[limit]=5')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -1033,7 +1050,7 @@ describe('/users', function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5&page[size]=5')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -1042,7 +1059,7 @@ describe('/users', function () {
           const res = await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=21')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
           should(res.body).have.propertyByPath('errors', '0', 'title')
