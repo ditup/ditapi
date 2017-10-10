@@ -1,22 +1,25 @@
 'use strict';
 
-const supertest = require('supertest'),
+const jwt = require('jsonwebtoken'),
+      supertest = require('supertest'),
       should = require('should'),
       sinon = require('sinon'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
+      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       models = require(path.resolve('./models')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       config = require(path.resolve('./config/config'));
 
 const agent = supertest.agent(app);
 
-describe('Tags of user', function () {
+describe.only('Tags of user', function () {
   let dbData,
       loggedUser,
       otherUser,
-      sandbox;
+      sandbox,
+      loggedUserToken;
 
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
@@ -46,7 +49,7 @@ describe('Tags of user', function () {
     });
   }
 
-  describe('/users/:username/tags', function () {
+  describe.only('/users/:username/tags', function () {
     describe('GET', function () {
       let loggedUser, taggedUser;
 
@@ -65,6 +68,8 @@ describe('Tags of user', function () {
 
       beforeEach(function () {
         [loggedUser, taggedUser] = dbData.users;
+        const jwtPayload = {username: loggedUser.username};
+        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
       });
 
       context('logged', () => {
@@ -73,7 +78,7 @@ describe('Tags of user', function () {
             const response = await agent
               .get(`/users/${taggedUser.username}/tags`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -108,10 +113,9 @@ describe('Tags of user', function () {
             const response = await agent
               .get(`/users/${taggedUser.username}/tags`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
-
 
             const userTags = response.body;
             const [firstTag] = userTags.data;
@@ -227,7 +231,7 @@ describe('Tags of user', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -290,7 +294,7 @@ describe('Tags of user', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -320,7 +324,7 @@ describe('Tags of user', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(409)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -349,7 +353,7 @@ describe('Tags of user', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -379,7 +383,7 @@ describe('Tags of user', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -410,7 +414,7 @@ describe('Tags of user', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -441,7 +445,7 @@ describe('Tags of user', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -473,7 +477,7 @@ describe('Tags of user', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -495,7 +499,7 @@ describe('Tags of user', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -541,7 +545,7 @@ describe('Tags of user', function () {
   describe('/users/:username/tags/:tagname', function () {
     // TODO include tag & user as relationships and included to the response
     describe('GET', function () {
-      let loggedUser, taggedUser;
+      let loggedUser, taggedUser, loggedUserToken;
 
       beforeEachPopulate({
         users: 3, // how many users to make
@@ -558,6 +562,9 @@ describe('Tags of user', function () {
 
       beforeEach(function () {
         [loggedUser, taggedUser] = dbData.users;
+        const jwtPayload = {username: loggedUser.username};
+        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
       });
 
       context('logged', () => {
@@ -568,7 +575,7 @@ describe('Tags of user', function () {
             const response = await agent
               .get(`/users/${taggedUser.username}/tags/${userTag.tag.tagname}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -599,7 +606,7 @@ describe('Tags of user', function () {
             await agent
               .get(`/users/${taggedUser.username}/tags/${dbData.tags[2].tagname}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -657,6 +664,9 @@ describe('Tags of user', function () {
             const [userTag] = dbData.userTag;
             const { tag } = userTag;
             const [me] = dbData.users;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
 
             const patchData = {
               data: {
@@ -672,7 +682,7 @@ describe('Tags of user', function () {
               .patch(`/users/${me.username}/tags/${tag.tagname}`)
               .send(patchData)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -687,6 +697,9 @@ describe('Tags of user', function () {
           it('[relevance] update relevance of the tag for user', async function () {
             const [me] = dbData.users;
             const [userTag] = dbData.userTag;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
 
             const patchData = {
               data: {
@@ -702,7 +715,7 @@ describe('Tags of user', function () {
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -720,6 +733,9 @@ describe('Tags of user', function () {
           it('[i\'m not the user of user-tag] 403 and message', async function () {
             const [other, me] = dbData.users;
             const [userTag] = dbData.userTag;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
 
             const patchData = {
               data: {
@@ -736,7 +752,7 @@ describe('Tags of user', function () {
               .patch(`/users/${other.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(403)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -744,6 +760,9 @@ describe('Tags of user', function () {
           it('[JSON API id doesn\'t match url] 400 and msg', async function () {
             const [me, other] = dbData.users;
             const [userTag] = dbData.userTag;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
 
             const patchData = {
               data: {
@@ -762,7 +781,7 @@ describe('Tags of user', function () {
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -772,6 +791,9 @@ describe('Tags of user', function () {
 
           it('[invalid story] 400 and msg', async function () {
             const { userTag: [userTag], users: [me] } = dbData;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
 
             const patchData = {
               data: {
@@ -788,7 +810,7 @@ describe('Tags of user', function () {
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -798,6 +820,8 @@ describe('Tags of user', function () {
 
           it('[invalid relevance] 400 and msg', async function () {
             const { users: [me], userTag: [userTag]} = dbData;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const patchData = {
               data: {
@@ -814,7 +838,7 @@ describe('Tags of user', function () {
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -825,6 +849,8 @@ describe('Tags of user', function () {
 
           it('[invalid tagname] 400 and msg', async function () {
             const { users: [me] } = dbData;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const invalidTagname = 'invalid.tagname';
 
@@ -842,7 +868,7 @@ describe('Tags of user', function () {
               .patch(`/users/${me.username}/tags/${invalidTagname}`)
               .send(patchData)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -856,6 +882,8 @@ describe('Tags of user', function () {
             const { tag } = userTag;
             // the user 1 has no tags
             const [, me] = dbData.users;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const patchData = {
               data: {
@@ -871,7 +899,7 @@ describe('Tags of user', function () {
               .patch(`/users/${me.username}/tags/${tag.tagname}`)
               .send(patchData)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -881,6 +909,8 @@ describe('Tags of user', function () {
             const { tag } = userTag;
             // the user 1 has no tags
             const [me] = dbData.users;
+            const jwtPayload = {username: me.username};
+            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const patchData = {
               data: {
@@ -897,7 +927,7 @@ describe('Tags of user', function () {
               .patch(`/users/${me.username}/tags/${tag.tagname}`)
               .send(patchData)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -954,11 +984,14 @@ describe('Tags of user', function () {
         const userTag = dbData.userTag[2];
         const user = userTag.user;
         const tag = userTag.tag;
+        const jwtPayload = {username: user.username};
+        const userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
 
         const response = await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(user.username, user.password)
+          .set('Authorization', 'Bearer ' + userToken)
           .expect(204)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -971,10 +1004,13 @@ describe('Tags of user', function () {
       it('[user doesn\'t have the tag] fail with 404', async function () {
         const user = dbData.users[0];
         const tag = dbData.tags[0];
+        const jwtPayload = {username: user.username};
+        const userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
         await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(user.username, user.password)
+          .set('Authorization', 'Bearer ' + userToken)
           .expect(404)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -984,11 +1020,14 @@ describe('Tags of user', function () {
         const user = userTag.user;
         const tag = userTag.tag;
         const otherUser = dbData.users[2];
+        const jwtPayload = {username: otherUser.username};
+        const otherUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
 
         await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(otherUser.username, otherUser.password)
+          .set('Authorization', 'Bearer ' + otherUserToken)
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
