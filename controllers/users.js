@@ -353,6 +353,10 @@ exports.getUserTag = async function (req, res, next) {
 
     const userTag = await models.userTag.read(username, tagname);
 
+    if (!userTag) {
+      return res.status(404).end();
+    }
+
     // respond
     const serialized = serialize.userTag(userTag);
 

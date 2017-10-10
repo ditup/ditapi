@@ -1,5 +1,3 @@
-const { username } = require('./paths');
-
 /**
  * The first validation on receiving image
  *
@@ -38,17 +36,8 @@ const getAvatar = {
         }
       },
       additionalProperties: false
-    },
-    params: {
-      properties: {
-        username
-      },
-      required: ['username'],
-      additionalProperties: false
     }
-  },
-  required: ['params']
-
+  }
 };
 
 module.exports = { patchAvatarHeaders, patchAvatarFile, getAvatar };

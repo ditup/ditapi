@@ -38,16 +38,9 @@ const patchConfirmContact = {
       },
       required: ['id', 'isConfirmed', 'trust', 'reference'],
       additionalProperties: false
-    },
-    params: {
-      properties: {
-        from: username,
-        to: username
-      },
-      required: ['from', 'to']
     }
   },
-  required: ['body', 'params']
+  required: ['body']
 };
 
 const patchUpdateContact = {
@@ -65,17 +58,4 @@ const patchUpdateContact = {
   }
 };
 
-const getContact = {
-  properties: {
-    params: {
-      properties: {
-        from: username,
-        to: username
-      },
-      required: ['from', 'to']
-    }
-  },
-  required: ['params']
-};
-
-module.exports = { postContacts, patchConfirmContact, patchUpdateContact, getContact };
+module.exports = { postContacts, patchConfirmContact, patchUpdateContact };

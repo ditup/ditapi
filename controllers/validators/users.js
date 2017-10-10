@@ -8,13 +8,11 @@ const getUsersWithLocation = validate('getUsersWithLocation', [['query.filter.lo
   return loc00 < loc10 && loc01 < loc11;
 }]]);
 const post = validate('postUsers');
-const get = validate('getUser');
 const patch = validate('patchUser', [['params.username', 'body.id']]);
 const getUsersWithMyTags = validate('getUsersWithMyTags');
 const getNewUsers = validate('newUsers');
 
 module.exports = {
-  get,
   patch,
   post,
   getUsersWithMyTags,

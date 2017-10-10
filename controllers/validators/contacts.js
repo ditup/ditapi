@@ -2,8 +2,6 @@
 
 const validate = require('./validate-by-schema');
 
-const get = validate('getContact');
-
 const post = validate('postContacts', [
   ['body.to.username','auth.username', (a, b) => a !== b ]
 ]);
@@ -17,4 +15,4 @@ const patchUpdate = validate('patchUpdateContact', [
   ['auth.username', 'params.from']
 ]);
 
-module.exports = { get, post, patchUpdate, patchConfirm };
+module.exports = { post, patchUpdate, patchConfirm };

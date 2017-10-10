@@ -5,7 +5,7 @@ const router = express.Router();
 const path = require('path');
 
 const tagController = require(path.resolve('./controllers/tags'));
-const validate = require(path.resolve('./controllers/validators/tags'));
+const { tags: validate, params: validateParams } = require(path.resolve('./controllers/validators'));
 const authorize = require(path.resolve('./controllers/authorize'));
 const { parse } = require(path.resolve('./controllers/validators/parser'));
 const go = require(path.resolve('./controllers/goto/tags'));
@@ -29,6 +29,7 @@ router.route('/')
   .get(go.get.random, authorize.onlyLogged, parse, validate.random, tagController.getRandomTags);
 
 router.route('/:tagname')
-  .get(validate.get, tagController.getTag);
+  .all(validateParams)
+  .get(tagController.getTag);
 
 module.exports = router;

@@ -13,6 +13,7 @@ router.route('/')
   .get(authorize.onlyLogged, messageController.getMessages);
 
 router.route('/:id')
+  .all(validators.params)
   .patch(authorize.onlyLogged, validators.messages.patch, messageController.patchMessage);
 
 module.exports = router;

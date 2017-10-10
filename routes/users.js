@@ -39,22 +39,26 @@ router.route('/')
 
 // get and patch user profile
 router.route('/:username')
-  .get(validators.users.get, userController.getUser)
+  .all(validators.params)
+  .get(userController.getUser)
   .patch(authorize.onlyLoggedMe, validators.users.patch, userController.patchUser, userController.getUser);
 
 /**
  * Routers for userTags
  */
 router.route('/:username/tags')
+  .all(validators.params)
   .post(authorize.onlyLoggedMe, validators.userTags.post, userController.postUserTags)
-  .get(userController.getUserTags);
+  .get(authorize.onlyLogged, userController.getUserTags);
 
 router.route('/:username/tags/:tagname')
-  .get(userController.getUserTag)
+  .all(validators.params)
+  .get(authorize.onlyLogged, userController.getUserTag)
   .patch(authorize.onlyLoggedMe, validators.userTags.patch, userController.patchUserTag, userController.getUserTag)
   .delete(authorize.onlyLoggedMe, userController.deleteUserTag);
 
 router.route('/:username/avatar')
+  .all(validators.params)
   .get(authorize.onlyLogged, parse, validators.avatar.get, avatarController.get)
   .patch(authorize.onlyLoggedMe, validators.avatar.patchHeaders, avatarController.parseAvatar, validators.avatar.patchFile, validators.avatar.patchFileType, avatarController.patch, avatarController.removeTemporaryFileOnError);
 
