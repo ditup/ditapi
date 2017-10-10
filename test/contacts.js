@@ -52,8 +52,8 @@ describe('contacts', function () {
       should(email).have.property('subject', `${from.username} would like to create a contact with you on ditup`);
 
       const url = `${config.appUrl.all}/user/${to.username}/contact/${from.username}`;
-      should(email).have.property('text').match(new RegExp(`${to.username}(.|\\n)*${from.username}(.|\\n)*${url}(.|\\n)*${message}`));
-      should(email).have.property('html').match(new RegExp(`${to.username}(.|\\n)*${from.username}(.|\\n)*${url}(.|\\n)*${message}`));
+      should(email).have.property('text').match(new RegExp(`${to.username}(.|\\n)*${from.username}(.|\\n)*${url}(.|\\n)*${message.text}`));
+      should(email).have.property('html').match(new RegExp(`${to.username}(.|\\n)*${from.username}(.|\\n)*${url}(.|\\n)*${message.html}`));
     }
 
     function generateContactBody(to, { trust, reference, message }) {
@@ -208,7 +208,7 @@ describe('contacts', function () {
         it('send one email informing the target user (asking for confirmation)', async function () {
           const [me, other] = dbData.users;
 
-          const message = 'i know you, i would like to establish a contact with you';
+          const message = 'i know you, i would like to establish a <a href="https://example.com" target="_blank">contact</a> with you';
 
           await models.contact.create({
             from: me.username,
@@ -228,7 +228,10 @@ describe('contacts', function () {
 
           const email = mailer.general.getCall(0).args[0];
 
-          checkEmail(email, me, other, message);
+          checkEmail(email, me, other, {
+            text: 'i know you, i would like to establish a contact with you',
+            html: 'i know you, i would like to establish a <a href="https:\\/\\/example\\.com">contact<\\/a> with you'
+          });
 
         });
       });

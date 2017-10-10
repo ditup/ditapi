@@ -4,8 +4,8 @@ const path = require('path'),
       nodemailer = require('nodemailer'),
       EmailTemplate = require('email-templates').EmailTemplate,
       fs = require('fs-extra'),
-      markdown = require('helper-markdown'),
-      hbs = require('handlebars');
+      hbs = require('handlebars'),
+      { plainText: sanitizeText, html: sanitizeHtml } = require(path.resolve('./services/text'));
 
 const config = require(path.resolve('./config'));
 
@@ -17,7 +17,6 @@ const dataNotProvided = new Error('data not provided');
   // definite partials and helpers
   hbs.registerHelper('html-partial', name => `${name}-html`);
   hbs.registerHelper('text-partial', name => `${name}-text`);
-  hbs.registerHelper('markdown', markdown());
 
   // configurable partials
   const partialNames = [
@@ -82,10 +81,15 @@ exports.notifyMessages = async function ({ messages, from, to }) {
 
   const isMore = messages.length > 1;
 
+  const sanitizedMessages = {
+    text: messages.map(({ body }) => sanitizeText(body)),
+    html: messages.map(({ body }) => sanitizeHtml(body))
+  };
+
   const { email } = to;
   const subject = `${from.username} wrote to you on ditup`;
 
-  return await sendMail('notify-messages', { from, to, messages, url, isMore }, email, subject);
+  return await sendMail('notify-messages', { from, to, messages: sanitizedMessages, url, isMore }, email, subject);
 };
 
 exports.notifyContactRequest = async function ({ from, to, message }) {
@@ -95,7 +99,12 @@ exports.notifyContactRequest = async function ({ from, to, message }) {
   const url = `${config.appUrl.all}/user/${to.username}/contact/${from.username}`;
   const subject = `${from.username} would like to create a contact with you on ditup`;
 
-  return await sendMail('notify-contact-request', { from, to, url, message }, to.email, subject);
+  const sanitizedMessage = {
+    text: sanitizeText(message),
+    html: sanitizeHtml(message)
+  };
+
+  return await sendMail('notify-contact-request', { from, to, url, message: sanitizedMessage }, to.email, subject);
 };
 
 exports.verifyEmail = async function ({ email, url, username, code }) {

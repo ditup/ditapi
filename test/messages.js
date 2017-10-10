@@ -284,7 +284,7 @@ describe('/messages', function () {
       users: 3, // how many users to make
       verifiedUsers: [0, 1, 2], // which  users to make verified
       messages: [
-        [0, 1], [1, 0, 'message0'], [0, 1], [0, 1], [1, 0, '# message1'],
+        [0, 1], [1, 0, 'message0'], [0, 1], [0, 1], [1, 0, '<a href="https://ditup.org" target="_blank">message1</a>'],
         [1, 2], [1, 2], [2, 1]
       ]
     });
@@ -312,7 +312,7 @@ describe('/messages', function () {
       // message talks about sender, amount of new messages, link to read and reply, text of the messages
       should(text).match(/user1(.|\n)*2 new messages(.|\n)*https:\/\/ditup\.org\/messages\/user1(.|\n)*message0(.|\n)*message1/);
       // markdown enabled in the text of the messages
-      should(html).match(/user1(.|\n)*2(\n|\s)*new messages(.|\n)*https:\/\/ditup\.org\/messages\/user1(.|\n)*message0(.|\n)*<h1>message1<\/h1>/);
+      should(html).match(/user1(.|\n)*2(\n|\s)*new messages(.|\n)*https:\/\/ditup\.org\/messages\/user1(.|\n)*message0(.|\n)*<a href="https:\/\/ditup\.org">message1<\/a>/);
       should(to).equal('<user0@example.com>');
       should(subject).equal('user1 wrote to you on ditup');
     });
