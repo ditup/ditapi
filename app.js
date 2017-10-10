@@ -10,7 +10,8 @@ const express = require('express'),
 const models = require('./models'),
       config = require('./config'),
       authenticate = require('./controllers/authenticate'),
-      deserialize = require('./controllers/deserialize');
+      deserialize = require('./controllers/deserialize'),
+      sanitizer = require('./controllers/validators/sanitizer');
 
 
 // configure the database for all the models
@@ -51,6 +52,7 @@ app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
 // here we deserialize JSON API requests
 app.use(deserialize);
+app.use(sanitizer);
 
 // authentication with passport
 app.use(passport.initialize());

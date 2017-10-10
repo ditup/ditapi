@@ -217,6 +217,37 @@ describe('/users/:username', function () {
           should(dt.attributes).have.property('description', attributes.description);
         });
 
+        it('should sanitize XSS', async () => {
+          const attributes = {
+           // test trimming
+            givenName: ' given name',
+            // test stripping tags to plaintext
+            familyName: '<a href="https://example.com">family name</a>',
+            // test sanitizing xss in html input
+            description: '<a href="javascript:alert(\'xss!\')">xss link</a> ahoj <script>alert(\'xss\')</script><a href="https://example.com">valid link</a>'
+          };
+
+          const res = await agent
+            .patch(`/users/${loggedUser.username}`)
+            .send({
+              data: {
+                type: 'users',
+                id: loggedUser.username,
+                attributes
+              }
+            })
+            .set('Content-Type', 'application/vnd.api+json')
+            .auth(loggedUser.username, loggedUser.password)
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(200);
+
+          should(res.body).have.property('data');
+          const dt = res.body.data;
+          should(dt.attributes).have.property('givenName', 'given name');
+          should(dt.attributes).have.property('familyName', 'family name');
+          should(dt.attributes).have.property('description', 'ahoj <a href="https://example.com">valid link</a>');
+        });
+
         it('should error when profile fields are mixed with settings or email', async function () {
           const attributes = {
             givenName: 'new-given-name',
