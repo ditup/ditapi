@@ -43,4 +43,12 @@ npm run test:watch
 
 ## Development
 
+You need `eslint` installed globally if you want to use `npm run lint`:
+
+```bash
+sudo npm install -g eslint
+```
+
+## Collaboration
+
 If you want to collaborate on the creation of ditup, let's get in touch.

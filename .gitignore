@@ -39,3 +39,6 @@ npm-debug.log
 # avatar and temporary files
 uploads/*
 files/avatars/*
+
+# package-lock
+package-lock.json

@@ -20,7 +20,10 @@ describe('Tags of user', function () {
 
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
-    sandbox.useFakeTimers(1500000000, 'Date');
+    sandbox.useFakeTimers({
+      now: 1500000000,
+      toFake: ['Date']
+    });
   });
 
   afterEach(function () {

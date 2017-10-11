@@ -165,7 +165,7 @@ async function resizeSaveAvatar(buffer, size, username) {
   const info = await sharp(buffer)
     .resize(size, size)
     .jpeg()
-  // save the file to files/avatars/:username/512.jpg
+    // save the file to files/avatars/:username/512.jpg
     .toFile(path.resolve(`./files/avatars/${username}/${size}`));
 
   return info;

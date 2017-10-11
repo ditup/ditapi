@@ -25,7 +25,10 @@ describe('GET contacts', function () {
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
 
-    sandbox.useFakeTimers(new Date('2017-07-15'), 'Date');
+    sandbox.useFakeTimers({
+      now: new Date('2017-07-15'),
+      toFake: ['Date']
+    });
 
     sandbox.stub(mailer, 'general');
   });

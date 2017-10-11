@@ -19,7 +19,7 @@ describe('User jobs', function () {
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
       sandbox.useFakeTimers(1500000000000, 'Date');
-      sandbox.stub(config, 'unverifiedUsersTTL', ttl);
+      sandbox.stub(config, 'unverifiedUsersTTL').value(ttl);
     });
 
     afterEach(function () {
