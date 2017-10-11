@@ -6,7 +6,6 @@ module.exports = {
     port: 8529,
     database: 'ditup-test',
     username: 'ditup-test',
-    password: ''
   },
   mailer: {
     host: '0.0.0.0',
