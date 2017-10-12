@@ -17,9 +17,11 @@ module.exports = {
     host: '0.0.0.0',
     port: 25
   },
-  originWhitelist: [
-    'http://localhost:4200',
-    'http://89.221.210.112:4200',
-    'https://dev.ditup.org'
-  ]
+  cors: {
+    origin: [
+      'http://localhost:4200',
+      'http://89.221.210.112:4200',
+      'https://dev.ditup.org'
+    ]
+  }
 };

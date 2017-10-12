@@ -4,13 +4,13 @@
 const express = require('express'),
       bodyParser = require('body-parser'),
       passport = require('passport'),
+      cors = require('cors'),
       helmet = require('helmet');
 
 // load internal dependencies
 const models = require('./models'),
       config = require('./config'),
       authenticate = require('./controllers/authenticate'),
-      cors = require('./controllers/cors'),
       deserialize = require('./controllers/deserialize'),
       sanitizer = require('./controllers/validators/sanitizer');
 
@@ -23,7 +23,7 @@ const app = express();
 app.set('env', process.env.NODE_ENV || 'development');
 
 // Cross Origin Resource Sharing
-app.use(cors);
+app.use(cors(config.cors));
 
 // Protect against some web vulnerabilities by setting some headers with Helmet
 // https://expressjs.com/en/advanced/best-practice-security.html

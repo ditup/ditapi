@@ -11,8 +11,6 @@ module.exports = {
     verifyEmail: (username, code) => `/user/${username}/verify-email/${code}`,
     resetPassword: (username, code) => `/reset-password/${username}/${code}`
   },
-  // Which Origin headers are allowed in CORS
-  originWhitelist: [],
   // password hashing and other
   security: {
     // iterations for pbkdf2 hashing of passwords
@@ -28,5 +26,14 @@ module.exports = {
   // when should email-verification code expire
   emailVerificationCodeExpire: 2 * 3600 * 1000, // 2 hours in milliseconds
   // when should reset-password code expire
-  resetPasswordCodeExpire: 30 * 60 * 1000 // 30 minutes in milliseconds
+  resetPasswordCodeExpire: 30 * 60 * 1000, // 30 minutes in milliseconds
+  // options for CORS (Cross Origin Resource Sharing)
+  cors: {
+    // a whitelist of Origin domains
+    origin: [],
+    // allowed methods
+    methods: ['DELETE', 'GET', 'HEAD', 'PATCH', 'POST'],
+    // allowed headers
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }
 };
