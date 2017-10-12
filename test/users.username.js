@@ -35,7 +35,11 @@ describe('/users/:username', function () {
     beforeEach(async function () {
       const data = {
         users: 3, // how many users to make
-        verifiedUsers: [0, 1] // which  users to make verified
+        verifiedUsers: [0, 1], // which  users to make verified
+        userLocations: [
+          [0, 0],
+          [1, 1]
+        ]
       };
       // create data in database
       dbData = await dbHandle.fill(data);
@@ -82,14 +86,15 @@ describe('/users/:username', function () {
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         const user = response.body;
-        user.should.have.property('data');
-        user.data.should.have.property('type', 'users');
-        user.data.should.have.property('id', existentUser.username);
-        user.data.should.have.property('attributes');
 
-        const fields = user.data.attributes;
-        fields.should.have.property('username', existentUser.username);
-        fields.should.not.have.property('givenName');
+        should(user).have.property('data')
+          .deepEqual({
+            type: 'users',
+            id: existentUser.username,
+            attributes: {
+              username: existentUser.username
+            }
+          });
       });
 
       it('[logged, not verified] should read simplified profile', async function () {
@@ -111,7 +116,7 @@ describe('/users/:username', function () {
         fields.should.not.have.property('givenName');
       });
 
-      it('[logged, unverified] should read her own profile full', async function () {
+      it('[logged, unverified] should be treated as not logged', async function () {
         const response = await agent
           .get(`/users/${unverifiedUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
@@ -120,14 +125,16 @@ describe('/users/:username', function () {
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         const user = response.body;
-        user.should.have.property('data');
-        user.data.should.have.property('type', 'users');
-        user.data.should.have.property('id', unverifiedUser.username);
-        user.data.should.have.property('attributes');
 
-        const fields = user.data.attributes;
-        fields.should.have.property('username', unverifiedUser.username);
-        fields.should.have.property('givenName');
+        should(user).have.property('data')
+          .deepEqual({
+            type: 'users',
+            id: unverifiedUser.username,
+            attributes: {
+              username: unverifiedUser.username
+            }
+          });
+
       });
     });
 

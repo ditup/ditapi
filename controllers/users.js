@@ -234,40 +234,55 @@ exports.getUsers = async function (req, res, next) {
 exports.getUser = async function (req, res, next) {
   try {
 
-    const auth = _.get(req, 'auth', { logged: false });
+    // get authentication data from req object
+    const { auth: { logged = false, username: me = null } = { } } = req;
 
     const { username } = req.params;
+
+    // read the user from database
     const user = await models.user.read(username);
 
-    if (user) {
-      // picking values to output from user and user.profile
-      const filteredUser = _.pick(user, ['username', 'location', 'locationUpdated']);
+    /* Output user filtering settings */
+    // fields to take from user based on the requesting user's role
+    const fields = {
+      everybody: ['username'],
+      logged: ['location', 'locationUpdated'],
+      me: ['email', 'preciseLocation']
+    };
+    // fields to take from user.profile based on the requesting user's role
+    const profileFields = {
+      everybody: [],
+      logged: ['givenName', 'familyName', 'description'],
+      me: []
+    };
+    // roles of the requesting user
+    const rights = {
+      everybody: true,
+      logged: logged === true,
+      me: logged === true && me === username
+    };
 
-      // profile detail is for logged users only (or from loggedUnverified self)
-      const isLogged = auth.logged === true;
-      const isSelf = auth.username === username;
-
-      const isLoggedUnverifiedSelf = !auth.logged &&
-        auth.loggedUnverified === true && isSelf;
-
-      if (isLogged || isLoggedUnverifiedSelf) {
-        _.assign(filteredUser, _.pick(user.profile, ['givenName', 'familyName', 'description']));
-      }
-
-      // show email in self profile
-      if (isSelf) {
-        filteredUser.email = user.email;
-        filteredUser.preciseLocation = user.preciseLocation;
-      }
-
-      filteredUser.id = filteredUser.username;
-
-      const serializedUser = serialize.user(filteredUser);
-
-      return res.status(200).json(serializedUser);
-    } else {
-      return next();
+    // when user not found, respond with 404 Not Found
+    if (!user) {
+      return res.status(404).end();
     }
+
+    // filter the user for output
+    const filteredUser = { };
+    for (const role in rights) {
+      if (rights[role]) {
+        // pick properties from user
+        Object.assign(filteredUser, _.pick(user, fields[role]));
+        // pick properties from user.profile
+        Object.assign(filteredUser, _.pick(user.profile, profileFields[role]));
+      }
+    }
+
+    // serialize
+    const serializedUser = serialize.user(filteredUser);
+
+    // respond with success
+    return res.status(200).json(serializedUser);
   } catch (e) {
     return next(e);
   }
