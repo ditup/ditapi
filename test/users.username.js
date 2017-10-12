@@ -2,12 +2,14 @@
 
 process.env.NODE_ENV = 'test';
 
-const supertest = require('supertest'),
+const jwt = require('jsonwebtoken'),
+      supertest = require('supertest'),
       should = require('should'),
       _ = require('lodash'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
+      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
 const agent = supertest.agent(app);
@@ -15,7 +17,9 @@ const agent = supertest.agent(app);
 let dbData,
     existentUser,
     loggedUser,
-    unverifiedUser;
+    unverifiedUser,
+    loggedUserToken,
+    unverifiedUserToken;
 
 const nonexistentUser = {
   username: 'nonexistent-user',
@@ -23,7 +27,7 @@ const nonexistentUser = {
 };
 
 
-describe('/users/:username', function () {
+describe.only('/users/:username', function () {
   describe('GET', function () {
     beforeEach(async function () {
       const data = {
@@ -36,6 +40,14 @@ describe('/users/:username', function () {
       existentUser = dbData.users[0];
       loggedUser = dbData.users[1];
       unverifiedUser = dbData.users[2];
+      console.log('loggedUser', loggedUser);
+      console.log('unverifiedUser', unverifiedUser);
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+      loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      const jwtunverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified || false, givenName:'', familyName:''};
+      console.log('payload', jwtunverifiedUserPayload);
+      unverifiedUserToken = jwt.sign(jwtunverifiedUserPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
     });
 
     afterEach(async function () {
@@ -45,19 +57,20 @@ describe('/users/:username', function () {
     context('[user exists]', function () {
       it('[logged] should read user`s profile', async function () {
         const response = await agent
-          .get(`/users/${existentUser.username}`)
+          .get(`/users/${loggedUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         const user = response.body;
+        console.log('dzik', response.body);
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
-        user.data.should.have.property('id', existentUser.username);
+        user.data.should.have.property('id', loggedUser.username);
         user.data.should.have.property('attributes');
         const fields = user.data.attributes;
-        fields.should.have.property('username', existentUser.username);
+        fields.should.have.property('username', loggedUser.username);
         fields.should.have.property('givenName');
         // TODO givenName, familyName, birthDate, profile, ...
       });
@@ -84,17 +97,19 @@ describe('/users/:username', function () {
         const response = await agent
           .get(`/users/${existentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(unverifiedUser.username, unverifiedUser.password)
+          .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         const user = response.body;
+        console.log('USER', user);
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
         user.data.should.have.property('id', existentUser.username);
         user.data.should.have.property('attributes');
 
         const fields = user.data.attributes;
+        console.log('fields', fields);
         fields.should.have.property('username', existentUser.username);
         fields.should.not.have.property('givenName');
       });
@@ -103,7 +118,7 @@ describe('/users/:username', function () {
         const response = await agent
           .get(`/users/${unverifiedUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(unverifiedUser.username, unverifiedUser.password)
+          .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -124,7 +139,7 @@ describe('/users/:username', function () {
         await agent
           .get(`/users/${nonexistentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(404)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -153,6 +168,8 @@ describe('/users/:username', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser, otherUser] = dbData.users;
+      const jwtPayload = {username: loggedUser.username};
+      loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
     });
 
     afterEach(async function () {
@@ -176,7 +193,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -204,7 +221,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -266,7 +283,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -289,7 +306,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -306,7 +323,7 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -326,7 +343,7 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);
