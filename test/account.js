@@ -7,7 +7,8 @@ const jwt = require('jsonwebtoken'),
       supertest = require('supertest');
 
 
-const app = require(path.resolve('./app')),
+const models = require(path.resolve('./models')),
+      agent = require('./agent'),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models'));
@@ -17,8 +18,6 @@ const jwtExpirationTime = config.jwt.expirationTime;
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
-
-const agent = supertest.agent(app);
 
 describe('/account', function () {
 
@@ -83,7 +82,6 @@ describe('/account', function () {
           await agent
             .patch('/account?reset-password')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(204);
 
           sinon.assert.calledOnce(mailer.general);
@@ -107,7 +105,6 @@ describe('/account', function () {
           await agent
             .patch('/account?reset-password')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(204);
 
           sinon.assert.calledOnce(mailer.general);
@@ -132,7 +129,6 @@ describe('/account', function () {
           await agent
             .patch('/account?reset-password')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
 
@@ -152,7 +148,6 @@ describe('/account', function () {
           await agent
             .patch('/account?reset-password')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
 
@@ -168,7 +163,6 @@ describe('/account', function () {
           await agent
             .patch('/account?reset-password')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(204);
         });
 
@@ -185,7 +179,6 @@ describe('/account', function () {
           await agent
             .patch('/account?reset-password')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
       });
@@ -214,7 +207,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(204);
 
           // check that we can authenticate with the new password
@@ -226,7 +218,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
       });
@@ -253,7 +244,6 @@ describe('/account', function () {
           const resp = await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
           should(resp.body).have.propertyByPath('errors', 0, 'title').eql('invalid id');
@@ -280,7 +270,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(404);
         });
 
@@ -306,7 +295,6 @@ describe('/account', function () {
           const resp = await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
           should(resp.body).have.propertyByPath('errors', 0, 'title')
@@ -333,7 +321,6 @@ describe('/account', function () {
           const resp = await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
           should(resp.body).have.propertyByPath('errors', 0, 'meta').eql('Wrong code');
@@ -360,7 +347,6 @@ describe('/account', function () {
           const resp = await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
           should(resp.body).have.propertyByPath('errors', 0, 'meta').eql('Expired code');
@@ -387,7 +373,6 @@ describe('/account', function () {
           const resp = await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
           should(resp.body).have.propertyByPath('errors', 0, 'title').eql('invalid password');
@@ -471,7 +456,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + userToken)
             .expect(204);
 
@@ -504,7 +488,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
@@ -524,7 +507,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
@@ -546,7 +528,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
@@ -567,7 +548,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
@@ -588,7 +568,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + userToken)
             .expect(403);
         });
@@ -609,7 +588,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
@@ -634,7 +612,6 @@ describe('/account', function () {
         await agent
           .patch('/account')
           .send(patchBody)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403);
       });
     });
@@ -681,7 +658,6 @@ describe('/account', function () {
         // we verify the email
         await agent
           .patch('/account')
-          .set('Content-Type', 'application/vnd.api+json')
           .send({
             data: {
               type: 'users',
@@ -708,7 +684,6 @@ describe('/account', function () {
         // we verify the email
         const response = await agent
           .patch('/account')
-          .set('Content-Type', 'application/vnd.api+json')
           .send({
             data: {
               type: 'users',
@@ -732,7 +707,6 @@ describe('/account', function () {
         // we verify the email
         const response = await agent
           .patch('/account')
-          .set('Content-Type', 'application/vnd.api+json')
           .send({
             data: {
               type: 'users',
@@ -755,7 +729,6 @@ describe('/account', function () {
         // we verify the email
         const response = await agent
           .patch('/account')
-          .set('Content-Type', 'application/vnd.api+json')
           .send({
             data: {
               type: 'users',
@@ -788,7 +761,6 @@ describe('/account', function () {
         // try to verify
         const response = await agent
           .patch('/account')
-          .set('Content-Type', 'application/vnd.api+json')
           .send({
             data: {
               type: 'users',
@@ -812,7 +784,6 @@ describe('/account', function () {
         // we verify the email
         await agent
           .patch('/account')
-          .set('Content-Type', 'application/vnd.api+json')
           .send({
             data: {
               type: 'users',
@@ -829,7 +800,6 @@ describe('/account', function () {
 
         const response = await agent
           .patch('/account')
-          .set('Content-Type', 'application/vnd.api+json')
           .send({
             data: {
               type: 'users',
@@ -896,7 +866,6 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Authorization', 'Bearer ' + user1Token)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(204);
 
           // check that we can authenticate with the new password
@@ -926,7 +895,6 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Authorization', 'Bearer ' + user0Token)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
 
@@ -947,7 +915,6 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Authorization', 'Bearer ' + user0Token)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403);
         });
 
@@ -968,7 +935,6 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Authorization', 'Bearer ' + user0Token)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
           should(response.body).have.propertyByPath('errors', 0, 'title')
@@ -1016,7 +982,6 @@ describe('/account', function () {
             .patch('/account')
             .send(patchBody)
             .set('Authorization', 'Bearer ' + user0Token)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
 
         });
@@ -1040,7 +1005,6 @@ describe('/account', function () {
         await agent
           .patch('/account')
           .send(patchBody)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403);
       });
     });

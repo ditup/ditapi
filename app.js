@@ -10,7 +10,7 @@ const express = require('express'),
 // load internal dependencies
 const models = require('./models'),
       config = require('./config'),
-      { validateContentType } = require('./controllers/security'),
+      { validateContentType, validateAccept } = require('./controllers/security'),
       authenticate = require('./controllers/authenticate'),
       deserialize = require('./controllers/deserialize'),
       sanitizer = require('./controllers/validators/sanitizer');
@@ -37,8 +37,10 @@ app.use(function (req, res, next) {
 
 // whitelist allowed methods
 app.use(allowMethods(config.cors.methods));
-
+// validate content-type header
 app.use(validateContentType);
+// validate accept (content-types) header
+app.use(validateAccept);
 
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 

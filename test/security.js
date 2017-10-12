@@ -1,11 +1,6 @@
 'use strict';
 
-const supertest = require('supertest'),
-      path = require('path');
-
-const app = require(path.resolve('./app'));
-
-const agent = supertest.agent(app);
+const agent = require('./agent');
 
 describe('Security', () => {
   describe('Restrict http methods', () => {
@@ -13,7 +8,6 @@ describe('Security', () => {
       await agent
         .put('/users/:username')
         .send({ })
-        .set('Content-Type', 'application/vnd.api+json')
         .expect(405)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
     });
@@ -32,8 +26,43 @@ describe('Security', () => {
       await agent
         .patch('/users/username/avatar')
         .send({ })
-        .set('Content-Type', 'application/vnd.api+json')
-        .expect(406);
+        .expect(406)
+        .expect('Content-Type', /^application\/vnd\.api\+json/);
     });
+  });
+
+  describe('Validate request Accept header', () => {
+    it('[request Accept header not contain application/vnd.api+json] 406', async() => {
+      await agent
+        .get('/users/username')
+        .set('Accept', 'application/json, */*')
+        .expect(406)
+        .expect('Content-Type', /^application\/vnd\.api\+json/);
+    });
+
+    it('[request Accept header contains application/vnd.api+json] not 406', async() => {
+      await agent
+        .get('/users/username')
+        .set('Accept', 'application/vnd.api+json, */*')
+        .expect(404)
+        .expect('Content-Type', /^application\/vnd\.api\+json/);
+    });
+
+    it('[exception: GET /users/:username/avatar] should contain image/jpeg and image/svg+xml', async () => {
+      // negative check
+      await agent
+        .get('/users/username/avatar')
+        .set('Accept', 'application/vnd.api+json, */*')
+        .expect(406)
+        .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+      // positive check
+      await agent
+        .get('/users/username/avatar')
+        .set('Accept', 'image/jpeg, image/svg+xml, */*')
+        .expect(403)
+        .expect('Content-Type', /^application\/vnd\.api\+json/);
+    });
+
   });
 });

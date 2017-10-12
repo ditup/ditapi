@@ -6,7 +6,8 @@ const jwt = require('jsonwebtoken'),
       sinon = require('sinon'),
       supertest = require('supertest');
 
-const app = require(path.resolve('./app')),
+const agent = require('./agent'),
+      models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models')),
@@ -17,8 +18,6 @@ const jwtExpirationTime = config.jwt.expirationTime;
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
-
-const agent = supertest.agent(app);
 
 describe('contacts', function () {
   let dbData,
@@ -115,7 +114,6 @@ describe('contacts', function () {
           const response = await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -190,7 +188,6 @@ describe('contacts', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -212,7 +209,6 @@ describe('contacts', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -261,7 +257,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -278,7 +273,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -294,7 +288,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -310,7 +303,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -327,7 +319,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -344,7 +335,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -359,7 +349,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(generateContactBody(me, {}))
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -373,7 +362,6 @@ describe('contacts', function () {
           const response = await agent
             .post('/contacts')
             .send(generateContactBody({ username: 'nonexistent-user' }, {}))
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -390,7 +378,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -398,7 +385,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(409)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -414,7 +400,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -423,7 +408,6 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + otherToken)
             .expect(409)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -436,7 +420,6 @@ describe('contacts', function () {
         await agent
           .post('/contacts')
           .send(contactBody)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -482,7 +465,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -518,7 +500,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -542,7 +523,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(403)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -566,7 +546,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -589,7 +568,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -612,7 +590,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -637,7 +614,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -661,7 +637,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -685,7 +660,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -709,7 +683,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -733,7 +706,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -757,7 +729,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -781,7 +752,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(403)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -805,7 +775,6 @@ describe('contacts', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -846,7 +815,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -879,7 +847,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -915,7 +882,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -942,7 +908,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -971,7 +936,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -995,7 +959,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1021,7 +984,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1045,7 +1007,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1069,7 +1030,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1093,7 +1053,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1117,7 +1076,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1141,7 +1099,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1166,7 +1123,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1191,7 +1147,6 @@ describe('contacts', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -1226,7 +1181,6 @@ describe('contacts', function () {
         await should(models.contact.read(me.username, other.username)).be.fulfilled();
         await agent
           .delete(`/contacts/${other.username}/${me.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + meToken)
           .expect(204)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1242,7 +1196,6 @@ describe('contacts', function () {
 
         await agent
           .delete(`/contacts/${other.username}/${me.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + meToken)
           .expect(404)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1258,7 +1211,6 @@ describe('contacts', function () {
 
         await agent
           .delete(`/contacts/${userA.username}/${userB.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + meToken)
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1271,7 +1223,6 @@ describe('contacts', function () {
 
         await agent
           .delete(`/contacts/${userA.username}/${userB.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -1286,7 +1237,6 @@ describe('contacts', function () {
 
         await agent
           .delete(`/contacts/${me.username}/invalid..username`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + meToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);

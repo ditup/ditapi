@@ -3,13 +3,12 @@
 const jwt = require('jsonwebtoken'),
       should = require('should'),
       sinon = require('sinon'),
-      supertest = require('supertest'),
       path = require('path');
 
-
-const app = require(path.resolve('./app')),
+const agent = require('./agent'),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
+      serializers = require(path.resolve('./serializers')),
       models = require(path.resolve('./models')),
       serializers = require(path.resolve('./serializers')),
       tagJobs = require(path.resolve('./jobs/tags'));
@@ -18,8 +17,6 @@ const jwtSecret = config.jwt.secret;
 const jwtExpirationTime = config.jwt.expirationTime;
 
 const serialize = serializers.serialize;
-
-const agent = supertest.agent(app);
 
 let dbData,
     loggedUser,
@@ -59,7 +56,6 @@ describe('/tags', function () {
       it('match tags with similar tagnames', async function () {
         const response = await agent
           .get('/tags?filter[tagname][like]=named-tag')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -76,7 +72,6 @@ describe('/tags', function () {
       it('don\'t match tags in the middle of a word, but match after hyphen', async function () {
         const response = await agent
           .get('/tags?filter[tagname][like]=tag')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -91,7 +86,6 @@ describe('/tags', function () {
       it('limit the output', async () => {
         const response = await agent
           .get('/tags?filter[tagname][like]=tag&page[offset]=0&page[limit]=3')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -103,7 +97,6 @@ describe('/tags', function () {
       it('[too high limit] respond 400', async () => {
         await agent
           .get('/tags?filter[tagname][like]=tag&page[offset]=0&page[limit]=21')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -112,7 +105,6 @@ describe('/tags', function () {
       it('[query.page[offset] different from 0] respond 400', async () => {
         await agent
           .get('/tags?filter[tagname][like]=tag&page[offset]=2&page[limit]=5')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -168,7 +160,6 @@ describe('/tags', function () {
 
           const resp = await agent
             .get('/tags?filter[relatedToMyTags]')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -190,7 +181,6 @@ describe('/tags', function () {
 
           const resp = await agent
             .get('/tags?filter[relatedToMyTags]&page[offset]=0&page[limit]=3')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -206,7 +196,6 @@ describe('/tags', function () {
 
           const resp = await agent
             .get('/tags?filter[relatedToMyTags]&page[offset]=2&page[limit]=10')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -227,7 +216,6 @@ describe('/tags', function () {
 
             await agent
               .get('/tags?filter[relatedToMyTags]&page[offset]=0&page[limit]=21')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -239,7 +227,6 @@ describe('/tags', function () {
         it('403', async function () {
           await agent
             .get('/tags?filter[relatedToMyTags]')
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -271,7 +258,6 @@ describe('/tags', function () {
 
           const resp = await agent
             .get('/tags?filter[random]')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -286,7 +272,6 @@ describe('/tags', function () {
 
           const resp = await agent
             .get('/tags?filter[random]&page[offset]=0&page[limit]=7')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -301,7 +286,6 @@ describe('/tags', function () {
 
           await agent
             .get('/tags?filter[random]&page[offset]=0&page[limit]=21')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -312,7 +296,6 @@ describe('/tags', function () {
         it('403', async function () {
           await agent
             .get('/tags?filter[random]')
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -364,7 +347,6 @@ describe('/tags', function () {
 
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -380,7 +362,6 @@ describe('/tags', function () {
           it('[example 2] respond with tags related to the list of tags', async function () {
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -396,7 +377,6 @@ describe('/tags', function () {
           it('[example 3] respond with tags related to the list of tags', async function () {
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag1')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -413,7 +393,6 @@ describe('/tags', function () {
           it('[example 4] respond with tags related to the list of tags', async function() {
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag3')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -425,7 +404,6 @@ describe('/tags', function () {
           it('[example 5] respond with tags related to the list of tags', async function() {
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1,tag2,tag3,tag4,tag5,tag6')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -437,7 +415,6 @@ describe('/tags', function () {
           it('[example 6] respond with tags related to the list of tags', async function() {
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1,tag2,tag3,tag4,tag5,tag6')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -449,7 +426,6 @@ describe('/tags', function () {
           it('[example 7] respond with tags related to the list of tags', async function() {
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag3,tag4,tag4')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -466,7 +442,6 @@ describe('/tags', function () {
           it('[offset and limit] respond with tags related to the list of tags', async function () {
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag1&page[limit]=2&page[offset]=1')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -487,7 +462,6 @@ describe('/tags', function () {
           it('[invalid tagname(s)] error 400', async function() {
             await agent
               .get('/tags?filter[relatedToTags]=ta-*-+A,tag4')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -499,7 +473,6 @@ describe('/tags', function () {
           it('[nonexistent tagname(s)]: ignore', async function () {
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1,tag9')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -515,7 +488,6 @@ describe('/tags', function () {
           it('[too high page[limit]] 400', async function () {
             await agent
               .get('/tags?filter[relatedToTags]=tag1&page[limit]=21&page[offset]=0')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -529,7 +501,6 @@ describe('/tags', function () {
         it('403', async function () {
           await agent
             .get('/tags?filter[relatedToTags]=tag0,tag1')
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -571,7 +542,6 @@ describe('/tags', function () {
         await agent
           .post('/tags')
           .send(serializedNewTag)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(201)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -587,7 +557,6 @@ describe('/tags', function () {
         await agent
           .post('/tags')
           .send(serializedInvalidTagname)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -597,7 +566,6 @@ describe('/tags', function () {
         await agent
           .post('/tags')
           .send({ data: { type: 'tags', attributes: { tagname: 'a' } } })
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -607,7 +575,6 @@ describe('/tags', function () {
         await agent
           .post('/tags')
           .send({ data: { type: 'tags', attributes: { tagname: 'a'.repeat(65) } } })
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -617,7 +584,6 @@ describe('/tags', function () {
         await agent
           .post('/tags')
           .send(serialize.newTag(dbData.tags[0]))
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(409)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -629,7 +595,6 @@ describe('/tags', function () {
         await agent
           .post('/tags')
           .send(serializedNewTag)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken + 'x')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -668,7 +633,6 @@ describe('/tags/:tagname', function () {
     it('should show the tag', async function () {
       const response = await agent
         .get(`/tags/${existentTag.tagname}`)
-        .set('Content-Type', 'application/vnd.api+json')
         .set('Authorization', 'Bearer ' + loggedUserToken)
         .expect(200)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -687,7 +651,6 @@ describe('/tags/:tagname', function () {
     it('[nonexistent tagname] should error 404', async function () {
       const response = await agent
         .get('/tags/nonexistent-tag')
-        .set('Content-Type', 'application/vnd.api+json')
         .set('Authorization', 'Bearer ' + loggedUserToken)
         .expect(404)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -698,7 +661,6 @@ describe('/tags/:tagname', function () {
     it('[invalid tagname] should error 400', async function () {
       const response = await agent
         .get('/tags/invalid_tag')
-        .set('Content-Type', 'application/vnd.api+json')
         .set('Authorization', 'Bearer ' + loggedUserToken)
         .expect(400)
         .expect('Content-Type', /^application\/vnd\.api\+json/);

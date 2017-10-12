@@ -7,7 +7,7 @@ const  _ = require('lodash'),
       sinon = require('sinon'),
       supertest = require('supertest');
 
-const app = require(path.resolve('./app')),
+const agent = require('./agent'),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
@@ -16,8 +16,6 @@ const jwtExpirationTime = config.jwt.expirationTime;
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
-
-const agent = supertest.agent(app);
 
 describe('GET contacts', function () {
   let dbData,
@@ -68,7 +66,6 @@ describe('GET contacts', function () {
 
             const response = await agent
               .get(`/contacts?filter[from]=${user0.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -115,7 +112,6 @@ describe('GET contacts', function () {
 
             const response = await agent
               .get(`/contacts?filter[from]=${me.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -163,7 +159,6 @@ describe('GET contacts', function () {
 
             const response = await agent
               .get(`/contacts?filter[to]=${user0.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -198,7 +193,6 @@ describe('GET contacts', function () {
 
             const response = await agent
               .get(`/contacts?filter[to]=${me.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -248,7 +242,6 @@ describe('GET contacts', function () {
         const [user] = dbData.users;
         await agent
           .get(`/contacts?filter[to]=${user.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -290,7 +283,6 @@ describe('GET contacts', function () {
 
           const response = await agent
             .get(`/contacts/${userA.username}/${userB.username}`)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -320,7 +312,6 @@ describe('GET contacts', function () {
 
           const response = await agent
             .get(`/contacts/${other.username}/${me.username}`)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -353,7 +344,6 @@ describe('GET contacts', function () {
 
           const response = await agent
             .get(`/contacts/${requester.username}/${requested.username}`)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + requesterUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -386,7 +376,6 @@ describe('GET contacts', function () {
 
           const response = await agent
             .get(`/contacts/${requester.username}/${requested.username}`)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + requestedUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -415,7 +404,6 @@ describe('GET contacts', function () {
 
           await agent
             .get(`/contacts/${requester.username}/${requested.username}`)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + otherUserToken)
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -430,7 +418,6 @@ describe('GET contacts', function () {
 
           await agent
             .get(`/contacts/${me.username}/${other.username}`)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -445,7 +432,6 @@ describe('GET contacts', function () {
 
           await agent
             .get('/contacts/invalid..username/other..invalid..username')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -458,7 +444,6 @@ describe('GET contacts', function () {
         const [me, other] = dbData.users;
         await agent
           .get(`/contacts/${other.username}/${me.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });

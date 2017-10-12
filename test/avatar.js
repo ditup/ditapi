@@ -9,7 +9,7 @@ const crypto = require('crypto'),
       { promisify } = require('util'),
       sizeOf = promisify(require('image-size'));
 
-const app = require(path.resolve('./app')),
+const agent = require('./agent'),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models')),
@@ -17,8 +17,6 @@ const app = require(path.resolve('./app')),
 
 const jwtSecret = config.jwt.secret;
 const jwtExpirationTime = config.jwt.expirationTime;
-
-const agent = supertest.agent(app);
 
 describe('/users/:username/avatar', function () {
 
@@ -71,6 +69,14 @@ describe('/users/:username/avatar', function () {
 
   describe('GET', function () {
 
+    before(() => {
+      agent.set('Accept', 'image/jpeg, image/svg+xml');
+    });
+
+    after(() => {
+      agent.set('Accept', 'application/vnd.api+json');
+    });
+
     context('logged', function () {
 
       context('valid data', () => {
@@ -93,7 +99,6 @@ describe('/users/:username/avatar', function () {
 
             const response = await agent
               .get(`/users/${otherUser.username}/avatar`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .buffer()
               .parse(binaryParser)
@@ -114,7 +119,6 @@ describe('/users/:username/avatar', function () {
 
             const response = await agent
               .get(`/users/${otherUser.username}/avatar?filter[size]=512`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .buffer()
               .parse(binaryParser)
@@ -134,7 +138,6 @@ describe('/users/:username/avatar', function () {
           it('responds with 404', async function () {
             await agent
               .get('/users/nonexistent-user/avatar')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -149,7 +152,6 @@ describe('/users/:username/avatar', function () {
         it('[invalid size] 400', async function () {
           await agent
             .get(`/users/${otherUser.username}/avatar?filter[size]=511`)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -159,7 +161,6 @@ describe('/users/:username/avatar', function () {
           await agent
             .get(`/users/${otherUser.username}/avatar?page[limit]=5`)
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -168,7 +169,6 @@ describe('/users/:username/avatar', function () {
           await agent
             .get('/users/invalid--username/avatar')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -186,7 +186,6 @@ describe('/users/:username/avatar', function () {
 
           const response = await agent
             .get(`/users/${otherUser.username}/avatar`)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(500);
 
@@ -201,7 +200,6 @@ describe('/users/:username/avatar', function () {
       it('responds with 403', async function () {
         await agent
           .get('/users/nonexistent-user/avatar')
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });

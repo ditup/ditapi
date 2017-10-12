@@ -1,21 +1,16 @@
 'use strict';
 
-process.env.NODE_ENV = 'test';
-
 const jwt = require('jsonwebtoken'),
-      supertest = require('supertest'),
       should = require('should'),
       _ = require('lodash'),
       path = require('path');
 
-const app = require(path.resolve('./app')),
+const agent = require('./agent'),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
 const jwtSecret = config.jwt.secret;
 const jwtExpirationTime = config.jwt.expirationTime;
-
-const agent = supertest.agent(app);
 
 let dbData,
     existentUser,
@@ -62,7 +57,6 @@ describe('/users/:username', function () {
       it('[logged] should read user`s profile', async function () {
         const response = await agent
           .get(`/users/${existentUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -81,7 +75,6 @@ describe('/users/:username', function () {
       it('[not logged] should read simplified profile', async function () {
         const response = await agent
           .get(`/users/${existentUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -100,7 +93,6 @@ describe('/users/:username', function () {
       it('[logged, not verified] should read simplified profile', async function () {
         const response = await agent
           .get(`/users/${existentUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -119,7 +111,6 @@ describe('/users/:username', function () {
       it('[logged, unverified] should be treated as not logged', async function () {
         const response = await agent
           .get(`/users/${unverifiedUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -142,7 +133,6 @@ describe('/users/:username', function () {
       it('should show 404', async function () {
         await agent
           .get(`/users/${nonexistentUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(404)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -153,7 +143,6 @@ describe('/users/:username', function () {
       it('should show 400', async function () {
         await agent
           .get('/users/this--is-an-invalid--username')
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -196,7 +185,6 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
@@ -224,7 +212,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
@@ -257,7 +244,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
@@ -286,7 +272,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -309,7 +294,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -328,7 +312,6 @@ describe('/users/:username', function () {
               }
             })
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -348,7 +331,6 @@ describe('/users/:username', function () {
               }
             })
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);
         });
@@ -368,7 +350,6 @@ describe('/users/:username', function () {
               }
             }
           })
-          .set('Content-Type', 'application/vnd.api+json')
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(403);
       });

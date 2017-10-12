@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken'),
       _ = require('lodash'),
       path = require('path');
 
-const app = require(path.resolve('./app')),
+const agent = require('./agent'),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       notificationJobs = require(path.resolve('./jobs/notifications')),
@@ -18,8 +18,6 @@ const jwtExpirationTime = config.jwt.expirationTime;
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
-
-const agent = supertest.agent(app);
 
 describe('/messages', function () {
 
@@ -107,7 +105,6 @@ describe('/messages', function () {
             const response = await agent
               .post('/messages')
               .send(validMessage)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(201)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -172,7 +169,6 @@ describe('/messages', function () {
             await agent
               .post('/messages')
               .send(validMessage)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -190,7 +186,6 @@ describe('/messages', function () {
           await agent
             .post('/messages')
             .send(validMessage)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -202,7 +197,6 @@ describe('/messages', function () {
           await agent
             .post('/messages')
             .send(validMessage)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -214,7 +208,6 @@ describe('/messages', function () {
           await agent
             .post('/messages')
             .send(validMessage)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -226,7 +219,6 @@ describe('/messages', function () {
           await agent
             .post('/messages')
             .send(validMessage)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -238,7 +230,6 @@ describe('/messages', function () {
           await agent
             .post('/messages')
             .send(validMessage)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -250,7 +241,6 @@ describe('/messages', function () {
           const response = await agent
             .post('/messages')
             .send(validMessage)
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -268,7 +258,6 @@ describe('/messages', function () {
         await agent
           .post('/messages')
           .send(validMessage)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -282,7 +271,6 @@ describe('/messages', function () {
         await agent
           .post('/messages')
           .send(validMessage)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -379,7 +367,6 @@ describe('/messages', function () {
         it('show amount of unread threads in meta', async function () {
           const response = await agent
             .get('/messages?filter[count]')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -394,7 +381,6 @@ describe('/messages', function () {
         it('show last messages of my threads sorted by time', async function () {
           const response = await agent
             .get('/messages?filter[threads]')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + otherUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -437,7 +423,6 @@ describe('/messages', function () {
         it('mark received messages as either unread or read', async function () {
           const response = await agent
             .get('/messages?filter[threads]')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -459,7 +444,6 @@ describe('/messages', function () {
           it('show messages with user :username from newest to oldest', async function () {
             const response = await agent
               .get(`/messages?filter[with]=${otherUser.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -481,7 +465,6 @@ describe('/messages', function () {
           it('[no messages] show 0 messages', async function () {
             const response = await agent
               .get(`/messages?filter[with]=${thirdUser.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -498,7 +481,6 @@ describe('/messages', function () {
           it('mark received messages as either unread or read', async function () {
             const response = await agent
               .get(`/messages?filter[with]=${otherUser.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -519,7 +501,6 @@ describe('/messages', function () {
           it('respond with 404', async function () {
             await agent
               .get(`/messages?filter[with]=${nonexistentUser.username}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -534,7 +515,6 @@ describe('/messages', function () {
       it('respond with 403', async function () {
         await agent
           .get(`/messages?filter[with]=${nonexistentUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -597,7 +577,6 @@ describe('/messages/:id', function () {
           .patch(`/messages/${msg2.id}`)
           .send(msgData)
           .set('Authorization', 'Bearer ' + user1Token)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -611,7 +590,6 @@ describe('/messages/:id', function () {
           .patch(`/messages/${msg3.id}`)
           .send(msgData)
           .set('Authorization', 'Bearer ' + user1Token)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -634,7 +612,6 @@ describe('/messages/:id', function () {
           .patch(`/messages/${msg2.id}`)
           .send(msgData)
           .set('Authorization', 'Bearer ' + user0Token)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -651,7 +628,6 @@ describe('/messages/:id', function () {
           .patch(`/messages/${msg2.id}`)
           .send(msgData)
           .set('Authorization', 'Bearer ' + user0Token)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -670,7 +646,6 @@ describe('/messages/:id', function () {
           .patch(`/messages/${msg1.id}`)
           .send(msgData)
           .set('Authorization', 'Bearer ' + user0Token)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -689,7 +664,6 @@ describe('/messages/:id', function () {
           .patch(`/messages/${msg1.id}`)
           .send(msgData)
           .set('Authorization', 'Bearer ' + user0Token)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });

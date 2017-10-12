@@ -20,6 +20,7 @@
     "init-db-standalone": "NODE_ENV=test node ./bin/init-db-standalone.js"
   },
   "dependencies": {
+    "accept": "^3.0.1",
     "ajv": "^5.2.3",
     "allow-methods": "^1.0.4",
     "arangojs": "^5.0.3",
@@ -59,6 +60,7 @@
     "rewire": "^2.5.2",
     "should": "^13.1.2",
     "sinon": "^4.0.1",
+    "superagent-defaults": "^0.1.14",
     "supertest": "^3.0.0"
   }
 }

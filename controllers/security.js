@@ -1,6 +1,8 @@
-const express = require('express');
+const express = require('express'),
+      accept = require('accept');
 
 const validateContentType = express.Router();
+const validateAccept = express.Router();
 
 /**
  * Check that every request has a valid content type
@@ -34,4 +36,40 @@ validateContentType
     return res.status(406).end();
   });
 
-module.exports = { validateContentType };
+/**
+ * Validate request's Accept header
+ * We expect it to strictly contain one or all of the possible Content-Types
+ */
+validateAccept
+  .get('/users/:username/avatar', (req, res, next) => {
+
+    const expected = accept.mediaTypes(req.headers.accept);
+
+    const hasJpeg = expected.includes('image/jpeg');
+    const hasSvg = expected.includes('image/svg+xml');
+
+    if (hasJpeg && hasSvg) {
+      req.acceptHeaderChecked = true;
+      return next();
+    }
+
+    return res.status(406).end();
+  })
+  .all('*', (req, res, next) => {
+
+    if (req.acceptHeaderChecked) {
+      delete req.acceptHeaderChecked;
+      return next();
+    }
+
+    const expected = accept.mediaTypes(req.headers.accept);
+
+    const hasJsonApi = expected.includes('application/vnd.api+json');
+    if (hasJsonApi) {
+      return next();
+    }
+
+    return res.status(406).end();
+  });
+
+module.exports = { validateContentType, validateAccept };

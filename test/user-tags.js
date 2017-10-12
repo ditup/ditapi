@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken'),
       sinon = require('sinon'),
       path = require('path');
 
-const app = require(path.resolve('./app')),
+const agent = require('./agent'),
       models = require(path.resolve('./models')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       config = require(path.resolve('./config/config'));
@@ -79,7 +79,6 @@ describe('Tags of user', function () {
           it('list of user\'s tags', async () => {
             const response = await agent
               .get(`/users/${taggedUser.username}/tags`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -114,7 +113,6 @@ describe('Tags of user', function () {
           it('should include the tags themselves as relationships', async () => {
             const response = await agent
               .get(`/users/${taggedUser.username}/tags`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -174,7 +172,6 @@ describe('Tags of user', function () {
           it('[invalid username] 400', async () => {
             await agent
               .get('/users/invalid--username/tags')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -186,7 +183,6 @@ describe('Tags of user', function () {
         it('403', async () => {
           await agent
             .get(`/users/${taggedUser.username}/tags`)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -232,7 +228,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -295,7 +290,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -325,7 +319,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(409)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -354,7 +347,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -384,7 +376,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -415,7 +406,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -446,7 +436,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -478,7 +467,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -500,7 +488,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -533,7 +520,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -576,7 +562,6 @@ describe('Tags of user', function () {
 
             const response = await agent
               .get(`/users/${taggedUser.username}/tags/${userTag.tag.tagname}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -607,7 +592,6 @@ describe('Tags of user', function () {
           it('[nonexistent user-tag] 404', async () => {
             await agent
               .get(`/users/${taggedUser.username}/tags/${dbData.tags[2].tagname}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -618,7 +602,6 @@ describe('Tags of user', function () {
 
             await agent
               .get(`/users/nonexistent/tags/${userTag.tag.tagname}`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -627,7 +610,6 @@ describe('Tags of user', function () {
           it('[nonexistent tag] 404', async () => {
             await agent
               .get(`/users/${taggedUser.username}/tags/nonexistent`)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -642,7 +624,6 @@ describe('Tags of user', function () {
 
           await agent
             .get(`/users/${taggedUser.username}/tags/${userTag.tag.tagname}`)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -683,7 +664,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -716,7 +696,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -753,7 +732,6 @@ describe('Tags of user', function () {
             await agent
               .patch(`/users/${other.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(403)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -782,7 +760,6 @@ describe('Tags of user', function () {
               // compare with the mismatch
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -811,7 +788,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -839,7 +815,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -869,7 +844,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${invalidTagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -900,7 +874,6 @@ describe('Tags of user', function () {
             await agent
               .patch(`/users/${me.username}/tags/${tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -928,7 +901,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -959,7 +931,6 @@ describe('Tags of user', function () {
           await agent
             .patch(`/users/${me.username}/tags/${tag.tagname}`)
             .send(patchData)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -992,7 +963,6 @@ describe('Tags of user', function () {
 
         const response = await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + userToken)
           .expect(204)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1011,7 +981,6 @@ describe('Tags of user', function () {
 
         await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + userToken)
           .expect(404)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -1028,7 +997,6 @@ describe('Tags of user', function () {
 
         await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + otherUserToken)
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);

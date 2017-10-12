@@ -1,14 +1,12 @@
 'use strict';
 
-process.env.NODE_ENV = 'test';
-
 const jwt = require('jsonwebtoken'),
       supertest = require('supertest'),
       should = require('should'),
       path = require('path'),
       sinon = require('sinon');
 
-const app = require(path.resolve('./app')),
+const agent = require('./agent'),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       mailer = require(path.resolve('./services/mailer')),
@@ -64,7 +62,6 @@ describe('/users', function () {
         const res = await agent
           .post('/users')
           .send(userData)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect('Location', selfLink)
           .expect(201);
@@ -82,13 +79,11 @@ describe('/users', function () {
         const res = await agent
           .post('/users')
           .send(userData)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(201);
 
         // GET the new user in another request to test its presence
         await agent
           .get(`/users/${res.body.data.id}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(200);
       });
 
@@ -97,7 +92,6 @@ describe('/users', function () {
         await agent
           .post('/users')
           .send(userData)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(201);
 
         // check the email
@@ -132,7 +126,6 @@ describe('/users', function () {
       const res = await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(400);
 
@@ -156,14 +149,12 @@ describe('/users', function () {
       await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(201);
 
       const res = await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(409); // Conflict
 
@@ -185,7 +176,6 @@ describe('/users', function () {
       const res = await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(400);
 
@@ -207,7 +197,6 @@ describe('/users', function () {
       const res = await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(400);
 
@@ -290,7 +279,6 @@ describe('/users', function () {
       // post the first user
       await agent.post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(201);
 
@@ -301,7 +289,6 @@ describe('/users', function () {
       const user2Response = await agent
         .post('/users')
         .send(userData2)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(409); // Conflict
 
@@ -345,7 +332,6 @@ describe('/users', function () {
       it('show list of users sorted by userTag relevance', async function () {
         const res = await agent
           .get('/users?filter[tag]=tag1,tag2')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
@@ -375,7 +361,6 @@ describe('/users', function () {
       it('limit the output', async () => {
         const res = await agent
           .get('/users?filter[tag]=tag1,tag2&page[limit]=3&page[offset]=0')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
@@ -386,7 +371,6 @@ describe('/users', function () {
       it('offset the output', async () => {
         const res = await agent
           .get('/users?filter[tag]=tag1,tag2&page[limit]=5&page[offset]=2')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
@@ -402,7 +386,6 @@ describe('/users', function () {
       it('include user-tag relationships', async function () {
         const res = await agent
           .get('/users?filter[tag]=tag1,tag2')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
@@ -478,7 +461,6 @@ describe('/users', function () {
         it('[invalid tagnames in a list] error 400', async function () {
           const res = await agent
             .get('/users?filter[tag]=t*,11')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -490,7 +472,6 @@ describe('/users', function () {
           // query with 11 provided tags (limit 10)
           const res = await agent
             .get('/users?filter[tag]=tag0,tag1,tag2,tag3,tag4,tag5,tag6,tag7,tag8,tag9,tag10')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -504,7 +485,6 @@ describe('/users', function () {
         it('[no tags provided] error 400', async () => {
           const res = await agent
             .get('/users?filter[tag]=')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -517,7 +497,6 @@ describe('/users', function () {
         it('[too high query.page[limit]] error 400', async () => {
           const res = await agent
             .get('/users?filter[tag]=tag1&page[offset]=0&page[limit]=21')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -582,7 +561,6 @@ describe('/users', function () {
       it('list users sorted by relevance weight', async function () {
         const res = await agent
           .get('/users?filter[byMyTags]')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
@@ -612,7 +590,6 @@ describe('/users', function () {
       it('include user-tag relationships', async function () {
         const res = await agent
           .get('/users?filter[byMyTags]')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
@@ -688,7 +665,6 @@ describe('/users', function () {
       it('limit the output', async () => {
         const res = await agent
           .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=2')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
@@ -703,7 +679,6 @@ describe('/users', function () {
       it('offset the output', async () => {
         const res = await agent
           .get('/users?filter[byMyTags]&page[offset]=2&page[limit]=5')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
@@ -720,7 +695,6 @@ describe('/users', function () {
       it('[invalid query.filter.byMyTags] should fail with 400', async () => {
         await agent
           .get('/users?filter[byMyTags]=asdf')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(400);
@@ -729,7 +703,6 @@ describe('/users', function () {
       it('[too high query.page[limit]] error 400', async () => {
         const res = await agent
           .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=21')
-          .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(400);
@@ -771,7 +744,6 @@ describe('/users', function () {
           it('[example 1] show list of 5 newly created and verified users sorted by creation date', async function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
@@ -788,7 +760,6 @@ describe('/users', function () {
           it('[example 2] show list of 20 newly created and verified users sorted by creation date', async function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=20')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
@@ -807,7 +778,6 @@ describe('/users', function () {
           it('[example 3] show list of 0 newly created and verified users', async function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=0')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
@@ -821,7 +791,6 @@ describe('/users', function () {
           it('[limit] data is a string: respond by error 400', async function() {
             await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=str')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
@@ -831,7 +800,6 @@ describe('/users', function () {
           it('[lack of limit data in the query] error 400', async function() {
             await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
@@ -841,7 +809,6 @@ describe('/users', function () {
           it('[lack of \'page.offset\' parameter in the query] error 404', async function() {
             await agent
               .get('/users?sort=-created&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
@@ -851,7 +818,6 @@ describe('/users', function () {
           it('[lack of \'pagination\' parameter in the query] error 404', async function() {
             await agent
               .get('/users?sort=-created')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
@@ -861,7 +827,6 @@ describe('/users', function () {
           it('[additional \'includes\' parameter in the query] error 404', async function() {
             await agent
               .get('/users?sort=-created&includes=true&page[offset]=0&page[limit]=0')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
@@ -871,7 +836,6 @@ describe('/users', function () {
           it('[too high query.page[limit]] error 400', async () => {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=21')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
@@ -887,7 +851,6 @@ describe('/users', function () {
         it('error 403', async function() {
           await agent
             .get('/users?sort=-created&page[offset]=0&page[limit]=20')
-            .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);
         });
@@ -984,7 +947,6 @@ describe('/users', function () {
           it('[example 1] show list of 5 new users who share at leats 2 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
@@ -1001,7 +963,6 @@ describe('/users', function () {
           it('[example 2] show list of 5 new users who share at leats 10 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=10&page[offset]=0&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
@@ -1011,7 +972,6 @@ describe('/users', function () {
           it('[example 3] show list of 2 new users who share at leats 3 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=3&page[offset]=0&page[limit]=2')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
@@ -1025,7 +985,6 @@ describe('/users', function () {
           it('[example 4] show list of 20 new users who share at leats 1 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=1&page[offset]=0&page[limit]=20')
-              .set('Content-Type', 'application/vnd.api+json')
               .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
@@ -1046,7 +1005,6 @@ describe('/users', function () {
           it('error 403', async function () {
             await agent
               .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(403);
           });
@@ -1059,7 +1017,6 @@ describe('/users', function () {
         it('[invalid \'shareMyTags\' parameter] error 400', async function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=0&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -1068,7 +1025,6 @@ describe('/users', function () {
         it('[invalid \'page.offset\' parameter] parameter is not a number: error 400', async function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=text&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -1077,7 +1033,6 @@ describe('/users', function () {
         it('[lack of \'sort\' parameter] error 404', async function () {
           await agent
             .get('/users?filter[withMyTags]=2&page[offset]=0&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(404);
@@ -1086,7 +1041,6 @@ describe('/users', function () {
         it('[lack of \'page.offset\' parameter] error 400', async function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -1095,7 +1049,6 @@ describe('/users', function () {
         it('[additional \'page.size\' parameter] error 400', async function () {
           await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5&page[size]=5')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -1104,7 +1057,6 @@ describe('/users', function () {
         it('[too high query.page[limit]] error 400', async () => {
           const res = await agent
             .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=21')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
