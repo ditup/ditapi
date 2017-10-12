@@ -19,7 +19,7 @@ const mailer = require(path.resolve('./services/mailer'));
 
 const agent = supertest.agent(app);
 
-describe.only('/messages', function () {
+describe('/messages', function () {
 
   let dbData,
       loggedUser,
@@ -68,9 +68,10 @@ describe.only('/messages', function () {
 
     beforeEach(function () {
       [loggedUser, otherUser, unverifiedUser] = dbData.users;
-      const jwtPayload = {username: loggedUser.username};
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+      console.log('logged',loggedUser);
       loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-      const jwtUnverifiedUserPayload = {username: unverifiedUser.username};
+      const jwtUnverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified, givenName:'', familyName:''};
       unverifiedUserToken = jwt.sign(jwtUnverifiedUserPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
     });
@@ -364,9 +365,9 @@ describe.only('/messages', function () {
 
     beforeEach(function () {
       [loggedUser, otherUser, thirdUser] = dbData.users;
-      const jwtPayload = {username: loggedUser.username};
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
       loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-      const otherUserPayload = {username: otherUser.username};
+      const otherUserPayload = {username: otherUser.username, verified:otherUser.verified, givenName:'', familyName:''};
       otherUserToken = jwt.sign(otherUserPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
     });
@@ -540,7 +541,7 @@ describe.only('/messages', function () {
   });
 });
 
-describe.only('/messages/:id', function () {
+describe('/messages/:id', function () {
   let dbData;
 
   function beforeEachPopulate(data) {
@@ -584,7 +585,7 @@ describe.only('/messages/:id', function () {
       it('update message.read and all the older received messages of the thread to true if i\'m the receiver', async function () {
         const [,, msg2, msg3] = dbData.messages;
         const [, user1] = dbData.users;
-        const jwtPayload = {username: user1.username};
+        const jwtPayload = {username: user1.username, verified:user1.verified, givenName:'', familyName:''};
         const user1Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
         msgData.data.id = msg2.id;
@@ -621,7 +622,7 @@ describe.only('/messages/:id', function () {
       it('if i\'m not a receiver, error 403', async function () {
         const [,, msg2] = dbData.messages;
         const [user0] = dbData.users;
-        const jwtPayload = {username: user0.username};
+        const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
         const user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
         msgData.data.id = msg2.id;
@@ -638,7 +639,7 @@ describe.only('/messages/:id', function () {
       it('if id in url doesn\'t match id in body, error 400', async function () {
         const [, msg1, msg2] = dbData.messages;
         const [user0] = dbData.users;
-        const jwtPayload = {username: user0.username};
+        const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
         const user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
         msgData.data.id = msg1.id;
@@ -655,7 +656,7 @@ describe.only('/messages/:id', function () {
       it('if other attributes than read are present, error 400', async function () {
         const [, msg1] = dbData.messages;
         const [user0] = dbData.users;
-        const jwtPayload = {username: user0.username};
+        const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
         const user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
         msgData.data.id = msg1.id;
@@ -674,7 +675,7 @@ describe.only('/messages/:id', function () {
       it('if read is not equal true, error with 400', async function () {
         const [, msg1] = dbData.messages;
         const [user0] = dbData.users;
-        const jwtPayload = {username: user0.username};
+        const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
         const user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
         msgData.data.id = msg1.id;

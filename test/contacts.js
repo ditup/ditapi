@@ -13,13 +13,12 @@ const app = require(path.resolve('./app')),
       models = require(path.resolve('./models')),
       notificationJobs = require(path.resolve('./jobs/notifications'));
 
-
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
 
 const agent = supertest.agent(app);
 
-describe.only('contacts', function () {
+describe('contacts', function () {
   let dbData,
       sandbox;
 
@@ -107,7 +106,7 @@ describe.only('contacts', function () {
       context('valid data', function () {
         it('create a contact to a user', async function () {
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const response = await agent
@@ -168,7 +167,7 @@ describe.only('contacts', function () {
 
         it('create multiple contacts between different people', async function () {
           const [me, user1, user2] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           await agent
@@ -250,7 +249,7 @@ describe.only('contacts', function () {
       context('invalid data', function () {
         it('[missing attribute \'trust\' in request body] 400', async function () {
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const contactBody = generateContactBody(other, {});
@@ -267,7 +266,7 @@ describe.only('contacts', function () {
 
         it('[invalid attributes] 400', async function () {
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const contactBody = generateContactBody(other, {});
@@ -284,7 +283,7 @@ describe.only('contacts', function () {
 
         it('[invalid other username] error 400', async function () {
           const [me] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const contactBody = generateContactBody({ username: 'invalid username' }, {});
@@ -300,7 +299,7 @@ describe.only('contacts', function () {
 
         it('[invalid trust level] error 400', async function () {
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const contactBody = generateContactBody(other, { trust: 7 });
@@ -317,7 +316,7 @@ describe.only('contacts', function () {
 
         it('[invalid message] 400', async function () {
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const contactBody = generateContactBody(other, { message: '.'.repeat(2049)});
@@ -334,7 +333,7 @@ describe.only('contacts', function () {
 
         it('[invalid reference] 400', async function () {
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const contactBody = generateContactBody(other, { reference: '.'.repeat(2049)});
@@ -351,7 +350,7 @@ describe.only('contacts', function () {
 
         it('[contact to oneself] 400', async function () {
           const [me] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           await agent
@@ -365,7 +364,7 @@ describe.only('contacts', function () {
 
         it('[nonexistent other user] error 404 and info', async function () {
           const [me] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const response = await agent
@@ -382,7 +381,7 @@ describe.only('contacts', function () {
 
         it('[already existent] 409 Conflict', async function () {
           const [me] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           await agent
@@ -404,9 +403,9 @@ describe.only('contacts', function () {
 
         it('[opposite direction exists] 409 Conflict', async function (){
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-          const jwtOtherPayload = {username: other.username};
+          const jwtOtherPayload = {username: other.username, verified:other.verified, givenName:'', familyName:''};
           const otherToken = jwt.sign(jwtOtherPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           await agent
@@ -464,7 +463,7 @@ describe.only('contacts', function () {
 
           it('makes the contact confirmed and saves trust & reference', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -500,7 +499,7 @@ describe.only('contacts', function () {
         context('invalid data', function () {
           it('[nonexistent contact to confirm] 404 and info', async function () {
             const [, me, another] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -524,7 +523,7 @@ describe.only('contacts', function () {
 
           it('[already confirmed contact to confirm] 403', async function () {
             const [me,,, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -548,7 +547,7 @@ describe.only('contacts', function () {
 
           it('[nonexistent user] 404', async function () {
             const [me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -571,7 +570,7 @@ describe.only('contacts', function () {
           });
           it('[url params and id don\'t match] 400', async function () {
             const [me, other, another] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -595,7 +594,7 @@ describe.only('contacts', function () {
 
           it('[missing parameters (confirmed, trust, reference)] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -618,7 +617,7 @@ describe.only('contacts', function () {
 
           it('[unexpected (invalid) parameters] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -643,7 +642,7 @@ describe.only('contacts', function () {
 
           it('[invalid reference] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -667,7 +666,7 @@ describe.only('contacts', function () {
 
           it('[invalid trust] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -691,7 +690,7 @@ describe.only('contacts', function () {
 
           it('[invalid username] 400', async function () {
             const [, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -715,7 +714,7 @@ describe.only('contacts', function () {
 
           it('[body.isConfirmed!=true] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -739,7 +738,7 @@ describe.only('contacts', function () {
 
           it('[the same user who created confirms] 404', async function () {
             const [me, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -763,7 +762,7 @@ describe.only('contacts', function () {
 
           it('[confirming contact not directed to me] 403', async function () {
             const [other, me, another] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -829,7 +828,7 @@ describe.only('contacts', function () {
         context('good data provided', function () {
           it('200 & update & respond with the updated contact', async function () {
             const [me, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -862,7 +861,7 @@ describe.only('contacts', function () {
 
           it('[opposite direction] 200 & update & respond with the updated contact', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -897,7 +896,7 @@ describe.only('contacts', function () {
 
           it('[unconfirmed which i created, including message] 200, update, respond', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -926,7 +925,7 @@ describe.only('contacts', function () {
 
           it('[partial update] 200, update partially, respond', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -954,7 +953,7 @@ describe.only('contacts', function () {
         context('bad data', function () {
           it('[contact not from me] 400', async function () {
             const [userA, userB, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             await agent
@@ -977,7 +976,7 @@ describe.only('contacts', function () {
 
           it('[contains invalid attributes (other than trust, reference, message)] 400', async function () {
             const [me, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -1004,7 +1003,7 @@ describe.only('contacts', function () {
 
           it('[jsonapi id doesn\'t match url] 400', async function () {
             const [me, userA, userB] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -1029,7 +1028,7 @@ describe.only('contacts', function () {
 
           it('[invalid trust] 400', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -1053,7 +1052,7 @@ describe.only('contacts', function () {
 
           it('[invalid reference] 400', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -1077,7 +1076,7 @@ describe.only('contacts', function () {
 
           it('[invalid message] 400', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -1101,7 +1100,7 @@ describe.only('contacts', function () {
 
           it('[provided message when already confirmed] 400', async function () {
             const [me, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -1125,7 +1124,7 @@ describe.only('contacts', function () {
 
           it('[nonexistent contact] 404', async function () {
             const [, me, other] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -1149,7 +1148,7 @@ describe.only('contacts', function () {
 
           it('[updating unconfirmed contact i didn\'t create] 400', async function () {
             const [other,, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const resp = await agent
@@ -1217,7 +1216,7 @@ describe.only('contacts', function () {
     context('owner', function () {
       it('[existent contact] returns 204 and removes the contact from database', async function () {
         const [me, other] = dbData.users;
-        const jwtPayload = {username: me.username};
+        const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
         const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
 
@@ -1234,7 +1233,7 @@ describe.only('contacts', function () {
 
       it('[nonexistent contact] returns 404', async function () {
         const [, me, other] = dbData.users;
-        const jwtPayload = {username: me.username};
+        const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
         const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
 
@@ -1250,7 +1249,7 @@ describe.only('contacts', function () {
     context('not owner', function () {
       it('403', async function () {
         const [userA, userB, me]= dbData.users;
-        const jwtPayload = {username: me.username};
+        const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
         const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
 
@@ -1278,7 +1277,7 @@ describe.only('contacts', function () {
     context('invalid username(s)', function () {
       it('400', async function () {
         const [me]= dbData.users;
-        const jwtPayload = {username: me.username};
+        const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
         const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
 

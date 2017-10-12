@@ -14,7 +14,7 @@ const agent = supertest.agent(app);
 
 let dbData;
 
-describe.only('Location of people, tags, ideas, projects, ...', function () {
+describe('Location of people, tags, ideas, projects, ...', function () {
   let sandbox;
 
   beforeEach(function () {
@@ -42,9 +42,8 @@ describe.only('Location of people, tags, ideas, projects, ...', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser, otherUser] = dbData.users;
-      const jwtPayload = {username: loggedUser.username};
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
       loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-
     });
 
     afterEach(async function () {
@@ -315,7 +314,7 @@ describe.only('Location of people, tags, ideas, projects, ...', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser] = dbData.users;
-      const jwtPayload = {username: loggedUser.username};
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
       loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
     });

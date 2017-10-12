@@ -18,7 +18,7 @@ const mailer = require(path.resolve('./services/mailer'));
 
 const agent = supertest.agent(app);
 
-describe.only('/account', function () {
+describe('/account', function () {
 
   describe('reset forgotten password', function () {
 
@@ -417,9 +417,8 @@ describe.only('/account', function () {
       // create data in database
       dbData = await dbHandle.fill(data);
       [{ username, password }] = dbData.users;
-      const jwtPayload = {username: username};
+      const jwtPayload = {username: username, verified:true, givenName:'', familyName:''};
       userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-
     });
 
     afterEach(async function () {
@@ -844,7 +843,7 @@ describe.only('/account', function () {
       dbData = await dbHandle.fill(data);
 
       [user0] = dbData.users;
-      const jwtPayload = {username: user0.username};
+      const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
       user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
     });
@@ -858,7 +857,7 @@ describe.only('/account', function () {
       context('good data', function () {
         it('should update the password', async function () {
           const [, user1] = dbData.users;
-          const jwtPayload = {username: user1.username};
+          const jwtPayload = {username: user1.username, verified:user1.verified, givenName:'', familyName:''};
           const user1Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const patchBody = {

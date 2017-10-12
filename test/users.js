@@ -17,7 +17,7 @@ const app = require(path.resolve('./app')),
 
 const agent = supertest.agent(app);
 
-describe.only('/users', function () {
+describe('/users', function () {
   let sandbox;
 
   // clear database after every test
@@ -291,7 +291,7 @@ describe.only('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username};
+        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
         loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
       });
@@ -528,7 +528,7 @@ describe.only('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username};
+        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
         loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
       });
@@ -709,7 +709,7 @@ describe.only('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username};
+        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
         loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
       });
@@ -921,7 +921,7 @@ describe.only('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username};
+        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
         loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
       });
 

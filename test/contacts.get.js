@@ -39,7 +39,7 @@ describe('GET contacts', function () {
     sandbox.restore();
   });
 
-  describe.only('GET /contacts', function () {
+  describe('GET /contacts', function () {
 
     beforeEach(async function () {
       // create data in database
@@ -61,7 +61,7 @@ describe('GET contacts', function () {
         context('everybody', function () {
           it('see only confirmed contacts from username to others (trust & reference which user gave to others)', async function () {
             const [user0,, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const response = await agent
@@ -108,7 +108,7 @@ describe('GET contacts', function () {
         context('me', function () {
           it('see confirmed and unconfirmed contacts from me to others', async function () {
             const [me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const response = await agent
@@ -156,7 +156,7 @@ describe('GET contacts', function () {
         context('everybody', function () {
           it('see only confirmed contacts with trust & reference given to the user', async function () {
             const [user0,, me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const response = await agent
@@ -191,7 +191,7 @@ describe('GET contacts', function () {
         context('me', function () {
           it('see confirmed & unconfirmed contacts with trust & reference given to me', async function () {
             const [me] = dbData.users;
-            const jwtPayload = {username: me.username};
+            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
             const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
             const response = await agent
@@ -253,7 +253,7 @@ describe('GET contacts', function () {
     });
   });
 
-  describe.only('GET /contacts/:from/:to', function () {
+  describe('GET /contacts/:from/:to', function () {
 
     beforeEach(async function () {
       // create data in database
@@ -283,7 +283,7 @@ describe('GET contacts', function () {
       context('confirmed contact exists', function () {
         it('return a contact between :from and :to including trust & reference', async function () {
           const [userA, userB, me] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const response = await agent
@@ -313,7 +313,7 @@ describe('GET contacts', function () {
 
         it('[confirmed contact (opposite direction)] return a contact between :from and :to including trust & reference', async function () {
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const response = await agent
@@ -346,7 +346,7 @@ describe('GET contacts', function () {
 
         it('[requester] see the whole unconfirmed contact including message', async function () {
           const [, requester, requested] = dbData.users;
-          const jwtPayload = {username: requester.username};
+          const jwtPayload = {username: requester.username, verified: requester.verified, givenName:'', familyName:''};
           const requesterUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const response = await agent
@@ -379,7 +379,7 @@ describe('GET contacts', function () {
 
         it('[requested] see contact with message, without trust & reference', async function () {
           const [, requester, requested] = dbData.users;
-          const jwtPayload = {username: requested.username};
+          const jwtPayload = {username: requested.username, verified: requested.verified, givenName:'', familyName:''};
           const requestedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           const response = await agent
@@ -408,7 +408,7 @@ describe('GET contacts', function () {
 
         it('[other] 404', async function () {
           const [other, requester, requested] = dbData.users;
-          const jwtPayload = {username: other.username};
+          const jwtPayload = {username: other.username, verified: other.verified, givenName:'', familyName:''};
           const otherUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           await agent
@@ -423,7 +423,7 @@ describe('GET contacts', function () {
       context('contact doesn\'t exist', function () {
         it('404', async function () {
           const [me,, other] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           await agent
@@ -438,7 +438,7 @@ describe('GET contacts', function () {
       context('invalid username(s)', function () {
         it('400', async function () {
           const [me] = dbData.users;
-          const jwtPayload = {username: me.username};
+          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
           const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
           await agent

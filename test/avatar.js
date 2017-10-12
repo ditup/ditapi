@@ -70,7 +70,7 @@ describe('/users/:username/avatar', function () {
 
   beforeEach(function () {
     [loggedUser, otherUser] = dbData.users;
-    const jwtPayload = {username: loggedUser.username};
+    const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
     loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
   });
 

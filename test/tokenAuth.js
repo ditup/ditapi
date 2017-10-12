@@ -11,7 +11,7 @@ const app = require(path.resolve('./app')),
       jwtConfig = require(path.resolve('./config/secret/jwt-config'));
 const agent = supertest.agent(app);
 
-describe.only('/auth/token', function() {
+describe('/auth/token', function() {
   let dbData;
   let verifiedUser;
   beforeEach(async function () {
@@ -118,7 +118,7 @@ describe.only('/auth/token', function() {
   });
 });
 
-describe.only('authorizing path for logged users', function() {
+describe('authorizing path for logged users', function() {
   describe('authorize show new users path', function () {
     let dbData,
         loggedUser, userToken;
@@ -134,7 +134,7 @@ describe.only('authorizing path for logged users', function() {
       dbData = await dbHandle.fill(data);
       [loggedUser] = dbData.users;
 
-      const jwtPayload = {username: loggedUser.username};
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
       userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
     });
 
@@ -183,7 +183,7 @@ describe.only('authorizing path for logged users', function() {
     });
   });
 });
-describe.only('authorizing path for logged \'as me\'', function () {
+describe('authorizing path for logged \'as me\'', function () {
   let loggedUser, otherUser, dbData, userToken;
 
   beforeEach(async function () {
@@ -195,7 +195,7 @@ describe.only('authorizing path for logged \'as me\'', function () {
     dbData = await dbHandle.fill(data);
 
     [loggedUser, otherUser] = dbData.users;
-    const jwtPayload = {username: loggedUser.username};
+    const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
     userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
   });
 
