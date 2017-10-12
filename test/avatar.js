@@ -159,6 +159,7 @@ describe('/users/:username/avatar', function () {
           await agent
             .get(`/users/${otherUser.username}/avatar?page[limit]=5`)
             .set('Authorization', 'Bearer ' + loggedUserToken)
+            .set('Content-Type', 'application/vnd.api+json')
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -167,6 +168,7 @@ describe('/users/:username/avatar', function () {
           await agent
             .get('/users/invalid--username/avatar')
             .set('Authorization', 'Bearer ' + loggedUserToken)
+            .set('Content-Type', 'application/vnd.api+json')
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -218,7 +220,6 @@ describe('/users/:username/avatar', function () {
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.png')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'image/jpeg')
             .expect(204);
 
           // check images' existence
@@ -236,7 +237,6 @@ describe('/users/:username/avatar', function () {
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.jpg')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'image/jpeg')
             .expect(204);
 
           // check images' existence
@@ -251,7 +251,6 @@ describe('/users/:username/avatar', function () {
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.jpg')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'image/jpeg')
             .expect(204);
 
           const files = await fs.readdir(path.resolve('./uploads'));
@@ -264,7 +263,6 @@ describe('/users/:username/avatar', function () {
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.jpg')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'image/jpeg')
             .expect(204);
 
           const { width, height } = await sizeOf(path.resolve(`./files/avatars/${loggedUser.username}/512`));
@@ -280,7 +278,6 @@ describe('/users/:username/avatar', function () {
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/bad-avatar.jpg')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'image/jpeg')
             .expect(400);
         });
 
@@ -289,7 +286,6 @@ describe('/users/:username/avatar', function () {
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/large-avatar.jpg')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'image/jpeg')
             .expect(400);
         });
 
@@ -298,14 +294,12 @@ describe('/users/:username/avatar', function () {
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/bad-avatar.jpg')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'image/jpeg')
             .expect(400);
 
           await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/large-avatar.jpg')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'image/jpeg')
             .expect(400);
 
           const files = await fs.readdir(path.resolve('./uploads'));
@@ -329,7 +323,6 @@ describe('/users/:username/avatar', function () {
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.png')
             .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'image/jpeg')
             .expect(500);
 
           should(response.body).have.propertyByPath('errors', 0, 'message').eql('The image upload failed. Try again.');
@@ -344,7 +337,6 @@ describe('/users/:username/avatar', function () {
           .patch(`/users/${otherUser.username}/avatar`)
           .attach('avatar', './test/img/avatar.jpg')
           .set('Authorization', 'Bearer ' + loggedUserToken)
-          .set('Content-Type', 'image/jpeg')
           .expect(403);
       });
 
