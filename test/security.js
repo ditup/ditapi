@@ -65,4 +65,16 @@ describe('Security', () => {
     });
 
   });
+
+  describe('Security headers in response', () => {
+    it('every response should contain security headers', async() => {
+      await agent
+        .get('/users/username')
+        .expect('Content-Type', 'application/vnd.api+json')
+        .expect('X-Content-Type-Options', 'nosniff')
+        .expect('X-Frame-Options', 'DENY');
+
+      // TODO test CORS headers
+    });
+  });
 });

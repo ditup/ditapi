@@ -24,7 +24,11 @@ app.set('env', process.env.NODE_ENV || 'development');
 
 // Protect against some web vulnerabilities by setting some headers with Helmet
 // https://expressjs.com/en/advanced/best-practice-security.html
-app.use(helmet());
+app.use(helmet({
+  frameguard: {
+    action: 'deny'
+  }
+}));
 
 // Cross Origin Resource Sharing
 app.use(cors(config.cors));
