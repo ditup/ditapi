@@ -44,10 +44,29 @@ npm run test:watch
 
 ## Development
 
-You need `eslint` installed globally if you want to use `npm run lint`:
+### Linting
+
+Use one of the following:
 
 ```bash
-sudo npm install -g eslint
+npm run lint
+npm run lint:fix
+```
+### Testing
+
+We practice behavior-driven development (BDD):
+
+- figure out expected behaviour
+- write a failing test of the behavior
+- make the test pass
+- refactor
+- repeat
+
+Use one of the following:
+
+```bash
+npm test
+npm run test:watch
 ```
 
 ## Collaboration
