@@ -40,7 +40,7 @@ router.route('/')
 // get and patch user profile
 router.route('/:username')
   .all(validators.params)
-  .get(userController.getUser)
+  .get(authorize.setAuthData, userController.getUser)
   .patch(authorize.onlyLoggedMe, validators.users.patch, userController.patchUser, userController.getUser);
 
 /**

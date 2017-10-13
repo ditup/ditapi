@@ -9,9 +9,10 @@ const jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       models = require(path.resolve('./models'));
 
 async function generateTokenBehavior(data) {
-  let username, password, token;
+  let username, password, token, authenticated, verified, user;
   const responseData = {};
   // checks for authorisation headers
+  // and take username and password from header
   if (_.has(data, 'headers.authorization')) {
     try{
       username = auth(data).name;
@@ -29,17 +30,21 @@ async function generateTokenBehavior(data) {
     responseData.data = {};
     return responseData;
   }
+
   try{
     // checks if user exists
     const userExists = await models.user.exists(username);
     if (!userExists || username === undefined || password === undefined) {
       responseData.status = 401;
-      responseData.message = 'User deasn\'t exist or lack of username or password';
+      responseData.message = 'User doesn\'t exist or lack of username or password';
       responseData.data = {};
       return responseData;
     }
     // checking login and password authorisation
-    const {authenticated} = await models.user.authenticate(username, password);
+    user = await models.user.authenticate(username, password);
+    authenticated = user.authenticated;
+    verified = user.verified;
+
     if(!authenticated) {
       responseData.status = 403;
       responseData.message = 'Authenticaton failed';
@@ -55,8 +60,9 @@ async function generateTokenBehavior(data) {
   try{
     // creating token
     // TODO - should throw any special error
-    const jwtPayload = { username: username };
-    token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+    const {username, givenName, familyName} = user;
+    const jwtPayload = { username, verified, givenName, familyName };
+    token = await jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
     responseData.status = 200;
     responseData.data = {token};
   } catch(e) {
