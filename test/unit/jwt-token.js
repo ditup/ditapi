@@ -33,7 +33,7 @@ describe.only('generateTokenBehavior(req)', function() {
       sandbox.stub(models.user, 'exists').callsFake(() => true);
       sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:true,
         verified: true, givenName:'user', familyName:'user', username:'user'}));
-      //sandbox.stub(jwt, 'sign').callsFake(() => userToken);
+      // sandbox.stub(jwt, 'sign').callsFake(() => userToken);
       const resp = await authController.generateTokenBehavior(req);
       should(resp.status).equal(200);
     });
@@ -42,7 +42,7 @@ describe.only('generateTokenBehavior(req)', function() {
       sandbox.stub(models.user, 'exists').callsFake(() => true);
       sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:true,
         verified: true, givenName:'user', familyName:'user', username:'user'}));
-      //sandbox.stub(jwt, 'sign').callsFake(() => userToken);
+      // sandbox.stub(jwt, 'sign').callsFake(() => userToken);
       const resp = await authController.generateTokenBehavior(req);
       should(resp.data).have.property('token');
     });
@@ -61,7 +61,7 @@ describe.only('generateTokenBehavior(req)', function() {
       sandbox.stub(models.user, 'exists').callsFake(() => true);
       sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:true,
         verified: true, givenName:'user', familyName:'user', username:'user'}));
-      //sandbox.stub(jwt, 'sign').callsFake(() => userToken);
+      // sandbox.stub(jwt, 'sign').callsFake(() => userToken);
       const resp = await authController.generateTokenBehavior(req);
       should(resp).have.property('status');
     });
@@ -70,7 +70,7 @@ describe.only('generateTokenBehavior(req)', function() {
       sandbox.stub(models.user, 'exists').callsFake(() => true);
       sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:true,
         verified: true, givenName:'user', familyName:'user', username:'user'}));
-      //sandbox.stub(jwt, 'sign').callsFake(() => userToken);
+      // sandbox.stub(jwt, 'sign').callsFake(() => userToken);
       const resp = await authController.generateTokenBehavior(req);
       should(resp).have.property('data');
     });
@@ -87,7 +87,7 @@ describe.only('generateTokenBehavior(req)', function() {
       const req = httpMocks.createRequest({headers: {authorization: userBasicAuth}});
       sandbox.stub(models.user, 'exists').callsFake(() => true);
       sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:false, verified:false}));
-      //sandbox.stub(jwt, 'sign').callsFake(() => userToken);
+      // sandbox.stub(jwt, 'sign').callsFake(() => userToken);
       const resp = await authController.generateTokenBehavior(req);
       should(resp.status).equal(403);
     });
@@ -175,10 +175,10 @@ describe.only('generateTokenBehavior(req)', function() {
     const req = httpMocks.createRequest({headers: {authorization: userBasicAuth}});
     sandbox.stub(models.user, 'exists').callsFake(() => true);
     sandbox.stub(models.user, 'authenticate').callsFake(() => ({ authenticated: true,
-  verified: true,givenName: 'givenNameUser',
-     familyName: 'familyNameUser',
-     username: 'user' }
-));
+      verified: true,givenName: 'givenNameUser',
+      familyName: 'familyNameUser',
+      username: 'user' }
+    ));
     const jwtSpy = sandbox.spy(jwt, 'sign');
     await authController.generateTokenBehavior(req);
     const spiedAuth = jwtSpy.calledWith({ username: user.username, verified: user.verified, givenName: user.givenName, familyName: user.familyName },jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
@@ -189,9 +189,9 @@ describe.only('generateTokenBehavior(req)', function() {
     sandbox.restore();
     sandbox.stub(models.user, 'exists').callsFake(() => true);
     sandbox.stub(models.user, 'authenticate').callsFake(() => ({ authenticated: true,
-  verified: true,givenName: 'givenNameUser',
-     familyName: 'familyNameUser',
-     username: 'user' }));
+      verified: true,givenName: 'givenNameUser',
+      familyName: 'familyNameUser',
+      username: 'user' }));
     const jwtSpy = sandbox.spy(jwt, 'sign');
     await authController.generateTokenBehavior(req);
     // TODO sinon called with just some of the aruments
@@ -203,7 +203,7 @@ describe.only('generateTokenBehavior(req)', function() {
     it('should call exists once', async function() {
       const req = httpMocks.createRequest({headers: {authorization: userBasicAuth}});
       sandbox.stub(models.user, 'authenticate').callsFake(() => ({ authenticated: true,
-  verified: true, givenName: 'user', familyName: 'user', username: 'user' }));
+        verified: true, givenName: 'user', familyName: 'user', username: 'user' }));
       const jwtSpy = sandbox.spy(models.user, 'exists');
       await authController.generateTokenBehavior(req);
       const spiedAuth = jwtSpy.callCount;

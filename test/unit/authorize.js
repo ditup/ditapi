@@ -19,7 +19,7 @@ describe.only('token authorization', function() {
   let sandbox;
   const user = { username: 'user', verified: true, givenName: 'userGivenName', familyName: 'userFamilyName',
     password: 'userPass'};
-  const unverifiedUser = { username: 'userUnveryfied', verified: false, givenName: 'userUnverifiedGivenName', familyName: 'userUnverifiedFamilyName', password: 'userUnverifiedPassword'}
+  const unverifiedUser = { username: 'userUnveryfied', verified: false, givenName: 'userUnverifiedGivenName', familyName: 'userUnverifiedFamilyName', password: 'userUnverifiedPassword'};
   const userToken = jwt.sign({username: user.username, verified: user.verified, givenName: user.givenName, familyName: user.familyName }, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
   const unverifiedUserToken = jwt.sign({username: unverifiedUser.username, verified: unverifiedUser.verified, givenName: unverifiedUser.givenName, familyName: unverifiedUser.familyName}, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
@@ -159,7 +159,7 @@ describe.only('token authorization', function() {
         // mocks tokenGetData to call tokenStub (mocking with rewire) (returns function to invert mocking)
         const unset = authorizeController.__set__('tokenGetData', tokenStub);
         await authorizeController.onlyLogged(req,res,()=>true);
-        should(req.auth).have.property('username')
+        should(req.auth).have.property('username');
         should(req.auth.username).equal(user.username);
         // rewerts change
         unset();

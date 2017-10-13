@@ -40,12 +40,9 @@ describe.only('/users/:username', function () {
       existentUser = dbData.users[0];
       loggedUser = dbData.users[1];
       unverifiedUser = dbData.users[2];
-      console.log('loggedUser', loggedUser);
-      console.log('unverifiedUser', unverifiedUser);
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
       loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
       const jwtunverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified || false, givenName:'', familyName:''};
-      console.log('payload', jwtunverifiedUserPayload);
       unverifiedUserToken = jwt.sign(jwtunverifiedUserPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
 
     });
@@ -64,7 +61,6 @@ describe.only('/users/:username', function () {
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         const user = response.body;
-        console.log('dzik', response.body);
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
         user.data.should.have.property('id', loggedUser.username);
@@ -102,14 +98,12 @@ describe.only('/users/:username', function () {
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         const user = response.body;
-        console.log('USER', user);
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
         user.data.should.have.property('id', existentUser.username);
         user.data.should.have.property('attributes');
 
         const fields = user.data.attributes;
-        console.log('fields', fields);
         fields.should.have.property('username', existentUser.username);
         fields.should.not.have.property('givenName');
       });

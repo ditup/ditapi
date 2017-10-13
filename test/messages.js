@@ -69,7 +69,6 @@ describe('/messages', function () {
     beforeEach(function () {
       [loggedUser, otherUser, unverifiedUser] = dbData.users;
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      console.log('logged',loggedUser);
       loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
       const jwtUnverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified, givenName:'', familyName:''};
       unverifiedUserToken = jwt.sign(jwtUnverifiedUserPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });

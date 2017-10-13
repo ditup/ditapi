@@ -16,10 +16,9 @@ async function setAuthData(req, res, next) {
     req.auth = {};
     const check = await tokenGetData(token);
     if (check.valid){
-      ////const auth = await models.user.authenticate(username, password);
       // full login
-      if(_.has(check,'data.verified') && check.data.verified)   
-        req.auth.logged = true
+      if(_.has(check,'data.verified') && check.data.verified)
+        req.auth.logged = true;
 
       // partial login (unverified)
       if (!check.data.verified)
