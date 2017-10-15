@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken'),
       _ = require('lodash'),
       path = require('path');
 
-const agent = require('./agent'),
+const agent = require('./agent')(),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 

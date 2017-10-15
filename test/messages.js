@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken'),
       _ = require('lodash'),
       path = require('path');
 
-const agent = require('./agent'),
+const agent = require('./agent')(),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       notificationJobs = require(path.resolve('./jobs/notifications')),

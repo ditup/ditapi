@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken'),
       path = require('path'),
       sinon = require('sinon');
 
-const agent = require('./agent'),
+const agent = require('./agent')(),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       mailer = require(path.resolve('./services/mailer')),

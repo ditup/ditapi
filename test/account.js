@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken'),
 
 
 const models = require(path.resolve('./models')),
-      agent = require('./agent'),
+      agent = require('./agent')(),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models'));

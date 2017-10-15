@@ -9,7 +9,7 @@ const crypto = require('crypto'),
       { promisify } = require('util'),
       sizeOf = promisify(require('image-size'));
 
-const agent = require('./agent'),
+const agent = require('./agent')(),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models')),

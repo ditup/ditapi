@@ -1,6 +1,6 @@
 'use strict';
 
-const agent = require('./agent');
+const agent = require('./agent')();
 
 describe('Security', () => {
   describe('Restrict http methods', () => {

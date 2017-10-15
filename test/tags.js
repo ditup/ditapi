@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken'),
       sinon = require('sinon'),
       path = require('path');
 
-const agent = require('./agent'),
+const agent = require('./agent')(),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       serializers = require(path.resolve('./serializers')),
