@@ -3,17 +3,15 @@
 // load module dependencies
 const express = require('express'),
       bodyParser = require('body-parser'),
-      passport = require('passport'),
       cors = require('cors'),
       helmet = require('helmet');
 
 // load internal dependencies
 const models = require('./models'),
       config = require('./config'),
-      authenticate = require('./controllers/authenticate'),
+      authorize = require('./controllers/authorize'),
       deserialize = require('./controllers/deserialize'),
       sanitizer = require('./controllers/validators/sanitizer');
-
 
 // configure the database for all the models
 models.connect(config.database);
@@ -36,9 +34,8 @@ app.use(deserialize);
 // here we sanitize all string properties in request body
 app.use(sanitizer);
 
-// authentication with passport
-app.use(passport.initialize());
-app.use(authenticate);
+// authentication
+app.use(authorize.setAuthData);
 
 // we set Content-Type header of all requests to JSON API
 app.use(function (req, res, next) {
@@ -60,6 +57,8 @@ app.use(function(req, res, next) {
   err.status = 404;
   next(err);
 });
+
+
 
 // error handlers
 /**

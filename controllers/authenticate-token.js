@@ -42,8 +42,17 @@ async function generateTokenBehavior(data) {
     }
     // checking login and password authorisation
     user = await models.user.authenticate(username, password);
+    console.log('yyyy', user);
     authenticated = user.authenticated;
     verified = user.verified;
+
+    // TODO kind of error to return
+    if(authenticated === undefined || verified === undefined) {
+      responseData.status = 401;
+      responseData.message = 'Invalid user object';
+      responseData.data = {};
+    return responseData;
+    }
 
     if(!authenticated) {
       responseData.status = 403;

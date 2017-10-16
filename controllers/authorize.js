@@ -16,6 +16,7 @@ async function setAuthData(req, res, next) {
     req.auth = {};
     const check = await tokenGetData(token);
     if (check.valid){
+      console.log('def val');
       // full login
       if(_.has(check,'data.verified') && check.data.verified)
         req.auth.logged = true;
@@ -49,16 +50,20 @@ async function setAuthData(req, res, next) {
 
 async function onlyLogged(req, res, next) {
   let token;
-  req.auth = {logged: false, username:{}, loggedUnverified: {}};
+  req.auth = {};
+  console.log(req.headers);
   if (_.has(req, 'headers.authorization')){
     token = req.headers.authorization;
+    console.log(token);
     const check = await tokenGetData(token);
-    if (check.valid && _.has(check, 'data.username')) {
-      req.auth.logged = true;
+    console.log('kk', check);
+    if (check.valid && _.has(check, 'data.username') && _.has(check, 'data.verified')) {
+      req.auth = {logged: false, username:{}, loggedUnverified: {}};
       req.auth.username = check.data.username;
       if( (check.data.verified === true || check.data.verified === false) ){
         req.auth.loggedUnverified = !check.data.verified;
-
+        // sets logged = true if verified 
+        req.auth.logged = check.data.verified;
         if (check.valid && check.data.verified) {
           return next();
         }
@@ -78,7 +83,7 @@ async function onlyLogged(req, res, next) {
 // otherwise returns error 403
 async function onlyLoggedMe(req, res, next) {
   let token;
-  req.auth = {username:{}, loggedUnverified: {}};
+  req.auth = {};
   req.logged = false;
   if (_.has(req, 'headers.authorization')){
     token = req.headers.authorization;
@@ -87,14 +92,15 @@ async function onlyLoggedMe(req, res, next) {
          _.has(check, 'data.username') &&
          _.has(req, 'params.username') &&
          check.data.username === req.params.username){
-      req.auth.logged = true;
-      if(_.has(check, 'data.username')) {
-        req.auth.username = check.data.username;
-      }
+      req.auth = {username:{}, loggedUnverified: {}, logged: false}
       if(_.has(check, 'data.verified')) {
+        if(_.has(check, 'data.username')) {
+          req.auth.username = check.data.username;
+        }
         req.auth.loggedUnverified = !check.data.verified;
+        req.auth.logged = check.data.verified;
+        return next();
       }
-      return next();
     }
   }
   return res.status(403).json({ errors: ['Not Authorized'] });
