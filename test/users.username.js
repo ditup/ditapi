@@ -27,7 +27,7 @@ const nonexistentUser = {
 };
 
 
-describe.only('/users/:username', function () {
+describe('/users/:username', function () {
   describe('GET', function () {
     beforeEach(async function () {
       const data = {

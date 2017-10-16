@@ -10,7 +10,7 @@ const userJobs = require(path.resolve('./jobs/users')),
       config = require(path.resolve('./config')),
       models = require(path.resolve('./models'));
 
-describe.only('User jobs', function () {
+describe('User jobs', function () {
   let sandbox;
 
   describe('Delete unverified users after a time period', function () {
