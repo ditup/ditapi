@@ -4,7 +4,7 @@ Hello {{to.username}},
 {{from.username}} sent you
 {{! show a number of messages, or 'a' if 1 }}
 {{#if isMore}}
-  {{messages.length}}
+  {{messages.html.length}}
   {{else}}
   a
 {{/if}}
@@ -15,8 +15,8 @@ new message{{#if isMore}}s{{/if}} on ditup.
 
 <blockquote>
   <ul>
-  {{#each messages}}
-    <li>{{{markdown this.body}}}</li>
+  {{#each messages.html}}
+    <li>{{{this}}}</li>
   {{/each}}
   </ul>
 </blockquote>
