@@ -39,7 +39,7 @@ npm run test:watch
 
 ## Documentation
 
-[API documentation](apidoc.apib) written with [API Blueprint](https://apiblueprint.org)
+[API documentation](https://ditup.github.io/apidoc) ([raw](apidoc.raml)) written with [RAML](https://raml.org)
 
 ## Development
 
