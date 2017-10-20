@@ -33,7 +33,10 @@ describe('/messages', function () {
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
 
-    sandbox.useFakeTimers(new Date('1999-09-09'), 'Date');
+    sandbox.useFakeTimers({
+      now: new Date('1999-09-09'),
+      toFake: ['Date']
+    });
   });
 
   afterEach(function () {

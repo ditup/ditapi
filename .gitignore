@@ -42,3 +42,6 @@ files/avatars/*
 
 # generated documentation
 apidoc.html
+
+# package-lock
+package-lock.json

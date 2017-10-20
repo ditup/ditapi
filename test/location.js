@@ -18,7 +18,9 @@ describe('Location of people, tags, ideas, projects, ...', function () {
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
 
-    sandbox.useFakeTimers('Date');
+    sandbox.useFakeTimers({
+      toFake: ['Date']
+    });
   });
 
   afterEach(function () {

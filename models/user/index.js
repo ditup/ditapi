@@ -6,7 +6,8 @@ const _ = require('lodash'),
 const Model = require(path.resolve('./models/model')),
       account = require('./account'),
       helpers = require('./helpers'),
-      schema = require('./schema');
+      schema = require('./schema'),
+      { resetPasswordCodeExpire } = require(path.resolve('./config'));
 
 class User extends Model {
 
@@ -74,7 +75,7 @@ class User extends Model {
         RETURN { username: NEW.username, email: NEW.email }
     `;
 
-    const params = { usernameOrEmail, hashedCode, codeExpire: Date.now() + 30 * 60 * 1000 };
+    const params = { usernameOrEmail, hashedCode, codeExpire: Date.now() + resetPasswordCodeExpire };
 
     const cursor = await this.db.query(query, params);
     const output = await cursor.all();

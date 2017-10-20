@@ -219,7 +219,7 @@ describe('/users/:username', function () {
 
         it('should sanitize XSS', async () => {
           const attributes = {
-           // test trimming
+            // test trimming
             givenName: ' given name',
             // test stripping tags to plaintext
             familyName: '<a href="https://example.com">family name</a>',

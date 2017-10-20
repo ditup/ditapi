@@ -1,21 +1,9 @@
 'use strict';
 
 module.exports = {
-  // arangodb database info
-  database: {
-    host: '127.0.0.1',
-    port: 8529,
-    database: 'ditup-dev',
-    username: 'ditup-dev'
-  },
   // the url where the API lives
   url: {
-    protocol: 'https',
-    host: 'ditup.org',
-    path: '/api',
-    get all() {
-      return `${this.protocol}://${this.host}${this.path}`;
-    }
+    all: 'https://ditup.org/api'
   },
   // the url where the app lives
   appUrl: {
@@ -33,7 +21,19 @@ module.exports = {
     min: 1000, // meters
     max: 2000 // meters
   },
-  // how long should unverified users exist before being deleted
+  // when can unverified users be deleted
   unverifiedUsersTTL: 24 * 3600 * 1000, // 1 day in milliseconds
-  emailVerificationCodeExpire: 2 * 3600 * 1000 // 2 hours in milliseconds
+  // when should email-verification code expire
+  emailVerificationCodeExpire: 2 * 3600 * 1000, // 2 hours in milliseconds
+  // when should reset-password code expire
+  resetPasswordCodeExpire: 30 * 60 * 1000, // 30 minutes in milliseconds
+  // options for CORS (Cross Origin Resource Sharing)
+  cors: {
+    // a whitelist of Origin domains
+    origin: [],
+    // allowed methods
+    methods: ['DELETE', 'GET', 'HEAD', 'PATCH', 'POST'],
+    // allowed headers
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }
 };

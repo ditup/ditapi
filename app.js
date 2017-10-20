@@ -4,6 +4,7 @@
 const express = require('express'),
       bodyParser = require('body-parser'),
       passport = require('passport'),
+      cors = require('cors'),
       helmet = require('helmet');
 
 // load internal dependencies
@@ -22,27 +23,7 @@ const app = express();
 app.set('env', process.env.NODE_ENV || 'development');
 
 // Cross Origin Resource Sharing
-app.use(function (req, res, next) {
-  // a list of allowed CORS Origins
-  // TODO move to a config
-  const originWhitelist = [
-    'http://localhost:4200',
-    'http://dev.ditup.org:4200',
-    'https://dev.ditup.org:4200',
-    'http://dev.ditup.org',
-    'https://dev.ditup.org'
-  ];
-
-  // check whether the request origin is present in whitelist
-  const origin = (originWhitelist.includes(req.headers.origin))
-    ? req.headers.origin
-    : 'none';
-
-  res.header('Access-Control-Allow-Origin', origin);
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE');
-  return next();
-});
+app.use(cors(config.cors));
 
 // Protect against some web vulnerabilities by setting some headers with Helmet
 // https://expressjs.com/en/advanced/best-practice-security.html
@@ -52,6 +33,7 @@ app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
 // here we deserialize JSON API requests
 app.use(deserialize);
+// here we sanitize all string properties in request body
 app.use(sanitizer);
 
 // authentication with passport

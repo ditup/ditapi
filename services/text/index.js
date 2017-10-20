@@ -188,7 +188,7 @@ function plainText(content, cleanWhitespace) {
   }
 
   // Replace HTML breaklines
-  content = content.replace(/<br\s*[\/]?>/gi, '\n');
+  content = content.replace(/<br\s*[/]?>/gi, '\n');
 
   /*
    * Sanitize HTML tags AND HTML entities out

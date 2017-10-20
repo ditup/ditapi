@@ -22,7 +22,7 @@ router.route('/')
 
 // get tags related to given tags
 router.route('/')
-.get(go.get.relatedToTags, authorize.onlyLogged, parse, validate.getTagsRelatedToTags, tagController.relatedToTags);
+  .get(go.get.relatedToTags, authorize.onlyLogged, parse, validate.getTagsRelatedToTags, tagController.relatedToTags);
 
 // get random tags
 router.route('/')

@@ -545,12 +545,12 @@ describe('/tags', function () {
     context('logged in', function () {
       it('[good data] should create a tag and respond with 201', async function () {
         await agent
-            .post('/tags')
-            .send(serializedNewTag)
-            .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
-            .expect(201)
-            .expect('Content-Type', /^application\/vnd\.api\+json/);
+          .post('/tags')
+          .send(serializedNewTag)
+          .set('Content-Type', 'application/vnd.api+json')
+          .auth(loggedUser.username, loggedUser.password)
+          .expect(201)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         // check that the newly created tag is there
         const tag = await models.tag.read(newTag.tagname);
