@@ -35,11 +35,11 @@ describe.only('generateTokenBehavior(req)', function() {
     describe('existent user data', function() {
       let req;
       beforeEach(function () {
-        // util for mock and stub    
+        // util for mock and stub
         req = httpMocks.createRequest({headers: {authorization: userBasicAuth}});
         sandbox.stub(models.user, 'exists').callsFake(() => true);
         sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:true,
-            verified: user.verified, givenName: user.givenName, familyName: user.familyName, username: user.username}));
+          verified: user.verified, givenName: user.givenName, familyName: user.familyName, username: user.username}));
       });
 
       it('should return 200 given correct username and password', async function() {
@@ -75,7 +75,7 @@ describe.only('generateTokenBehavior(req)', function() {
     describe('existent incorrect passowrd', function() {
       let req;
       beforeEach(function () {
-        // util for mock and stub    
+        // util for mock and stub
         req = httpMocks.createRequest({headers: {authorization: userBasicAuth}});
         sandbox.stub(models.user, 'exists').callsFake(() => true);
         sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:false, verified:false}));
@@ -97,7 +97,7 @@ describe.only('generateTokenBehavior(req)', function() {
     describe('unexistent user data', function() {
       let req;
       beforeEach(function () {
-        // util for mock and stub    
+        // util for mock and stub
         req = httpMocks.createRequest({headers: {authorization: userBasicAuth}});
         sandbox.stub(models.user, 'exists').callsFake(() => false);
         sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:false, verified:false}));
@@ -110,16 +110,16 @@ describe.only('generateTokenBehavior(req)', function() {
       it('should return empty data object given unexistent user data',async function() {
         const resp = await authController.generateTokenBehavior(req);
         should(resp.data).be.empty();
-      })
+      });
     });
     describe('unverified user data', function() {
       let req;
       beforeEach(function () {
-        // util for mock and stub    
+        // util for mock and stub
         req = httpMocks.createRequest({headers: {authorization: userBasicAuth}});
         sandbox.stub(models.user, 'exists').callsFake(() => true);
         sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:true,
-            verified: unverifiedUser.verified, givenName: unverifiedUser.givenName, familyName: unverifiedUser.familyName, username: unverifiedUser.username}));
+          verified: unverifiedUser.verified, givenName: unverifiedUser.givenName, familyName: unverifiedUser.familyName, username: unverifiedUser.username}));
       });
 
       it('should return 200 given correct username and password', async function() {
@@ -132,8 +132,6 @@ describe.only('generateTokenBehavior(req)', function() {
       });
       it('should return a correct jwt token',async function() {
         const resp = await authController.generateTokenBehavior(req);
-                console.log('jj', jwt.verify(resp.data.token, jwtConfig.jwtSecret));
-        console.log('jj', jwt.verify(unverifiedUserToken , jwtConfig.jwtSecret));
         should(resp.data.token).equal(unverifiedUserToken);
       });
       it('should return status in response data given valid data', async function() {
@@ -166,7 +164,7 @@ describe.only('generateTokenBehavior(req)', function() {
       const resp = await authController.generateTokenBehavior(req);
       should(resp.status).equal(401);
     });
-    it('should return 401 while authorization doesn;t return verified paraneter',)
+    it('should return 401 while authorization doesn;t return verified paraneter',);
   });
   describe('called functions throw errors', function() {
     let req;

@@ -47,7 +47,7 @@ describe.only('token authorization', function() {
           await tokenGetData(userToken);
           should(stubToken.callCount).equal(1);
         });
-         it('should check have property valid', async function(){
+        it('should check have property valid', async function(){
           const check = await tokenGetData(userToken);
           should(check).have.property('valid');
         });
@@ -218,10 +218,10 @@ describe.only('token authorization', function() {
         should(nextSpy.callCount).equal(0);
       });
       it('should req.auth be empty', async function() {
-         await authorizeController.onlyLogged(req,res,()=>true);
+        await authorizeController.onlyLogged(req,res,()=>true);
         should(req).have.property('auth');
         should(req.auth).be.empty();
-      });     
+      });
     });
     describe('sending request without authorization header', function(){
       let req, res, tokenStub, unset;
@@ -294,7 +294,6 @@ describe.only('token authorization', function() {
       it('should set req.auth to have {username: \'username\'', async function() {
         await authorizeController.onlyLogged(req,res,()=>true);
         should(req.auth).have.property('username');
-                console.log(req);
         should(req.auth.username).equal(unverifiedUser.username);
       });
       it('should set auth.loggedUnverified = true', async function() {
@@ -363,7 +362,7 @@ describe.only('token authorization', function() {
         should(req).have.property('auth');
         should(req.auth).have.property('logged');
         should(req.auth.logged).equal(true);
-      }); 
+      });
       it('should set req.auth to have {username: \'username\'', async function() {
         await authorizeController.onlyLoggedMe(req,res,()=>true);
         should(req).have.property('auth');
