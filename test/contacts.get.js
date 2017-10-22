@@ -27,6 +27,8 @@ describe('GET contacts', function () {
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
 
+    // stub jwtSecret
+    sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
     sandbox.useFakeTimers({
       now: new Date('2017-07-15'),
       toFake: ['Date']

@@ -5,6 +5,7 @@ process.env.NODE_ENV = 'test';
 const jwt = require('jsonwebtoken'),
       supertest = require('supertest'),
       should = require('should'),
+      sinon = require('sinon'),
       _ = require('lodash'),
       path = require('path');
 
@@ -29,6 +30,7 @@ const nonexistentUser = {
 
 describe('/users/:username', function () {
   describe('GET', function () {
+    let sandbox;
     beforeEach(async function () {
       const data = {
         users: 3, // how many users to make
@@ -36,6 +38,9 @@ describe('/users/:username', function () {
       };
       // create data in database
       dbData = await dbHandle.fill(data);
+      sandbox = sinon.sandbox.create();
+      // stub jwtSecret
+      sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
 
       existentUser = dbData.users[0];
       loggedUser = dbData.users[1];

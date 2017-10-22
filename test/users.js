@@ -29,6 +29,8 @@ describe('/users', function () {
     sandbox = sinon.sandbox.create();
     // check that the mail was sent
     sandbox.stub(mailer, 'general');
+    // stub jwtSecret
+    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
   });
 
   afterEach(function () {

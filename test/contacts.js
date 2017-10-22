@@ -35,6 +35,8 @@ describe('contacts', function () {
     });
 
     sandbox.stub(mailer, 'general');
+    // stub jwtSecret
+    sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
   });
 
   afterEach(function () {

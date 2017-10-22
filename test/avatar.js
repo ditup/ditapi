@@ -25,6 +25,8 @@ describe('/users/:username/avatar', function () {
   // creating sinon sandbox
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
+    // stub jwtSecret
+    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
   });
 
   afterEach(() => {

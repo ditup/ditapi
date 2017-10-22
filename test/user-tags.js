@@ -27,6 +27,8 @@ describe('Tags of user', function () {
       now: 1500000000,
       toFake: ['Date']
     });
+    // stub jwtSecret
+    sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
   });
 
   afterEach(function () {

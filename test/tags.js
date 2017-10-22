@@ -2,6 +2,7 @@
 
 const jwt = require('jsonwebtoken'),
       should = require('should'),
+      sinon = require('sinon'),
       supertest = require('supertest'),
       path = require('path');
 
@@ -18,14 +19,21 @@ const serialize = serializers.serialize;
 const agent = supertest.agent(app);
 
 let dbData,
-    loggedUser;
+    loggedUser,
+    sandbox;
 
 
 describe('/tags', function () {
 
+  beforeEach(function () {
+    sandbox = sinon.sandbox.create();
+    // stub jwtSecret
+    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
+  });
   // clear database after every test
   afterEach(async function () {
     await dbHandle.clear();
+    sandbox.restore();
   });
 
   describe('GET', function () {
@@ -646,12 +654,15 @@ describe('/tags/:tagname', function () {
     loggedUser = dbData.users[0];
     const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
     loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-
+    sandbox = sinon.sandbox.create();
+    // stub jwtSecret
+    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
   });
 
   // clear database after every test
   afterEach(async function () {
     await dbHandle.clear();
+    sandbox.restore();
   });
 
   describe('GET', function () {
@@ -713,11 +724,15 @@ describe('Deleting unused tags.', function () {
 
     // create data in database
     dbData = await dbHandle.fill(data);
+    sandbox = sinon.sandbox.create();
+    // stub jwtSecret
+    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
   });
 
   // clear database after every test
   afterEach(async function () {
     await dbHandle.clear();
+    sandbox.restore();
   });
 
   it('Unused tags should be deleted regularly with a cron-like job.', async function () {

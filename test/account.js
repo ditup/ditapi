@@ -25,6 +25,8 @@ describe('/account', function () {
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
 
+      // stub jwtSecret
+      sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
       sandbox.useFakeTimers({
         now: new Date('1999-09-09'),
         toFake: ['Date']
@@ -399,7 +401,8 @@ describe('/account', function () {
     let username, password, userToken;
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
-
+      // stub jwtSecret
+      sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
       sandbox.stub(mailer, 'general');
 
     });
@@ -624,6 +627,8 @@ describe('/account', function () {
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
 
+      // stub jwtSecret
+      sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
       sandbox.useFakeTimers({
         now: new Date('1999-09-09'),
         toFake: ['Date']
@@ -642,12 +647,16 @@ describe('/account', function () {
         password: 'asdfasdf',
         email: 'test@example.com'
       });
-
+      sandbox = sinon.sandbox.create();
+      sandbox.useFakeTimers(new Date('1999-09-09'), 'Date');
+      // stub jwtSecret
+      sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
       code = emailVerifyCode;
     });
 
     afterEach(async function () {
       await dbHandle.clear();
+      sandbox.restore();
     });
 
     context('valid data', function () {
@@ -825,9 +834,7 @@ describe('/account', function () {
         should(response.body).have.propertyByPath('errors', 0, 'detail')
           .eql('user is already verified');
       });
-
     });
-
   });
 
   describe('change password', function () {
@@ -845,7 +852,6 @@ describe('/account', function () {
       [user0] = dbData.users;
       const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
       user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-
     });
 
     afterEach(async function () {
@@ -1002,8 +1008,6 @@ describe('/account', function () {
           .expect(403);
       });
     });
-
-
   });
 
 });

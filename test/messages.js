@@ -37,6 +37,8 @@ describe('/messages', function () {
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
 
+    // stub jwtSecret
+    sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
     sandbox.useFakeTimers({
       now: new Date('1999-09-09'),
       toFake: ['Date']
@@ -541,17 +543,21 @@ describe('/messages', function () {
 });
 
 describe('/messages/:id', function () {
-  let dbData;
+  let dbData, sandbox;
 
   function beforeEachPopulate(data) {
     // put pre-data into database
     beforeEach(async function () {
       // create data in database
       dbData = await dbHandle.fill(data);
+      sandbox = sinon.sandbox.create();
+      // stub jwtSecret
+      sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
     });
 
     afterEach(async function () {
       await dbHandle.clear();
+      sandbox.restore();
     });
   }
 

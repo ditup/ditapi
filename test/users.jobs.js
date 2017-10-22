@@ -7,6 +7,7 @@ const path = require('path'),
 
 const userJobs = require(path.resolve('./jobs/users')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
+      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       config = require(path.resolve('./config')),
       models = require(path.resolve('./models'));
 
@@ -18,8 +19,13 @@ describe('User jobs', function () {
 
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
-      sandbox.useFakeTimers(1500000000000, 'Date');
+      sandbox.useFakeTimers({
+        now: 1500000000000,
+        toFake: ['Date']
+      });
       sandbox.stub(config, 'unverifiedUsersTTL').value(ttl);
+      // stub jwtSecret
+      sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
     });
 
     afterEach(function () {
