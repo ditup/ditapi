@@ -521,7 +521,7 @@ class User extends Model {
   }
 
   static async updatePassword(username, newPassword, disableCode) {
-    const newHashedPassword = await account.hash(newPassword);
+    const newHashedPassword = await helpers.checkAndHashPassword(newPassword, [username]);
 
     const query = (disableCode)
       ?

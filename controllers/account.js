@@ -32,7 +32,7 @@ exports.resetPassword = async function (req, res, next) {
   }
 };
 
-exports.updateResetPassword = async function (req, res) {
+exports.updateResetPassword = async function (req, res, next) {
   const { id: username, password, code } = req.body;
 
   try {
@@ -54,7 +54,11 @@ exports.updateResetPassword = async function (req, res) {
     });
   }
 
-  await models.user.updatePassword(username, password, true);
+  try {
+    await models.user.updatePassword(username, password, true);
+  } catch (e) {
+    return next(e);
+  }
 
   return res.status(204).end();
 };
@@ -104,7 +108,7 @@ exports.verifyEmail = async function (req, res, next) {
   }
 };
 
-exports.changePassword = async function (req, res) {
+exports.changePassword = async function (req, res, next) {
   // check that the old password is correct
 
   const username = req.body.id;
@@ -117,6 +121,10 @@ exports.changePassword = async function (req, res) {
   }
 
   // update the password
-  await models.user.updatePassword(username, password);
+  try {
+    await models.user.updatePassword(username, password);
+  } catch (e) {
+    return next(e);
+  }
   return res.status(204).end();
 };

@@ -94,7 +94,7 @@ function processData(data) {
   output.users = _.map(_.range(data.users), function (n) {
     const resp = {
       username: `user${n}`,
-      password: 'asdfasdf',
+      password: 'a*.0-1fiuyt',
       email: `user${n}@example.com`,
       tags: [],
       _messages: [],

@@ -1,11 +1,12 @@
 'use strict';
 
 const account = require('./account');
+const helpers = require('./helpers');
 const path = require('path');
 const config = require(path.resolve('./config'));
 
 module.exports = async function (user) {
-  const password = await account.hash(user.password);
+  const password = await helpers.checkAndHashPassword(user.password, [user.username]);
 
   return {
     username: user.username,
