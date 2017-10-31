@@ -984,7 +984,7 @@ describe('/account', function () {
               id: user0.username,
               attributes: {
                 oldPassword: user0.password,
-                password: 'guessable-password'
+                password: 'guesspassword'
               }
             }
           };

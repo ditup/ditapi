@@ -242,7 +242,7 @@ describe('/users', function () {
           type: 'users',
           attributes: {
             username: 'krui',
-            password: 'krui-lkia-i',
+            password: 'krui-lkia',
             email: 'test@example.com'
           }
         }

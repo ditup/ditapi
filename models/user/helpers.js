@@ -71,7 +71,7 @@ async function checkAndHashPassword(password, data = []) {
   // check password strength
   const { score } = passStrength(password, data);
 
-  if (score < 4) {
+  if (score < 3) {
     const err = new Error('password is too weak');
     err.status = 400;
     throw err;
