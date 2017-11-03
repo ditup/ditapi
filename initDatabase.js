@@ -1,26 +1,29 @@
 'use strict';
 
 module.exports = async function ({ db, dbUser, dbPasswd, dbName, collections }) {
-  // dropping database if exist
-  try {
-    await db.dropDatabase(dbName);
-  }
-  catch (err) {
-    console.log('creating new database'); // eslint-disable-line no-console
-  }
 
+  // we shouldn't use root to manage the database
   if (dbUser === 'root') throw new Error('Don\'t use root. Change your config.');
 
-  const cursor = await db.query('FOR u IN _users FILTER u.user == @username REMOVE u IN _users', { username: dbUser });
+  // drop database if exists
+  try {
+    await db.dropDatabase(dbName);
+    console.log('recreating database'); // eslint-disable-line no-console
+  }
+  catch (err) {
+    console.log('creating a new database'); // eslint-disable-line no-console
+  }
 
-  if (cursor.extra.stats.writesExecuted === 1) {
+  // delete user if exists
+  try {
+    await db._api.delete(`/user/${dbUser}`);
     console.log(`recreating user ${dbUser}`); // eslint-disable-line no-console
-  } else {
+  } catch (err) {
     console.log(`creating a new user ${dbUser}`); // eslint-disable-line no-console
   }
 
-  // (re)creating the database
-  await db.createDatabase(dbName, [{username: dbUser, passwd: dbPasswd}]);
+  // (re)create the database and user
+  await db.createDatabase(dbName, [{ username: dbUser, passwd: dbPasswd }]);
 
   db.useDatabase(dbName);
 

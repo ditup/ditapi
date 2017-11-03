@@ -9,7 +9,10 @@
     "test:watch": "NODE_ENV=test mocha ./test/ --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "init-db-standalone": "NODE_ENV=test node ./bin/init-db-standalone"
+    "init-db": "node ./bin/init-db.js",
+    "init-db:development": "NODE_ENV=development node ./bin/init-db.js",
+    "init-db:test": "NODE_ENV=test node ./bin/init-db.js",
+    "init-db-standalone": "NODE_ENV=test node ./bin/init-db-standalone.js"
   },
   "dependencies": {
     "ajv": "^5.2.3",
