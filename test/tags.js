@@ -8,11 +8,14 @@ const jwt = require('jsonwebtoken'),
 
 
 const app = require(path.resolve('./app')),
+      config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       models = require(path.resolve('./models')),
       serializers = require(path.resolve('./serializers')),
       tagJobs = require(path.resolve('./jobs/tags'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 const serialize = serializers.serialize;
 
@@ -27,8 +30,6 @@ describe('/tags', function () {
 
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
   });
   // clear database after every test
   afterEach(async function () {
@@ -51,7 +52,7 @@ describe('/tags', function () {
 
         [loggedUser] = dbData.users;
         const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
       });
 
@@ -163,7 +164,7 @@ describe('/tags', function () {
         it('respond with tags related to my tags', async function () {
           const [me] = dbData.users;
           const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtMePayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const resp = await agent
             .get('/tags?filter[relatedToMyTags]')
@@ -185,7 +186,7 @@ describe('/tags', function () {
         it('limit the output', async function () {
           const [me] = dbData.users;
           const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtMePayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const resp = await agent
             .get('/tags?filter[relatedToMyTags]&page[offset]=0&page[limit]=3')
@@ -200,7 +201,7 @@ describe('/tags', function () {
         it('offset the output', async function () {
           const [me] = dbData.users;
           const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtMePayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
 
           const resp = await agent
@@ -222,7 +223,7 @@ describe('/tags', function () {
           it('[too high query.page[limit]] 400', async function () {
             const [me] = dbData.users;
             const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtMePayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             await agent
               .get('/tags?filter[relatedToMyTags]&page[offset]=0&page[limit]=21')
@@ -266,7 +267,7 @@ describe('/tags', function () {
         it('[default] respond with an array of 1 random tag', async function () {
           const [me] = dbData.users;
           const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtMePayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const resp = await agent
             .get('/tags?filter[random]')
@@ -281,7 +282,7 @@ describe('/tags', function () {
         it('[pagination] respond array with {page[limit]} elements', async function () {
           const [me] = dbData.users;
           const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtMePayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const resp = await agent
             .get('/tags?filter[random]&page[offset]=0&page[limit]=7')
@@ -296,7 +297,7 @@ describe('/tags', function () {
         it('[too high page[limit]] 400', async function () {
           const [me] = dbData.users;
           const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtMePayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           await agent
             .get('/tags?filter[random]&page[offset]=0&page[limit]=21')
@@ -343,7 +344,7 @@ describe('/tags', function () {
         dbData = await dbHandle.fill(data);
         const [loggedUser] = dbData.users;
         const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
       });
 
@@ -562,7 +563,7 @@ describe('/tags', function () {
 
       [loggedUser] = dbData.users;
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     context('logged in', function () {
@@ -653,10 +654,8 @@ describe('/tags/:tagname', function () {
 
     loggedUser = dbData.users[0];
     const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-    loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+    loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     sandbox = sinon.sandbox.create();
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
   });
 
   // clear database after every test
@@ -725,8 +724,6 @@ describe('Deleting unused tags.', function () {
     // create data in database
     dbData = await dbHandle.fill(data);
     sandbox = sinon.sandbox.create();
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
   });
 
   // clear database after every test

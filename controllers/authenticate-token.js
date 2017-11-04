@@ -5,8 +5,11 @@ const _ =  require('lodash'),
       jwt = require('jsonwebtoken'),
       path = require('path');
 
-const jwtConfig = require(path.resolve('./config/secret/jwt-config')),
-      models = require(path.resolve('./models'));
+const models = require(path.resolve('./models')),
+      config = require(path.resolve('./config'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 async function generateTokenBehavior(data) {
   let username, password, token, authenticated, verified, user;
@@ -70,7 +73,7 @@ async function generateTokenBehavior(data) {
     // TODO - should throw any special error
     const {username, givenName, familyName} = user;
     const jwtPayload = { username, verified, givenName, familyName };
-    token = await jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+    token = await jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     responseData.status = 200;
     responseData.data = {token};
   } catch(e) {

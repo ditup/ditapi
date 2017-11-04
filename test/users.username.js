@@ -5,13 +5,15 @@ process.env.NODE_ENV = 'test';
 const jwt = require('jsonwebtoken'),
       supertest = require('supertest'),
       should = require('should'),
-      sinon = require('sinon'),
       _ = require('lodash'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
+      config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 const agent = supertest.agent(app);
 
@@ -30,7 +32,6 @@ const nonexistentUser = {
 
 describe('/users/:username', function () {
   describe('GET', function () {
-    let sandbox;
     beforeEach(async function () {
       const data = {
         users: 3, // how many users to make
@@ -38,17 +39,14 @@ describe('/users/:username', function () {
       };
       // create data in database
       dbData = await dbHandle.fill(data);
-      sandbox = sinon.sandbox.create();
-      // stub jwtSecret
-      sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
 
       existentUser = dbData.users[0];
       loggedUser = dbData.users[1];
       unverifiedUser = dbData.users[2];
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
       const jwtunverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified || false, givenName:'', familyName:''};
-      unverifiedUserToken = jwt.sign(jwtunverifiedUserPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      unverifiedUserToken = jwt.sign(jwtunverifiedUserPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
     });
 
@@ -155,7 +153,7 @@ describe('/users/:username', function () {
     });
   });
 
-  describe('PATCH', function () {
+  describe.only('PATCH', function () {
     let loggedUser, otherUser;
 
     beforeEach(async function () {
@@ -167,8 +165,8 @@ describe('/users/:username', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser, otherUser] = dbData.users;
-      const jwtPayload = {username: loggedUser.username};
-      loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -253,7 +251,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 

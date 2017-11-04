@@ -8,9 +8,13 @@ const jwt = require('jsonwebtoken'),
       supertest = require('supertest');
 
 const app = require(path.resolve('./app')),
-      dbHandle = require(path.resolve('./test/handleDatabase')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config'));
+      config = require(path.resolve('./config')),
+      dbHandle = require(path.resolve('./test/handleDatabase'));
+
 const agent = supertest.agent(app);
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 describe('/auth/token', function() {
   let dbData, verifiedUser, sandbox;
@@ -23,8 +27,6 @@ describe('/auth/token', function() {
     dbData = await dbHandle.fill(data);
     verifiedUser = dbData.users[0];
     sandbox = sinon.sandbox.create();
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
   });
 
   afterEach(async function () {
@@ -50,10 +52,10 @@ describe('/auth/token', function() {
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
         const token = response.body.meta.token;
-        const decodedData = await jwt.verify(token, jwtConfig.jwtSecret);
+        const decodedData = await jwt.verify(token, jwtSecret);
         decodedData.username.should.equal(verifiedUser.username);
         const difference = decodedData.exp - decodedData.iat;
-        difference.should.equal(jwtConfig.expirationTime/1000);
+        difference.should.equal(jwtExpirationTime);
       });
     });
 
@@ -139,11 +141,9 @@ describe('authorizing path for logged users', function() {
       [loggedUser] = dbData.users;
 
       sandbox = sinon.sandbox.create();
-      // stub jwtSecret
-      sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
 
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -193,7 +193,7 @@ describe('authorizing path for logged users', function() {
   });
 });
 describe('authorizing path for logged \'as me\'', function () {
-  let loggedUser, otherUser, dbData, userToken, sandbox;
+  let loggedUser, otherUser, dbData, userToken;
 
   beforeEach(async function () {
     const data = {
@@ -205,15 +205,11 @@ describe('authorizing path for logged \'as me\'', function () {
 
     [loggedUser, otherUser] = dbData.users;
     const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-    userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-    sandbox = sinon.sandbox.create();
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
+    userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
   });
 
   afterEach(async function () {
     await dbHandle.clear();
-    sandbox.restore();
   });
 
   context('logged in', function () {

@@ -4,7 +4,9 @@ const _ = require('lodash'),
       path = require('path'),
       jwt = require('jsonwebtoken');
 
-const jwtConfig = require(path.resolve('./config/secret/jwt-config'));
+const config = require(path.resolve('./config'));
+
+const jwtSecret = config.jwt.secret;
 
 const contacts = require('./contacts');
 
@@ -113,7 +115,7 @@ async function tokenGetData(token){
   let decoded;
   // checks if token is correct, if not jwt throws an error
   try {
-    decoded = await jwt.verify(token, jwtConfig.jwtSecret);
+    decoded = await jwt.verify(token, jwtSecret);
   } catch(e) {
     return { valid: false, data: {}};
   }

@@ -10,38 +10,31 @@ const crypto = require('crypto'),
       sizeOf = promisify(require('image-size'));
 
 const app = require(path.resolve('./app')),
+      config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       models = require(path.resolve('./models')),
       { clearTemporary } = require(path.resolve('./jobs/files'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 const agent = supertest.agent(app);
 
 describe('/users/:username/avatar', function () {
 
-  let dbData;
-  let sandbox;
-
-  // creating sinon sandbox
-  beforeEach(() => {
-    sandbox = sinon.sandbox.create();
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
-  });
-
-  afterEach(() => {
-    sandbox.restore();
-  });
+  let dbData, sandbox;
 
   function beforeEachPopulate(data) {
     // put pre-data into database
     beforeEach(async function () {
       // create data in database
       dbData = await dbHandle.fill(data);
+      sandbox = sinon.sandbox.create();
     });
 
     afterEach(async function () {
       await dbHandle.clear();
+      sandbox.restore();
     });
   }
 
@@ -73,7 +66,7 @@ describe('/users/:username/avatar', function () {
   beforeEach(function () {
     [loggedUser, otherUser] = dbData.users;
     const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-    loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+    loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
   });
 
   describe('GET', function () {

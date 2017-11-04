@@ -7,10 +7,12 @@ const jwt = require('jsonwebtoken'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       models = require(path.resolve('./models')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       config = require(path.resolve('./config/config'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 const agent = supertest.agent(app);
 
@@ -27,8 +29,6 @@ describe('Tags of user', function () {
       now: 1500000000,
       toFake: ['Date']
     });
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
   });
 
   afterEach(function () {
@@ -71,7 +71,7 @@ describe('Tags of user', function () {
       beforeEach(function () {
         [loggedUser, taggedUser] = dbData.users;
         const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
       });
 
       context('logged', () => {
@@ -565,7 +565,7 @@ describe('Tags of user', function () {
       beforeEach(function () {
         [loggedUser, taggedUser] = dbData.users;
         const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
       });
 
@@ -619,7 +619,7 @@ describe('Tags of user', function () {
             await agent
               .get(`/users/nonexistent/tags/${userTag.tag.tagname}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -628,7 +628,7 @@ describe('Tags of user', function () {
             await agent
               .get(`/users/${taggedUser.username}/tags/nonexistent`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -667,7 +667,7 @@ describe('Tags of user', function () {
             const { tag } = userTag;
             const [me] = dbData.users;
             const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
 
             const patchData = {
@@ -700,7 +700,7 @@ describe('Tags of user', function () {
             const [me] = dbData.users;
             const [userTag] = dbData.userTag;
             const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
 
             const patchData = {
@@ -736,7 +736,7 @@ describe('Tags of user', function () {
             const [other, me] = dbData.users;
             const [userTag] = dbData.userTag;
             const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
 
             const patchData = {
@@ -763,7 +763,7 @@ describe('Tags of user', function () {
             const [me, other] = dbData.users;
             const [userTag] = dbData.userTag;
             const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
 
             const patchData = {
@@ -794,7 +794,7 @@ describe('Tags of user', function () {
           it('[invalid story] 400 and msg', async function () {
             const { userTag: [userTag], users: [me] } = dbData;
             const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
 
             const patchData = {
@@ -823,7 +823,7 @@ describe('Tags of user', function () {
           it('[invalid relevance] 400 and msg', async function () {
             const { users: [me], userTag: [userTag]} = dbData;
             const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const patchData = {
               data: {
@@ -852,7 +852,7 @@ describe('Tags of user', function () {
           it('[invalid tagname] 400 and msg', async function () {
             const { users: [me] } = dbData;
             const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const invalidTagname = 'invalid.tagname';
 
@@ -885,7 +885,7 @@ describe('Tags of user', function () {
             // the user 1 has no tags
             const [, me] = dbData.users;
             const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const patchData = {
               data: {
@@ -912,7 +912,7 @@ describe('Tags of user', function () {
             // the user 1 has no tags
             const [me] = dbData.users;
             const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const patchData = {
               data: {
@@ -987,7 +987,7 @@ describe('Tags of user', function () {
         const user = userTag.user;
         const tag = userTag.tag;
         const jwtPayload = {username: user.username, verified: user.verified, givenName: '', familyName: ''};
-        const userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        const userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
 
         const response = await agent
@@ -1007,7 +1007,7 @@ describe('Tags of user', function () {
         const user = dbData.users[0];
         const tag = dbData.tags[0];
         const jwtPayload = {username: user.username, verified: user.verified, givenName: '', familyName: ''};
-        const userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        const userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         await agent
           .delete(`/users/${user.username}/tags/${tag.tagname}`)
@@ -1023,7 +1023,7 @@ describe('Tags of user', function () {
         const tag = userTag.tag;
         const otherUser = dbData.users[2];
         const jwtPayload = {username: otherUser.username, verified: otherUser.verified, givenName:'', familyName:''};
-        const otherUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        const otherUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
 
         await agent

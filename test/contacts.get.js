@@ -8,8 +8,11 @@ const  _ = require('lodash'),
       supertest = require('supertest');
 
 const app = require(path.resolve('./app')),
-      dbHandle = require(path.resolve('./test/handleDatabase')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config'));
+      config = require(path.resolve('./config')),
+      dbHandle = require(path.resolve('./test/handleDatabase'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
@@ -26,9 +29,6 @@ describe('GET contacts', function () {
 
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
-
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
     sandbox.useFakeTimers({
       now: new Date('2017-07-15'),
       toFake: ['Date']
@@ -64,7 +64,7 @@ describe('GET contacts', function () {
           it('see only confirmed contacts from username to others (trust & reference which user gave to others)', async function () {
             const [user0,, me] = dbData.users;
             const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const response = await agent
               .get(`/contacts?filter[from]=${user0.username}`)
@@ -111,7 +111,7 @@ describe('GET contacts', function () {
           it('see confirmed and unconfirmed contacts from me to others', async function () {
             const [me] = dbData.users;
             const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const response = await agent
               .get(`/contacts?filter[from]=${me.username}`)
@@ -159,7 +159,7 @@ describe('GET contacts', function () {
           it('see only confirmed contacts with trust & reference given to the user', async function () {
             const [user0,, me] = dbData.users;
             const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const response = await agent
               .get(`/contacts?filter[to]=${user0.username}`)
@@ -194,7 +194,7 @@ describe('GET contacts', function () {
           it('see confirmed & unconfirmed contacts with trust & reference given to me', async function () {
             const [me] = dbData.users;
             const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const response = await agent
               .get(`/contacts?filter[to]=${me.username}`)
@@ -286,7 +286,7 @@ describe('GET contacts', function () {
         it('return a contact between :from and :to including trust & reference', async function () {
           const [userA, userB, me] = dbData.users;
           const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const response = await agent
             .get(`/contacts/${userA.username}/${userB.username}`)
@@ -316,7 +316,7 @@ describe('GET contacts', function () {
         it('[confirmed contact (opposite direction)] return a contact between :from and :to including trust & reference', async function () {
           const [me, other] = dbData.users;
           const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const response = await agent
             .get(`/contacts/${other.username}/${me.username}`)
@@ -349,7 +349,7 @@ describe('GET contacts', function () {
         it('[requester] see the whole unconfirmed contact including message', async function () {
           const [, requester, requested] = dbData.users;
           const jwtPayload = {username: requester.username, verified: requester.verified, givenName:'', familyName:''};
-          const requesterUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const requesterUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const response = await agent
             .get(`/contacts/${requester.username}/${requested.username}`)
@@ -382,7 +382,7 @@ describe('GET contacts', function () {
         it('[requested] see contact with message, without trust & reference', async function () {
           const [, requester, requested] = dbData.users;
           const jwtPayload = {username: requested.username, verified: requested.verified, givenName:'', familyName:''};
-          const requestedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const requestedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const response = await agent
             .get(`/contacts/${requester.username}/${requested.username}`)
@@ -411,7 +411,7 @@ describe('GET contacts', function () {
         it('[other] 404', async function () {
           const [other, requester, requested] = dbData.users;
           const jwtPayload = {username: other.username, verified: other.verified, givenName:'', familyName:''};
-          const otherUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const otherUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           await agent
             .get(`/contacts/${requester.username}/${requested.username}`)
@@ -426,7 +426,7 @@ describe('GET contacts', function () {
         it('404', async function () {
           const [me,, other] = dbData.users;
           const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           await agent
             .get(`/contacts/${me.username}/${other.username}`)
@@ -441,7 +441,7 @@ describe('GET contacts', function () {
         it('400', async function () {
           const [me] = dbData.users;
           const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           await agent
             .get('/contacts/invalid..username/other..invalid..username')

@@ -9,11 +9,13 @@ const jwt = require('jsonwebtoken'),
       sinon = require('sinon');
 
 const app = require(path.resolve('./app')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       mailer = require(path.resolve('./services/mailer')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 const agent = supertest.agent(app);
 
@@ -29,8 +31,6 @@ describe('/users', function () {
     sandbox = sinon.sandbox.create();
     // check that the mail was sent
     sandbox.stub(mailer, 'general');
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
   });
 
   afterEach(function () {
@@ -294,7 +294,7 @@ describe('/users', function () {
 
         [loggedUser] = dbData.users;
         const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
       });
 
@@ -531,7 +531,7 @@ describe('/users', function () {
 
         [loggedUser] = dbData.users;
         const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
       });
 
@@ -712,7 +712,7 @@ describe('/users', function () {
 
         [loggedUser] = dbData.users;
         const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
       });
 
@@ -924,7 +924,7 @@ describe('/users', function () {
 
         [loggedUser] = dbData.users;
         const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
       });
 
       function testUser(jsonApiUser, { username }, tagCount) {

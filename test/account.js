@@ -10,8 +10,10 @@ const jwt = require('jsonwebtoken'),
 const app = require(path.resolve('./app')),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       models = require(path.resolve('./models'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
@@ -24,9 +26,6 @@ describe('/account', function () {
 
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
-
-      // stub jwtSecret
-      sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
       sandbox.useFakeTimers({
         now: new Date('1999-09-09'),
         toFake: ['Date']
@@ -401,8 +400,6 @@ describe('/account', function () {
     let username, password, userToken;
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
-      // stub jwtSecret
-      sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
       sandbox.stub(mailer, 'general');
 
     });
@@ -421,7 +418,7 @@ describe('/account', function () {
       dbData = await dbHandle.fill(data);
       [{ username, password }] = dbData.users;
       const jwtPayload = {username: username, verified:true, givenName:'', familyName:''};
-      userToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -627,8 +624,6 @@ describe('/account', function () {
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
 
-      // stub jwtSecret
-      sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
       sandbox.useFakeTimers({
         now: new Date('1999-09-09'),
         toFake: ['Date']
@@ -647,16 +642,12 @@ describe('/account', function () {
         password: 'asdfasdf',
         email: 'test@example.com'
       });
-      sandbox = sinon.sandbox.create();
-      sandbox.useFakeTimers(new Date('1999-09-09'), 'Date');
-      // stub jwtSecret
-      sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
+
       code = emailVerifyCode;
     });
 
     afterEach(async function () {
       await dbHandle.clear();
-      sandbox.restore();
     });
 
     context('valid data', function () {
@@ -678,7 +669,6 @@ describe('/account', function () {
           })
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
-
         // see whether the user's email is verified now
         const user = await models.user.read('test');
 
@@ -851,7 +841,7 @@ describe('/account', function () {
 
       [user0] = dbData.users;
       const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
-      user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -864,7 +854,7 @@ describe('/account', function () {
         it('should update the password', async function () {
           const [, user1] = dbData.users;
           const jwtPayload = {username: user1.username, verified:user1.verified, givenName:'', familyName:''};
-          const user1Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+          const user1Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const patchBody = {
             data: {

@@ -2,6 +2,7 @@
 
 module.exports = {
   database: {
-    password: ''
-  }
+    password: 'dzikudzik'
+  },
+  jwt: { secret: 'someL0ngandsecureSecretsTRing' }
 };

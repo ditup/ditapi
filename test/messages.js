@@ -8,11 +8,13 @@ const jwt = require('jsonwebtoken'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config')),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       notificationJobs = require(path.resolve('./jobs/notifications')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
@@ -37,8 +39,6 @@ describe('/messages', function () {
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
 
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
     sandbox.useFakeTimers({
       now: new Date('1999-09-09'),
       toFake: ['Date']
@@ -71,9 +71,9 @@ describe('/messages', function () {
     beforeEach(function () {
       [loggedUser, otherUser, unverifiedUser] = dbData.users;
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
       const jwtUnverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified, givenName:'', familyName:''};
-      unverifiedUserToken = jwt.sign(jwtUnverifiedUserPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      unverifiedUserToken = jwt.sign(jwtUnverifiedUserPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
     });
 
@@ -367,9 +367,9 @@ describe('/messages', function () {
     beforeEach(function () {
       [loggedUser, otherUser, thirdUser] = dbData.users;
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
       const otherUserPayload = {username: otherUser.username, verified:otherUser.verified, givenName:'', familyName:''};
-      otherUserToken = jwt.sign(otherUserPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      otherUserToken = jwt.sign(otherUserPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
     });
 
@@ -551,8 +551,6 @@ describe('/messages/:id', function () {
       // create data in database
       dbData = await dbHandle.fill(data);
       sandbox = sinon.sandbox.create();
-      // stub jwtSecret
-      sandbox.stub(jwtConfig, 'jwtSecret').returns('pass1234');
     });
 
     afterEach(async function () {
@@ -591,7 +589,7 @@ describe('/messages/:id', function () {
         const [,, msg2, msg3] = dbData.messages;
         const [, user1] = dbData.users;
         const jwtPayload = {username: user1.username, verified:user1.verified, givenName:'', familyName:''};
-        const user1Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        const user1Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg2.id;
 
@@ -628,7 +626,7 @@ describe('/messages/:id', function () {
         const [,, msg2] = dbData.messages;
         const [user0] = dbData.users;
         const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
-        const user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        const user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg2.id;
 
@@ -645,7 +643,7 @@ describe('/messages/:id', function () {
         const [, msg1, msg2] = dbData.messages;
         const [user0] = dbData.users;
         const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
-        const user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        const user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg1.id;
 
@@ -662,7 +660,7 @@ describe('/messages/:id', function () {
         const [, msg1] = dbData.messages;
         const [user0] = dbData.users;
         const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
-        const user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        const user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg1.id;
 
@@ -681,7 +679,7 @@ describe('/messages/:id', function () {
         const [, msg1] = dbData.messages;
         const [user0] = dbData.users;
         const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
-        const user0Token = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+        const user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg1.id;
 

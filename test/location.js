@@ -7,8 +7,11 @@ const jwt = require('jsonwebtoken'),
       supertest = require('supertest');
 
 const app = require(path.resolve('./app')),
-      dbHandle = require(path.resolve('./test/handleDatabase')),
-      jwtConfig = require(path.resolve('./config/secret/jwt-config'));
+      config = require(path.resolve('./config')),
+      dbHandle = require(path.resolve('./test/handleDatabase'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 const agent = supertest.agent(app);
 
@@ -20,8 +23,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
 
-    // stub jwtSecret
-    sandbox.stub(jwtConfig, 'jwtSecret').value('pass1234');
     sandbox.useFakeTimers({
       toFake: ['Date']
     });
@@ -45,7 +46,7 @@ describe('Location of people, tags, ideas, projects, ...', function () {
 
       [loggedUser, otherUser] = dbData.users;
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -317,7 +318,7 @@ describe('Location of people, tags, ideas, projects, ...', function () {
 
       [loggedUser] = dbData.users;
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
     });
 
