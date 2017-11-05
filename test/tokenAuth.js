@@ -59,13 +59,14 @@ describe('/auth/token', function() {
       });
     });
 
+
     context('request with incorrect password', function () {
-      it('should respond with 403', async function() {
+      it('should respond with 401', async function() {
         await agent
           .get('/auth/token')
           .set('Content-Type', 'application/vnd.api+json')
           .auth(verifiedUser.username, 'incorrectPassword')
-          .expect(403)
+          .expect(401)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
     });
@@ -236,7 +237,7 @@ describe('authorizing path for logged \'as me\'', function () {
     });
 
     context('the edited user is not the logged one', function () {
-      it('should error with 403 Not Authorized', async function () {
+      it('should error with 403', async function () {
         await agent
           .patch(`/users/${otherUser.username}`)
           .send({

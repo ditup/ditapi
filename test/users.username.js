@@ -153,7 +153,7 @@ describe('/users/:username', function () {
     });
   });
 
-  describe.only('PATCH', function () {
+  describe('PATCH', function () {
     let loggedUser, otherUser;
 
     beforeEach(async function () {

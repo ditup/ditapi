@@ -12,14 +12,15 @@ const jwtSecret = config.jwt.secret;
 const jwtExpirationTime = config.jwt.expirationTime;
 
 async function generateTokenBehavior(data) {
-  let username, password, token, authenticated, verified, user;
+  let token, authenticated, verified, user, username, password;
   const responseData = {};
+  //const { username: name, password: pass } = auth(data) 
   // checks for authorisation headers
   // and take username and password from header
+  console.log('GEN')
   if (_.has(data, 'headers.authorization')) {
     try{
-      username = auth(data).name;
-      password = auth(data).pass;
+      ({ name: username, pass: password } = auth(data))
     } catch(e) {
       // TODO error status
       responseData.status = 401;
@@ -57,7 +58,7 @@ async function generateTokenBehavior(data) {
     }
 
     if(!authenticated) {
-      responseData.status = 403;
+      responseData.status = 401;
       responseData.message = 'Authenticaton failed';
       responseData.data = {};
       return responseData;
