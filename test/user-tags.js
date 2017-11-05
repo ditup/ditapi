@@ -175,7 +175,7 @@ describe('Tags of user', function () {
             await agent
               .get('/users/invalid--username/tags')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });

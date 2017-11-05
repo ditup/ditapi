@@ -14,13 +14,12 @@ const jwtExpirationTime = config.jwt.expirationTime;
 async function generateTokenBehavior(data) {
   let token, authenticated, verified, user, username, password;
   const responseData = {};
-  //const { username: name, password: pass } = auth(data) 
+  // const { username: name, password: pass } = auth(data)
   // checks for authorisation headers
   // and take username and password from header
-  console.log('GEN')
   if (_.has(data, 'headers.authorization')) {
     try{
-      ({ name: username, pass: password } = auth(data))
+      ({ name: username, pass: password } = auth(data));
     } catch(e) {
       // TODO error status
       responseData.status = 401;

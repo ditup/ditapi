@@ -669,7 +669,7 @@ describe('/tags/:tagname', function () {
       const response = await agent
         .get(`/tags/${existentTag.tagname}`)
         .set('Content-Type', 'application/vnd.api+json')
-        .set('Authorization', 'Bearer ' + loggedUserToken + 'x')
+        .set('Authorization', 'Bearer ' + loggedUserToken)
         .expect(200)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -688,7 +688,7 @@ describe('/tags/:tagname', function () {
       const response = await agent
         .get('/tags/nonexistent-tag')
         .set('Content-Type', 'application/vnd.api+json')
-        .set('Authorization', 'Bearer ' + loggedUserToken + 'x')
+        .set('Authorization', 'Bearer ' + loggedUserToken)
         .expect(404)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -699,7 +699,7 @@ describe('/tags/:tagname', function () {
       const response = await agent
         .get('/tags/invalid_tag')
         .set('Content-Type', 'application/vnd.api+json')
-        .set('Authorization', 'Bearer ' + loggedUserToken + 'x')
+        .set('Authorization', 'Bearer ' + loggedUserToken)
         .expect(400)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
 

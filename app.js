@@ -9,7 +9,7 @@ const express = require('express'),
 // load internal dependencies
 const models = require('./models'),
       config = require('./config'),
-      authorize = require('./controllers/authorize'),
+      authenticate = require('./controllers/authenticate'),
       deserialize = require('./controllers/deserialize'),
       sanitizer = require('./controllers/validators/sanitizer');
 
@@ -29,19 +29,19 @@ app.use(helmet());
 
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 
+// we set Content-Type header of all requests to JSON API
+app.use(function (req, res, next) {
+  res.contentType('application/vnd.api+json');
+  return next();
+});
+
 // here we deserialize JSON API requests
 app.use(deserialize);
 // here we sanitize all string properties in request body
 app.use(sanitizer);
 
 // authentication
-app.use(authorize.setAuthData);
-
-// we set Content-Type header of all requests to JSON API
-app.use(function (req, res, next) {
-  res.contentType('application/vnd.api+json');
-  return next();
-});
+app.use(authenticate);
 
 // actual routes
 app.use('/users', require('./routes/users'));
