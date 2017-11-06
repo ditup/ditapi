@@ -1,5 +1,6 @@
 'use strict';
 
+exports.authenticate = require('./authenticate');
 exports.avatar = require('./avatar');
 exports.contacts = require('./contacts');
 exports.messages = require('./messages');

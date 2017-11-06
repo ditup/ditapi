@@ -1,39 +1,52 @@
-'use strict';
-
-const passport = require('passport'),
-      _ = require('lodash'),
+const _ = require('lodash'),
       path = require('path'),
-      models = require(path.resolve('./models')),
-      BasicStrategy = require('passport-http').BasicStrategy;
+      jwt = require('jsonwebtoken');
 
-passport.use(new BasicStrategy(
-  async function(username, password, done) {
-    const auth = await models.user.authenticate(username, password);
+const config = require(path.resolve('./config'));
 
-    // full login
-    const user = {
-      logged: Boolean(auth.authenticated && auth.verified)
-    };
+const jwtSecret = config.jwt.secret;
 
-    // partial login (unverified)
-    if (auth.authenticated && ! auth.verified)
-      user.loggedUnverified = true;
+// this middleware shouldn't be applied on some url paths
+// i.e. when using Basic Authorization for login with credentials
+const pathBlacklist = ['/auth/token', '/auth/token/'];
 
-    // additional information
-    if (auth.authenticated) {
-      _.assign(user, _.pick(auth, ['username', 'givenName', 'familyName']));
+async function setAuthData(req, res, next) {
+  if (pathBlacklist.includes(req.path)) {
+    return next();
+  }
+
+  // set the default req.auth (not logged)
+  req.auth = { logged: false, loggedUnverified: false, username: null };
+
+  if (_.has(req, 'headers.authorization')) {
+    const token = req.headers.authorization;
+    let username, verified;
+    try {
+      const data = await tokenGetData(token);
+      username = data.username;
+      verified = data.verified;
+    } catch (e) {
+      // TODO report some error message
+      return res.status(403).json({
+        errors: [{
+          status: '403',
+          title: 'Not Authorized'
+        }]
+      });
     }
 
-    return done(null, user);
+    req.auth.username = username;
+    req.auth.logged = (verified === true) ? true : false;
+    req.auth.loggedUnverified = (verified === false) ? true : false;
   }
-));
 
-module.exports = function (req, res, next) {
-  passport.authenticate('basic', { session: false },
-    function (err, user, info) {
-    // add user info to body
-      info; // satisfy eslint and maybe use it later
-      req.auth = user || { logged: false };
-      next();
-    })(req, res, next);
-};
+  next();
+}
+
+async function tokenGetData(token){
+  // cutting away 'Bearer ' part of token
+  token = token.split(' ').pop();
+  return await jwt.verify(token, jwtSecret);
+}
+
+module.exports = setAuthData;

@@ -1,6 +1,7 @@
 'use strict';
 
-const supertest = require('supertest'),
+const jwt = require('jsonwebtoken'),
+      supertest = require('supertest'),
       should = require('should'),
       sinon = require('sinon'),
       _ = require('lodash'),
@@ -11,6 +12,9 @@ const app = require(path.resolve('./app')),
       config = require(path.resolve('./config')),
       notificationJobs = require(path.resolve('./jobs/notifications')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
@@ -23,7 +27,9 @@ describe('/messages', function () {
       loggedUser,
       otherUser,
       unverifiedUser,
-      sandbox;
+      sandbox,
+      loggedUserToken,
+      unverifiedUserToken;
 
   const nonexistentUser = {
     username: 'nonexistent-user',
@@ -64,6 +70,11 @@ describe('/messages', function () {
 
     beforeEach(function () {
       [loggedUser, otherUser, unverifiedUser] = dbData.users;
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+      const jwtUnverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified, givenName:'', familyName:''};
+      unverifiedUserToken = jwt.sign(jwtUnverifiedUserPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
     });
 
     let validMessage;
@@ -97,7 +108,7 @@ describe('/messages', function () {
               .post('/messages')
               .send(validMessage)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(201)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -162,7 +173,7 @@ describe('/messages', function () {
               .post('/messages')
               .send(validMessage)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -180,7 +191,7 @@ describe('/messages', function () {
             .post('/messages')
             .send(validMessage)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -192,7 +203,7 @@ describe('/messages', function () {
             .post('/messages')
             .send(validMessage)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -204,7 +215,7 @@ describe('/messages', function () {
             .post('/messages')
             .send(validMessage)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -216,7 +227,7 @@ describe('/messages', function () {
             .post('/messages')
             .send(validMessage)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -228,7 +239,7 @@ describe('/messages', function () {
             .post('/messages')
             .send(validMessage)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -240,7 +251,7 @@ describe('/messages', function () {
             .post('/messages')
             .send(validMessage)
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -266,12 +277,13 @@ describe('/messages', function () {
 
     context('logged unverified', function () {
 
+      //  TODO where is verification checked
       it('respond with 403', async () => {
         await agent
           .post('/messages')
           .send(validMessage)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(unverifiedUser.username, unverifiedUser.password)
+          .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -340,7 +352,7 @@ describe('/messages', function () {
   // fetch threads
   // fetch messages in a single thread
   describe('GET', function () {
-    let thirdUser;
+    let thirdUser, loggedUserToken, otherUserToken;
 
     beforeEachPopulate({
       users: 5, // how many users to make
@@ -354,6 +366,11 @@ describe('/messages', function () {
 
     beforeEach(function () {
       [loggedUser, otherUser, thirdUser] = dbData.users;
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+      const otherUserPayload = {username: otherUser.username, verified:otherUser.verified, givenName:'', familyName:''};
+      otherUserToken = jwt.sign(otherUserPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
     });
 
     context('logged in', function () {
@@ -363,7 +380,7 @@ describe('/messages', function () {
           const response = await agent
             .get('/messages?filter[count]')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -378,7 +395,7 @@ describe('/messages', function () {
           const response = await agent
             .get('/messages?filter[threads]')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(otherUser.username, otherUser.password)
+            .set('Authorization', 'Bearer ' + otherUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -421,7 +438,7 @@ describe('/messages', function () {
           const response = await agent
             .get('/messages?filter[threads]')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -443,7 +460,7 @@ describe('/messages', function () {
             const response = await agent
               .get(`/messages?filter[with]=${otherUser.username}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -465,7 +482,7 @@ describe('/messages', function () {
             const response = await agent
               .get(`/messages?filter[with]=${thirdUser.username}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -482,7 +499,7 @@ describe('/messages', function () {
             const response = await agent
               .get(`/messages?filter[with]=${otherUser.username}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -503,7 +520,7 @@ describe('/messages', function () {
             await agent
               .get(`/messages?filter[with]=${nonexistentUser.username}`)
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -526,17 +543,19 @@ describe('/messages', function () {
 });
 
 describe('/messages/:id', function () {
-  let dbData;
+  let dbData, sandbox;
 
   function beforeEachPopulate(data) {
     // put pre-data into database
     beforeEach(async function () {
       // create data in database
       dbData = await dbHandle.fill(data);
+      sandbox = sinon.sandbox.create();
     });
 
     afterEach(async function () {
       await dbHandle.clear();
+      sandbox.restore();
     });
   }
 
@@ -569,13 +588,15 @@ describe('/messages/:id', function () {
       it('update message.read and all the older received messages of the thread to true if i\'m the receiver', async function () {
         const [,, msg2, msg3] = dbData.messages;
         const [, user1] = dbData.users;
+        const jwtPayload = {username: user1.username, verified:user1.verified, givenName:'', familyName:''};
+        const user1Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg2.id;
 
         const resp = await agent
           .patch(`/messages/${msg2.id}`)
           .send(msgData)
-          .auth(user1.username, user1.password)
+          .set('Authorization', 'Bearer ' + user1Token)
           .set('Content-Type', 'application/vnd.api+json')
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -589,7 +610,7 @@ describe('/messages/:id', function () {
         const resp2 = await agent
           .patch(`/messages/${msg3.id}`)
           .send(msgData)
-          .auth(user1.username, user1.password)
+          .set('Authorization', 'Bearer ' + user1Token)
           .set('Content-Type', 'application/vnd.api+json')
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -604,13 +625,15 @@ describe('/messages/:id', function () {
       it('if i\'m not a receiver, error 403', async function () {
         const [,, msg2] = dbData.messages;
         const [user0] = dbData.users;
+        const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
+        const user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg2.id;
 
         await agent
           .patch(`/messages/${msg2.id}`)
           .send(msgData)
-          .auth(user0.username, user0.password)
+          .set('Authorization', 'Bearer ' + user0Token)
           .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -619,13 +642,15 @@ describe('/messages/:id', function () {
       it('if id in url doesn\'t match id in body, error 400', async function () {
         const [, msg1, msg2] = dbData.messages;
         const [user0] = dbData.users;
+        const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
+        const user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg1.id;
 
         await agent
           .patch(`/messages/${msg2.id}`)
           .send(msgData)
-          .auth(user0.username, user0.password)
+          .set('Authorization', 'Bearer ' + user0Token)
           .set('Content-Type', 'application/vnd.api+json')
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -634,6 +659,8 @@ describe('/messages/:id', function () {
       it('if other attributes than read are present, error 400', async function () {
         const [, msg1] = dbData.messages;
         const [user0] = dbData.users;
+        const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
+        const user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg1.id;
 
@@ -642,7 +669,7 @@ describe('/messages/:id', function () {
         await agent
           .patch(`/messages/${msg1.id}`)
           .send(msgData)
-          .auth(user0.username, user0.password)
+          .set('Authorization', 'Bearer ' + user0Token)
           .set('Content-Type', 'application/vnd.api+json')
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -651,6 +678,8 @@ describe('/messages/:id', function () {
       it('if read is not equal true, error with 400', async function () {
         const [, msg1] = dbData.messages;
         const [user0] = dbData.users;
+        const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
+        const user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
         msgData.data.id = msg1.id;
 
@@ -659,7 +688,7 @@ describe('/messages/:id', function () {
         await agent
           .patch(`/messages/${msg1.id}`)
           .send(msgData)
-          .auth(user0.username, user0.password)
+          .set('Authorization', 'Bearer ' + user0Token)
           .set('Content-Type', 'application/vnd.api+json')
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);

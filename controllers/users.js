@@ -39,7 +39,7 @@ exports.getUsersWithLocation = async function (req, res, next) {
 
     const serializedUsers = serialize.user(users);
 
-    res.status(200).json(serializedUsers);
+    return res.status(200).json(serializedUsers);
   } catch (e) {
     // unhandled exceptions
     return next(e);

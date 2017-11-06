@@ -6,8 +6,8 @@ const path = require('path'),
 
 
 const userJobs = require(path.resolve('./jobs/users')),
-      dbHandle = require(path.resolve('./test/handleDatabase')),
       config = require(path.resolve('./config')),
+      dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models'));
 
 describe('User jobs', function () {
@@ -18,7 +18,10 @@ describe('User jobs', function () {
 
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
-      sandbox.useFakeTimers(1500000000000, 'Date');
+      sandbox.useFakeTimers({
+        now: 1500000000000,
+        toFake: ['Date']
+      });
       sandbox.stub(config, 'unverifiedUsersTTL').value(ttl);
     });
 

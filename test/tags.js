@@ -1,33 +1,45 @@
 'use strict';
 
-const supertest = require('supertest'),
+const jwt = require('jsonwebtoken'),
       should = require('should'),
+      sinon = require('sinon'),
+      supertest = require('supertest'),
       path = require('path');
 
+
 const app = require(path.resolve('./app')),
-      serializers = require(path.resolve('./serializers')),
+      config = require(path.resolve('./config')),
+      dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models')),
-      tagJobs = require(path.resolve('./jobs/tags')),
-      dbHandle = require(path.resolve('./test/handleDatabase'));
+      serializers = require(path.resolve('./serializers')),
+      tagJobs = require(path.resolve('./jobs/tags'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 const serialize = serializers.serialize;
 
 const agent = supertest.agent(app);
 
 let dbData,
-    loggedUser;
+    loggedUser,
+    sandbox;
 
 
 describe('/tags', function () {
 
+  beforeEach(function () {
+    sandbox = sinon.sandbox.create();
+  });
   // clear database after every test
   afterEach(async function () {
     await dbHandle.clear();
+    sandbox.restore();
   });
 
   describe('GET', function () {
     describe('/tags?filter[tagname][like]=string', function () {
-
+      let loggedUserToken;
       // seed the database with users and some named tags to do filtering on
       beforeEach(async function () {
         const data = {
@@ -39,13 +51,16 @@ describe('/tags', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
+        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
       });
 
       it('match tags with similar tagnames', async function () {
         const response = await agent
           .get('/tags?filter[tagname][like]=named-tag')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -62,7 +77,7 @@ describe('/tags', function () {
         const response = await agent
           .get('/tags?filter[tagname][like]=tag')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -77,7 +92,7 @@ describe('/tags', function () {
         const response = await agent
           .get('/tags?filter[tagname][like]=tag&page[offset]=0&page[limit]=3')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -89,7 +104,7 @@ describe('/tags', function () {
         await agent
           .get('/tags?filter[tagname][like]=tag&page[offset]=0&page[limit]=21')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -98,7 +113,7 @@ describe('/tags', function () {
         await agent
           .get('/tags?filter[tagname][like]=tag&page[offset]=2&page[limit]=5')
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -148,11 +163,13 @@ describe('/tags', function () {
       context('logged', function () {
         it('respond with tags related to my tags', async function () {
           const [me] = dbData.users;
+          const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const resp = await agent
             .get('/tags?filter[relatedToMyTags]')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -168,11 +185,13 @@ describe('/tags', function () {
 
         it('limit the output', async function () {
           const [me] = dbData.users;
+          const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const resp = await agent
             .get('/tags?filter[relatedToMyTags]&page[offset]=0&page[limit]=3')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -181,11 +200,14 @@ describe('/tags', function () {
 
         it('offset the output', async function () {
           const [me] = dbData.users;
+          const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
 
           const resp = await agent
             .get('/tags?filter[relatedToMyTags]&page[offset]=2&page[limit]=10')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -200,11 +222,13 @@ describe('/tags', function () {
         context('invalid', function () {
           it('[too high query.page[limit]] 400', async function () {
             const [me] = dbData.users;
+            const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
+            const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             await agent
               .get('/tags?filter[relatedToMyTags]&page[offset]=0&page[limit]=21')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(me.username, me.password)
+              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -242,11 +266,13 @@ describe('/tags', function () {
       context('logged', function () {
         it('[default] respond with an array of 1 random tag', async function () {
           const [me] = dbData.users;
+          const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const resp = await agent
             .get('/tags?filter[random]')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -255,11 +281,13 @@ describe('/tags', function () {
 
         it('[pagination] respond array with {page[limit]} elements', async function () {
           const [me] = dbData.users;
+          const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const resp = await agent
             .get('/tags?filter[random]&page[offset]=0&page[limit]=7')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -268,11 +296,13 @@ describe('/tags', function () {
 
         it('[too high page[limit]] 400', async function () {
           const [me] = dbData.users;
+          const jwtMePayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
+          const meToken = jwt.sign(jwtMePayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           await agent
             .get('/tags?filter[random]&page[offset]=0&page[limit]=21')
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(me.username, me.password)
+            .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -290,7 +320,7 @@ describe('/tags', function () {
     });
 
     describe('/tags?filter[relatedToTags]=tag1,tag2,tag3', function () {
-
+      let loggedUserToken;
       beforeEach(async function () {
         const data = {
           users: 4, // how many users to make
@@ -312,6 +342,10 @@ describe('/tags', function () {
 
         // create data in database
         dbData = await dbHandle.fill(data);
+        const [loggedUser] = dbData.users;
+        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
       });
 
       // clear database after every test
@@ -327,12 +361,11 @@ describe('/tags', function () {
           }
 
           it('[example 1] respond with tags related to the list of tags', async function () {
-            const [loggedUser] = dbData.users;
 
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -345,11 +378,10 @@ describe('/tags', function () {
           });
 
           it('[example 2] respond with tags related to the list of tags', async function () {
-            const [loggedUser] = dbData.users;
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -362,11 +394,10 @@ describe('/tags', function () {
           });
 
           it('[example 3] respond with tags related to the list of tags', async function () {
-            const [loggedUser] = dbData.users;
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag1')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -380,11 +411,10 @@ describe('/tags', function () {
           });
 
           it('[example 4] respond with tags related to the list of tags', async function() {
-            const [loggedUser] = dbData.users;
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag3')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -393,11 +423,10 @@ describe('/tags', function () {
           });
 
           it('[example 5] respond with tags related to the list of tags', async function() {
-            const [loggedUser] = dbData.users;
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1,tag2,tag3,tag4,tag5,tag6')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -406,11 +435,10 @@ describe('/tags', function () {
           });
 
           it('[example 6] respond with tags related to the list of tags', async function() {
-            const [loggedUser] = dbData.users;
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1,tag2,tag3,tag4,tag5,tag6')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -419,11 +447,10 @@ describe('/tags', function () {
           });
 
           it('[example 7] respond with tags related to the list of tags', async function() {
-            const [loggedUser] = dbData.users;
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag3,tag4,tag4')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -437,11 +464,10 @@ describe('/tags', function () {
           });
 
           it('[offset and limit] respond with tags related to the list of tags', async function () {
-            const [loggedUser] = dbData.users;
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag1&page[limit]=2&page[offset]=1')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -459,11 +485,10 @@ describe('/tags', function () {
           }
 
           it('[invalid tagname(s)] error 400', async function() {
-            const [loggedUser] = dbData.users;
             await agent
               .get('/tags?filter[relatedToTags]=ta-*-+A,tag4')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -472,12 +497,10 @@ describe('/tags', function () {
 
           // ignore nonexistent tagname(s) in request
           it('[nonexistent tagname(s)]: ignore', async function () {
-            const [loggedUser] = dbData.users;
-
             const resp = await agent
               .get('/tags?filter[relatedToTags]=tag0,tag1,tag9')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -490,11 +513,10 @@ describe('/tags', function () {
           });
 
           it('[too high page[limit]] 400', async function () {
-            const [loggedUser] = dbData.users;
             await agent
               .get('/tags?filter[relatedToTags]=tag1&page[limit]=21&page[offset]=0')
               .set('Content-Type', 'application/vnd.api+json')
-              .auth(loggedUser.username, loggedUser.password)
+              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -528,7 +550,7 @@ describe('/tags', function () {
     };
 
     const serializedInvalidTagname = serialize.newTag(invalidTagname);
-
+    let loggedUserToken;
     // put pre-data into database
     beforeEach(async function () {
       const data = {
@@ -540,6 +562,8 @@ describe('/tags', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser] = dbData.users;
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     context('logged in', function () {
@@ -548,7 +572,7 @@ describe('/tags', function () {
           .post('/tags')
           .send(serializedNewTag)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(201)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -564,7 +588,7 @@ describe('/tags', function () {
           .post('/tags')
           .send(serializedInvalidTagname)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -574,7 +598,7 @@ describe('/tags', function () {
           .post('/tags')
           .send({ data: { type: 'tags', attributes: { tagname: 'a' } } })
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -584,7 +608,7 @@ describe('/tags', function () {
           .post('/tags')
           .send({ data: { type: 'tags', attributes: { tagname: 'a'.repeat(65) } } })
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -594,19 +618,19 @@ describe('/tags', function () {
           .post('/tags')
           .send(serialize.newTag(dbData.tags[0]))
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(409)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
     });
 
     context('not logged in', function () {
-      it('should say 403 Forbidden', async function () {
+      it('incorrect token: should say 403 Forbidden', async function () {
         await agent
           .post('/tags')
           .send(serializedNewTag)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, `${loggedUser.password}a`)
+          .set('Authorization', 'Bearer ' + loggedUserToken + 'x')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -616,7 +640,7 @@ describe('/tags', function () {
 
 describe('/tags/:tagname', function () {
   let existentTag;
-
+  let loggedUserToken;
   // put pre-data into database
   beforeEach(async function () {
     const data = {
@@ -629,11 +653,15 @@ describe('/tags/:tagname', function () {
     [existentTag] = dbData.tags;
 
     loggedUser = dbData.users[0];
+    const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+    loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+    sandbox = sinon.sandbox.create();
   });
 
   // clear database after every test
   afterEach(async function () {
     await dbHandle.clear();
+    sandbox.restore();
   });
 
   describe('GET', function () {
@@ -641,7 +669,7 @@ describe('/tags/:tagname', function () {
       const response = await agent
         .get(`/tags/${existentTag.tagname}`)
         .set('Content-Type', 'application/vnd.api+json')
-        .auth(loggedUser.username, loggedUser.password)
+        .set('Authorization', 'Bearer ' + loggedUserToken)
         .expect(200)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -660,7 +688,7 @@ describe('/tags/:tagname', function () {
       const response = await agent
         .get('/tags/nonexistent-tag')
         .set('Content-Type', 'application/vnd.api+json')
-        .auth(loggedUser.username, loggedUser.password)
+        .set('Authorization', 'Bearer ' + loggedUserToken)
         .expect(404)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -671,7 +699,7 @@ describe('/tags/:tagname', function () {
       const response = await agent
         .get('/tags/invalid_tag')
         .set('Content-Type', 'application/vnd.api+json')
-        .auth(loggedUser.username, loggedUser.password)
+        .set('Authorization', 'Bearer ' + loggedUserToken)
         .expect(400)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -695,11 +723,13 @@ describe('Deleting unused tags.', function () {
 
     // create data in database
     dbData = await dbHandle.fill(data);
+    sandbox = sinon.sandbox.create();
   });
 
   // clear database after every test
   afterEach(async function () {
     await dbHandle.clear();
+    sandbox.restore();
   });
 
   it('Unused tags should be deleted regularly with a cron-like job.', async function () {

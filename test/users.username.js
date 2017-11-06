@@ -2,20 +2,27 @@
 
 process.env.NODE_ENV = 'test';
 
-const supertest = require('supertest'),
+const jwt = require('jsonwebtoken'),
+      supertest = require('supertest'),
       should = require('should'),
       _ = require('lodash'),
       path = require('path');
 
 const app = require(path.resolve('./app')),
+      config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
+
+const jwtSecret = config.jwt.secret;
+const jwtExpirationTime = config.jwt.expirationTime;
 
 const agent = supertest.agent(app);
 
 let dbData,
     existentUser,
     loggedUser,
-    unverifiedUser;
+    unverifiedUser,
+    loggedUserToken,
+    unverifiedUserToken;
 
 const nonexistentUser = {
   username: 'nonexistent-user',
@@ -36,6 +43,11 @@ describe('/users/:username', function () {
       existentUser = dbData.users[0];
       loggedUser = dbData.users[1];
       unverifiedUser = dbData.users[2];
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+      const jwtunverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified || false, givenName:'', familyName:''};
+      unverifiedUserToken = jwt.sign(jwtunverifiedUserPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
     });
 
     afterEach(async function () {
@@ -47,7 +59,7 @@ describe('/users/:username', function () {
         const response = await agent
           .get(`/users/${existentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -84,7 +96,7 @@ describe('/users/:username', function () {
         const response = await agent
           .get(`/users/${existentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(unverifiedUser.username, unverifiedUser.password)
+          .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -103,7 +115,7 @@ describe('/users/:username', function () {
         const response = await agent
           .get(`/users/${unverifiedUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(unverifiedUser.username, unverifiedUser.password)
+          .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -124,7 +136,7 @@ describe('/users/:username', function () {
         await agent
           .get(`/users/${nonexistentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
-          .auth(loggedUser.username, loggedUser.password)
+          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(404)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -153,6 +165,8 @@ describe('/users/:username', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser, otherUser] = dbData.users;
+      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
+      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -176,7 +190,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -204,7 +218,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -237,7 +251,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -266,7 +280,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -289,7 +303,7 @@ describe('/users/:username', function () {
               }
             })
             .set('Content-Type', 'application/vnd.api+json')
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -306,7 +320,7 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
@@ -326,7 +340,7 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .auth(loggedUser.username, loggedUser.password)
+            .set('Authorization', 'Bearer ' + loggedUserToken)
             .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);

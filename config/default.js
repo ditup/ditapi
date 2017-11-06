@@ -35,5 +35,6 @@ module.exports = {
     methods: ['DELETE', 'GET', 'HEAD', 'PATCH', 'POST'],
     // allowed headers
     allowedHeaders: ['Content-Type', 'Authorization']
-  }
+  },
+  jwt: { expirationTime: 3000 }
 };
