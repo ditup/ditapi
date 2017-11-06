@@ -992,7 +992,7 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .auth(user0.username, user0.password)
+            .set('Authorization', 'Bearer ' + user0Token)
             .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
