@@ -1,33 +1,51 @@
 'use strict';
 
-const path = require('path');
 const httpMocks = require('node-mocks-http'),
       jwt = require('jsonwebtoken'),
+      _ = require('lodash'),
+      path = require('path'),
       should = require('should'),
       sinon = require('sinon');
 
-
 const models = require(path.resolve('./models'));
 const authController = require(path.resolve('./controllers/authenticate-token'));
-const jwtConfig = require(path.resolve('./config/secret/jwt-config'));
+const jwtConfig = require(path.resolve('./config')).jwt;
 
+describe('generateTokenBehavior(req)', function() {
+  let sandbox,
+      userToken,
+      unverifiedUserToken;
 
+  const user = {
+    username: 'user',
+    verified: true,
+    givenName: 'givenNameUser',
+    familyName: 'familyNameUser',
+    password: 'userPass'
+  };
 
-describe.only('generateTokenBehavior(req)', function() {
-  let sandbox;
-  const user = { username: 'user', verified: true, givenName: 'givenNameUser', familyName: 'familyNameUser',
-    password: 'userPass'};
-  this.clock = sinon.useFakeTimers();
-  const userToken = jwt.sign({username: user.username, verified: user.verified, givenName: user.givenName, familyName: user.familyName}, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-  const unverifiedUser = { username: 'user', verified: false, givenName: 'givenNameUser', familyName: 'familyNameUser',
-    password: 'userPass'};
-  const unverifiedUserToken = jwt.sign({username: unverifiedUser.username, verified: unverifiedUser.verified, givenName: unverifiedUser.givenName, familyName: unverifiedUser.familyName}, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-  const forAuthBuffer = new Buffer(user.username+':'+user.password).toString('base64');
-  const userBasicAuth = 'Basic ' + forAuthBuffer;
+  const unverifiedUser = {
+    username: 'user',
+    verified: false,
+    givenName: 'givenNameUser',
+    familyName: 'familyNameUser',
+    password: 'userPass'
+  };
+
+  const payloadFields = ['username', 'verified', 'givenName', 'familyName'];
+
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
+    sandbox.useFakeTimers();
   });
 
+  beforeEach(() => {
+    userToken = jwt.sign(_.pick(user, payloadFields), jwtConfig.secret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
+    unverifiedUserToken = jwt.sign(_.pick(unverifiedUser, payloadFields), jwtConfig.secret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+  });
+  const forAuthBuffer = new Buffer(user.username+':'+user.password).toString('base64');
+  const userBasicAuth = 'Basic ' + forAuthBuffer;
   afterEach(function () {
     sandbox.restore();
   });
@@ -51,7 +69,6 @@ describe.only('generateTokenBehavior(req)', function() {
         should(resp.data).have.property('token');
       });
       it('should return a correct jwt token',async function() {
-        this.clock = sinon.useFakeTimers();
         const resp = await authController.generateTokenBehavior(req);
         should(resp.data.token).equal(userToken);
       });
@@ -81,9 +98,9 @@ describe.only('generateTokenBehavior(req)', function() {
         sandbox.stub(models.user, 'authenticate').callsFake(() => ({authenticated:false, verified:false}));
         // sandbox.stub(jwt, 'sign').callsFake(() => userToken);
       });
-      it('should return 403 given incorrect username and password', async function() {
+      it('should return 401 given incorrect username and password', async function() {
         const resp = await authController.generateTokenBehavior(req);
-        should(resp.status).equal(403);
+        should(resp.status).equal(401);
       });
       it('should return empty data object given incorrect username and password',async function() {
         const resp = await authController.generateTokenBehavior(req);
@@ -228,7 +245,7 @@ describe.only('generateTokenBehavior(req)', function() {
     ));
     const jwtSpy = sandbox.spy(jwt, 'sign');
     await authController.generateTokenBehavior(req);
-    const spiedAuth = jwtSpy.calledWith({ username: user.username, verified: user.verified, givenName: user.givenName, familyName: user.familyName },jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+    const spiedAuth = jwtSpy.calledWith({ username: user.username, verified: user.verified, givenName: user.givenName, familyName: user.familyName },jwtConfig.secret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
     should(spiedAuth).equal(true);
   });
   it('should call jwt.sign with algorithm: HS256', async function() {
@@ -242,7 +259,7 @@ describe.only('generateTokenBehavior(req)', function() {
     const jwtSpy = sandbox.spy(jwt, 'sign');
     await authController.generateTokenBehavior(req);
     // TODO sinon called with just some of the aruments
-    const spiedAuth = jwtSpy.calledWith({ username: user.username, verified: user.verified, givenName: user.givenName, familyName: user.familyName },jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+    const spiedAuth = jwtSpy.calledWith({ username: user.username, verified: user.verified, givenName: user.givenName, familyName: user.familyName },jwtConfig.secret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
     should(spiedAuth).equal(true);
   });
 

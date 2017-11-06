@@ -1,28 +1,47 @@
 'use strict';
 
-const path = require('path');
-const httpMocks = require('node-mocks-http'),
+const // httpMocks = require('node-mocks-http'),
       jwt = require('jsonwebtoken'),
+      _ = require('lodash'),
+      path = require('path'),
+      rewire = require('rewire'),
       should = require('should'),
-      sinon = require('sinon'),
-      rewire = require('rewire');
-
+      sinon = require('sinon');
 
 // const models = require(path.resolve('./models'));
 // const authController = require(path.resolve('./controllers/authenticate-token'));
-const authorizeController = rewire(path.resolve('./controllers/authorize'));
-const jwtConfig = require(path.resolve('./config/secret/jwt-config'));
-const authorizeControllerPublic = require(path.resolve('./controllers/authorize'));
+const authenticateController = rewire(path.resolve('./controllers/authenticate'));
+const jwtConfig = require(path.resolve('./config')).jwt;
+// const authenticateControllerPublic = require(path.resolve('./controllers/authenticate'));
+// const authorizeController = require(path.resolve('./controllers/authorize'));
 
 
-describe.only('token authorization', function() {
+describe('token authorization', function() {
   let sandbox;
-  const user = { username: 'user', verified: true, givenName: 'userGivenName', familyName: 'userFamilyName',
-    password: 'userPass'};
-  const unverifiedUser = { username: 'userUnveryfied', verified: false, givenName: 'userUnverifiedGivenName', familyName: 'userUnverifiedFamilyName', password: 'userUnverifiedPassword'};
-  const userToken = jwt.sign({username: user.username, verified: user.verified, givenName: user.givenName, familyName: user.familyName }, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-  const unverifiedUserToken = jwt.sign({username: unverifiedUser.username, verified: unverifiedUser.verified, givenName: unverifiedUser.givenName, familyName: unverifiedUser.familyName}, jwtConfig.jwtSecret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
-  const otherUser = { username: 'otherUser'};
+
+  const user = {
+    username: 'user',
+    verified: true,
+    givenName: 'userGivenName',
+    familyName: 'userFamilyName',
+    password: 'userPass'
+  };
+
+  const unverifiedUser = {
+    username: 'userUnveryfied',
+    verified: false,
+    givenName: 'userUnverifiedGivenName',
+    familyName: 'userUnverifiedFamilyName',
+    password: 'userUnverifiedPassword'
+  };
+
+  const payloadFields = ['username', 'verified', 'givenName', 'familyName'];
+
+  const userToken = jwt.sign(_.pick(user, payloadFields), jwtConfig.secret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
+  const unverifiedUserToken = jwt.sign(_.pick(unverifiedUser, payloadFields), jwtConfig.secret, { algorithm: 'HS256', expiresIn: jwtConfig.expirationTime });
+
+  // const otherUser = { username: 'otherUser'};
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
   });
@@ -30,112 +49,98 @@ describe.only('token authorization', function() {
   afterEach(function () {
     sandbox.restore();
   });
+
   describe('tokenGetData(token)', function() {
-    const tokenGetData = authorizeController.__get__('tokenGetData');
+    const tokenGetData = authenticateController.__get__('tokenGetData');
     describe('correct token', function() {
       describe('verified user', function(){
         it('should check data have property username', async function(){
           const check = await tokenGetData(userToken);
-          should(check.data).have.property('username');
+          should(check).have.property('username');
         });
         it('should return correct username', async function(){
           const check = await tokenGetData(userToken);
-          should(check.data.username).equal(user.username);
+          should(check.username).equal(user.username);
         });
         it('should call token.verify once', async function(){
           const stubToken = sandbox.stub(jwt, 'verify');
           await tokenGetData(userToken);
           should(stubToken.callCount).equal(1);
         });
-        it('should check have property valid', async function(){
-          const check = await tokenGetData(userToken);
-          should(check).have.property('valid');
-        });
-        it('should return valid true', async function(){
-          const check = await tokenGetData(userToken);
-          should(check.valid).equal(true);
-        });
         it('should return verified parameter', async function(){
           const check = await tokenGetData(userToken);
-          should(check.data).have.property('verified');
+          should(check).have.property('verified');
         });
         it('should return verified true', async function(){
           const check = await tokenGetData(userToken);
-          should(check.data.verified).equal(true);
+          should(check.verified).equal(true);
         });
         it('should return givenName parameter', async function(){
           const check = await tokenGetData(userToken);
-          should(check.data).have.property('givenName');
+          should(check).have.property('givenName');
         });
         it('should return correct givenName parameter', async function(){
           const check = await tokenGetData(userToken);
-          should(check.data.givenName).equal(user.givenName);
+          should(check.givenName).equal(user.givenName);
         });
         it('should return familyName parameter', async function(){
           const check = await tokenGetData(userToken);
-          should(check.data).have.property('familyName');
+          should(check).have.property('familyName');
         });
         it('should return correct familyName parameter', async function(){
           const check = await tokenGetData(userToken);
-          should(check.data.familyName).equal(user.familyName);
+          should(check.familyName).equal(user.familyName);
         });
       });
       describe('unverified user', function(){
         it('should check data have property username', async function(){
           const check = await tokenGetData(unverifiedUserToken);
-          should(check.data).have.property('username');
+          should(check).have.property('username');
         });
-        it('should check.data return correct username', async function(){
+        it('should check return correct username', async function(){
           const check = await tokenGetData(unverifiedUserToken);
-          should(check.data.username).equal(unverifiedUser.username);
+          should(check.username).equal(unverifiedUser.username);
         });
         it('should call token.verify once', async function(){
           const stubToken = sandbox.stub(jwt, 'verify');
           await tokenGetData(unverifiedUserToken);
           should(stubToken.callCount).equal(1);
         });
-        it('should check have property valid', async function(){
-          const check = await tokenGetData(unverifiedUserToken);
-          should(check).have.property('valid');
-        });
-        it('should return valid true', async function(){
-          const check = await tokenGetData(unverifiedUserToken);
-          should(check.valid).equal(true);
-        });
         it('should return verified parameter', async function(){
           const check = await tokenGetData(unverifiedUserToken);
-          should(check.data).have.property('verified');
+          should(check).have.property('verified');
         });
         it('should return verified false', async function(){
           const check = await tokenGetData(unverifiedUserToken);
-          should(check.data.verified).equal(false);
+          should(check.verified).equal(false);
         });
         it('should return givenName parameter', async function(){
           const check = await tokenGetData(unverifiedUserToken);
-          should(check.data).have.property('givenName');
+          should(check).have.property('givenName');
         });
         it('should return correct givenName parameter', async function(){
           const check = await tokenGetData(unverifiedUserToken);
-          should(check.data.givenName).equal(unverifiedUser.givenName);
+          should(check.givenName).equal(unverifiedUser.givenName);
         });
         it('should return familyName parameter', async function(){
           const check = await tokenGetData(unverifiedUserToken);
-          should(check.data).have.property('familyName');
+          should(check).have.property('familyName');
         });
         it('should return correct familyName parameter', async function(){
           const check = await tokenGetData(unverifiedUserToken);
-          should(check.data.familyName).equal(unverifiedUser.familyName);
+          should(check.familyName).equal(unverifiedUser.familyName);
         });
       });
     });
     describe('incorrect token', function(){
-      it('should return false', async function(){
-        const check = await tokenGetData(userToken+'x');
-        should(check.valid).equal(false);
-      });
-      it('should return empty data field', async function(){
-        const check = await tokenGetData(userToken+'x');
-        should(check.data).be.empty;
+      it('should Promise be rejected', async function(){
+        try {
+          await tokenGetData(userToken+'x');
+          // the code beyond should not be executed because of expected error
+          throw new Error('should not be reached');
+        } catch (e) {
+          should(e.message).eql('invalid signature');
+        }
       });
       it('should call token.verify once', async function(){
         const stubToken = sandbox.stub(jwt, 'verify');
@@ -144,6 +149,7 @@ describe.only('token authorization', function() {
       });
     });
   });
+  /*
   describe('onlyLogged(req, res, next)', function(){
     // const tokenGetData = authorizeController.__get__('tokenGetData');
     describe('sending request with correct authorization header verified user', function(){
@@ -641,4 +647,5 @@ describe.only('token authorization', function() {
       });
     });
   });
+  */
 });
