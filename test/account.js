@@ -457,8 +457,8 @@ describe('/account', function () {
 
           should(email).have.property('to', '<other.email@example.com>');
           should(email).have.property('subject', 'email verification for ditup.org');
-          should(email).have.property('text').match(new RegExp(`${config.appUrl.all}/user/user0/verify-email/[0-9a-f]{32}`));
-          should(email).have.property('html').match(new RegExp(`${config.appUrl.all}/user/user0/verify-email/[0-9a-f]{32}`));
+          should(email).have.property('text').match(new RegExp(`${config.appUrl.all}/verify-email/user0/[0-9a-f]{32}`));
+          should(email).have.property('html').match(new RegExp(`${config.appUrl.all}/verify-email/user0/[0-9a-f]{32}`));
         });
       });
 

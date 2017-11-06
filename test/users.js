@@ -107,8 +107,8 @@ describe('/users', function () {
 
         should(email).have.property('to', '<test@example.com>');
         should(email).have.property('subject', 'email verification for ditup.org');
-        should(email).have.property('text').match(new RegExp(`${config.appUrl.all}/user/test/verify-email/[0-9a-f]{32}`));
-        should(email).have.property('html').match(new RegExp(`${config.appUrl.all}/user/test/verify-email/[0-9a-f]{32}`));
+        should(email).have.property('text').match(new RegExp(`${config.appUrl.all}/verify-email/test/[0-9a-f]{32}`));
+        should(email).have.property('html').match(new RegExp(`${config.appUrl.all}/verify-email/test/[0-9a-f]{32}`));
       });
     });
 

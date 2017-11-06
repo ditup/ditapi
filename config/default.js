@@ -8,7 +8,7 @@ module.exports = {
   // the url where the app lives
   appUrl: {
     all: 'https://ditup.org',
-    verifyEmail: (username, code) => `/user/${username}/verify-email/${code}`,
+    verifyEmail: (username, code) => `/verify-email/${username}/${code}`,
     resetPassword: (username, code) => `/reset-password/${username}/${code}`
   },
   // password hashing and other
