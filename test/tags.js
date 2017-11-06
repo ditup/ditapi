@@ -8,7 +8,6 @@ const jwt = require('jsonwebtoken'),
 const agent = require('./agent')(),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
-      serializers = require(path.resolve('./serializers')),
       models = require(path.resolve('./models')),
       serializers = require(path.resolve('./serializers')),
       tagJobs = require(path.resolve('./jobs/tags'));

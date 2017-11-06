@@ -1,7 +1,6 @@
 'use strict';
 
 const jwt = require('jsonwebtoken'),
-      supertest = require('supertest'),
       should = require('should'),
       sinon = require('sinon'),
       path = require('path');
@@ -13,8 +12,6 @@ const agent = require('./agent')(),
 
 const jwtSecret = config.jwt.secret;
 const jwtExpirationTime = config.jwt.expirationTime;
-
-const agent = supertest.agent(app);
 
 describe('Tags of user', function () {
   let dbData,

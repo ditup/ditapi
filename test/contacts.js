@@ -3,11 +3,9 @@
 const jwt = require('jsonwebtoken'),
       path = require('path'),
       should = require('should'),
-      sinon = require('sinon'),
-      supertest = require('supertest');
+      sinon = require('sinon');
 
 const agent = require('./agent')(),
-      models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models')),

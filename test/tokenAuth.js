@@ -2,20 +2,20 @@
 
 const jwt = require('jsonwebtoken'),
       path = require('path'),
-      sinon = require('sinon'),
-      supertest = require('supertest');
+      sinon = require('sinon');
 
-const app = require(path.resolve('./app')),
+const agentFactory = require(path.resolve('./test/agent')),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
-const agent = supertest.agent(app);
 
 const jwtSecret = config.jwt.secret;
 const jwtExpirationTime = config.jwt.expirationTime;
 
 describe('/auth/token', function() {
   let dbData, verifiedUser, sandbox;
+  let agent;
+
   beforeEach(async function () {
     const data = {
       users: 2, // how many users to make
@@ -25,6 +25,8 @@ describe('/auth/token', function() {
     dbData = await dbHandle.fill(data);
     verifiedUser = dbData.users[0];
     sandbox = sinon.sandbox.create();
+
+    agent = agentFactory();
   });
 
   afterEach(async function () {
@@ -37,7 +39,6 @@ describe('/auth/token', function() {
       it('should respond with 200 Success', async function() {
         await agent
           .get('/auth/token')
-          .set('Content-Type', 'application/vnd.api+json')
           .auth(verifiedUser.username, verifiedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -45,7 +46,6 @@ describe('/auth/token', function() {
       it('should respond with correct jwt token in the header', async function() {
         const response = await agent
           .get('/auth/token')
-          .set('Content-Type', 'application/vnd.api+json')
           .auth(verifiedUser.username, verifiedUser.password)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -62,7 +62,6 @@ describe('/auth/token', function() {
       it('should respond with 401', async function() {
         await agent
           .get('/auth/token')
-          .set('Content-Type', 'application/vnd.api+json')
           .auth(verifiedUser.username, 'incorrectPassword')
           .expect(401)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -73,7 +72,6 @@ describe('/auth/token', function() {
       it('should respond with 401', async function() {
         await agent
           .get('/auth/token')
-          .set('Content-Type', 'application/vnd.api+json')
           .auth('nonexistentUser', verifiedUser.password)
           .expect(401)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -84,7 +82,6 @@ describe('/auth/token', function() {
       it('should respond with 401', async function() {
         await agent
           .get('/auth/token')
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(401)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -94,7 +91,6 @@ describe('/auth/token', function() {
       it('should respond with 401', async function() {
         await agent
           .get('/auth/token')
-          .set('Content-Type', 'application/vnd.api+json')
           .auth('2000', verifiedUser.password)
           .expect(401)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -105,7 +101,6 @@ describe('/auth/token', function() {
       it('should respond with 400', async function() {
         await agent
           .get('/auth/token?filter[tag]=tag1,tag2')
-          .set('Content-Type', 'application/vnd.api+json')
           .auth(verifiedUser.username, verifiedUser.password)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
@@ -126,7 +121,8 @@ describe('/auth/token', function() {
 describe('authorizing path for logged users', function() {
   describe('authorize show new users path', function () {
     let dbData,
-        loggedUser, userToken, sandbox;
+        loggedUser, userToken, sandbox,
+        agent;
 
     // seed the database with users
     beforeEach(async function () {
@@ -143,6 +139,8 @@ describe('authorizing path for logged users', function() {
 
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
       userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
+      agent = agentFactory();
     });
 
     afterEach(async function () {
@@ -151,14 +149,15 @@ describe('authorizing path for logged users', function() {
     });
 
     context('logged in', function () {
+      beforeEach(() => {
+        agent.set('Authorization', 'Bearer ' + userToken);
+      });
       context('valid data', function () {
         // TODO limit shoud be set or given in query?
         // diff query /users?filter[newUsers]=<limit>
         it('show new users should return 200', async function () {
           await agent
             .get('/users?sort=-created&page[offset]=0&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + userToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
         });
@@ -171,7 +170,6 @@ describe('authorizing path for logged users', function() {
         it('show new users should return 403', async function () {
           await agent
             .get('/users?sort=-created&page[offset]=0&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);
         });
@@ -182,7 +180,6 @@ describe('authorizing path for logged users', function() {
         it('show new users with uncorrect token 403', async function () {
           await agent
             .get('/users?sort=-created&page[offset]=0&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
             .set('Authorization', 'Bearer ' + 'wrongToken')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);
@@ -191,8 +188,10 @@ describe('authorizing path for logged users', function() {
     });
   });
 });
+
 describe('authorizing path for logged \'as me\'', function () {
-  let loggedUser, otherUser, dbData, userToken;
+  let loggedUser, otherUser, dbData, userToken,
+      agent;
 
   beforeEach(async function () {
     const data = {
@@ -205,6 +204,8 @@ describe('authorizing path for logged \'as me\'', function () {
     [loggedUser, otherUser] = dbData.users;
     const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
     userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
+    agent = agentFactory();
   });
 
   afterEach(async function () {
@@ -212,6 +213,9 @@ describe('authorizing path for logged \'as me\'', function () {
   });
 
   context('logged in', function () {
+    beforeEach(() => {
+      agent.set('Authorization', 'Bearer ' + userToken);
+    });
     context('the edited user is the logged user', function () {
       // profile fields are givenName, familyName, description, birthday
       //
@@ -227,8 +231,6 @@ describe('authorizing path for logged \'as me\'', function () {
               }
             }
           })
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + userToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
       });
@@ -247,8 +249,6 @@ describe('authorizing path for logged \'as me\'', function () {
               }
             }
           })
-          .set('Authorization', 'Bearer ' + userToken)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(403);
       });
@@ -268,7 +268,6 @@ describe('authorizing path for logged \'as me\'', function () {
             }
           }
         })
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(403);
     });

@@ -3,8 +3,7 @@
 const jwt = require('jsonwebtoken'),
       path = require('path'),
       should = require('should'),
-      sinon = require('sinon'),
-      supertest = require('supertest');
+      sinon = require('sinon');
 
 const agent = require('./agent')(),
       config = require(path.resolve('./config')),

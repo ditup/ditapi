@@ -1,7 +1,6 @@
 'use strict';
 
 const jwt = require('jsonwebtoken'),
-      supertest = require('supertest'),
       should = require('should'),
       sinon = require('sinon'),
       _ = require('lodash'),

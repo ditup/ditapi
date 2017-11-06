@@ -1,7 +1,6 @@
 'use strict';
 
 const jwt = require('jsonwebtoken'),
-      supertest = require('supertest'),
       should = require('should'),
       path = require('path'),
       sinon = require('sinon');
@@ -14,8 +13,6 @@ const agent = require('./agent')(),
 
 const jwtSecret = config.jwt.secret;
 const jwtExpirationTime = config.jwt.expirationTime;
-
-const agent = supertest.agent(app);
 
 describe('/users', function () {
   let sandbox;
