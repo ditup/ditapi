@@ -27,7 +27,12 @@ async function setAuthData(req, res, next) {
       verified = data.verified;
     } catch (e) {
       // TODO report some error message
-      return res.status(403).json();
+      return res.status(403).json({
+        errors: [{
+          status: '403',
+          title: 'Not Authorized'
+        }]
+      });
     }
 
     req.auth.username = username;
@@ -43,7 +48,5 @@ async function tokenGetData(token){
   token = token.split(' ').pop();
   return await jwt.verify(token, jwtSecret);
 }
-
-
 
 module.exports = setAuthData;

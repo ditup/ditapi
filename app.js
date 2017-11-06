@@ -41,6 +41,7 @@ app.use(deserialize);
 app.use(sanitizer);
 
 // authentication
+// set req.auth object with info about user rights
 app.use(authenticate);
 
 // actual routes

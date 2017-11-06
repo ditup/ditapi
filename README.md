@@ -17,9 +17,10 @@ Follows [JSON API](http://jsonapi.org) specification.
 ## Install
 
 - @todo
-- fork this repository
-- `cd` to the folder of this repository
-- run `npm install`
+- clone this repository
+- run `npm install` in the repository folder
+- run `npm run init` to create folders for avatar uploads
+- run `NODE_ENV=development node ./bin/init-db`
 
 ## Run
 

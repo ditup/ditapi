@@ -236,6 +236,7 @@ class User extends Model {
       profile.username = username;
       _.assign(user, profile);
     }
+
     return user;
   }
 

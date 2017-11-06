@@ -57,7 +57,7 @@ describe('/users/:username', function () {
     context('[user exists]', function () {
       it('[logged] should read user`s profile', async function () {
         const response = await agent
-          .get(`/users/${loggedUser.username}`)
+          .get(`/users/${existentUser.username}`)
           .set('Content-Type', 'application/vnd.api+json')
           .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
@@ -66,10 +66,10 @@ describe('/users/:username', function () {
         const user = response.body;
         user.should.have.property('data');
         user.data.should.have.property('type', 'users');
-        user.data.should.have.property('id', loggedUser.username);
+        user.data.should.have.property('id', existentUser.username);
         user.data.should.have.property('attributes');
         const fields = user.data.attributes;
-        fields.should.have.property('username', loggedUser.username);
+        fields.should.have.property('username', existentUser.username);
         fields.should.have.property('givenName');
         // TODO givenName, familyName, birthDate, profile, ...
       });

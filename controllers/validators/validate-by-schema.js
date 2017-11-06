@@ -11,6 +11,7 @@ const _ = require('lodash');
 module.exports = function (schema, consistency) {
   return function (req, res, next) {
     const valid = ajv.validate(`sch#/${schema}`, req);
+
     if (!valid) {
       return next(ajv.errors);
     }

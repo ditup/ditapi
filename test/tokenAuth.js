@@ -1,7 +1,5 @@
 'use strict';
 
-process.env.NODE_ENV = 'test';
-
 const jwt = require('jsonwebtoken'),
       path = require('path'),
       sinon = require('sinon'),
