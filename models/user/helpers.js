@@ -4,6 +4,9 @@ const path = require('path');
 
 const config = require(path.resolve('./config'));
 
+const passStrength = require('zxcvbn');
+const account = require('./account');
+
 // based on trustroots code
 
 /**
@@ -56,4 +59,26 @@ function fuzzyLocation(location, inputOffset) {
   return [latO, lngO];
 }
 
-exports.randomizeLocation = fuzzyLocation;
+/**
+ * Check strength of a password and generate a password's hash for saving
+ * @param {string} password - password string to check and hash
+ * @param {string[]} [data] - array of strings which shouldn't be contained
+ * in the password. i.e. username
+ * @returns Promise<{ hash: string, salt: string, iterations: number }>
+ */
+async function checkAndHashPassword(password, data = []) {
+  // if load, load user's data from database
+  // check password strength
+  const { score } = passStrength(password, data);
+
+  if (score < 3) {
+    const err = new Error('password is too weak');
+    err.status = 400;
+    throw err;
+  }
+
+  // hash password
+  return await account.hash(password);
+}
+
+module.exports = { randomizeLocation: fuzzyLocation, checkAndHashPassword };

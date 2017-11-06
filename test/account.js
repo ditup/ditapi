@@ -205,7 +205,7 @@ describe('/account', function () {
               type: 'users',
               id: user0.username,
               attributes: {
-                password: 'new-Pa5sw0rD',
+                password: 'a.089&3flnh',
                 code
               }
             }
@@ -392,6 +392,30 @@ describe('/account', function () {
 
           should(resp.body).have.propertyByPath('errors', 0, 'title').eql('invalid password');
         });
+
+        it('[guessable password] 400', async function () {
+          const [user0] = dbData.users;
+
+          // first get the validation code
+          const { code } = await models.user.createPasswordResetCode(user0.username);
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: user0.username,
+              attributes: {
+                password: 'easy-password',
+                code
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(400);
+        });
+
       });
     });
   });
@@ -639,7 +663,7 @@ describe('/account', function () {
     beforeEach(async function () {
       const { emailVerifyCode } = await models.user.create({
         username: 'test',
-        password: 'asdfasdf',
+        password: '_*FN:nvv 0c3',
         email: 'test@example.com'
       });
 
@@ -862,7 +886,7 @@ describe('/account', function () {
               id: user1.username,
               attributes: {
                 oldPassword: user1.password,
-                password: 'new-password_?'
+                password: '&^m.UgOHnnofqb87'
               }
             }
           };
@@ -949,6 +973,28 @@ describe('/account', function () {
 
           should(response.body).have.propertyByPath('errors', 0, 'title')
             .eql('invalid password');
+        });
+
+        it('[guessable new password] should error with 400', async function () {
+          const [user0] = dbData.users;
+
+          const patchBody = {
+            data: {
+              type: 'users',
+              id: user0.username,
+              attributes: {
+                oldPassword: user0.password,
+                password: 'guesspassword'
+              }
+            }
+          };
+
+          await agent
+            .patch('/account')
+            .send(patchBody)
+            .set('Authorization', 'Bearer ' + user0Token)
+            .set('Content-Type', 'application/vnd.api+json')
+            .expect(400);
         });
 
         it('[unexpected attributes] should error with 400', async function () {

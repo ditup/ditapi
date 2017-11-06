@@ -15,7 +15,7 @@ module.exports.hashPassword = function hashPassword(password, salt, iterations) 
 };
 
 exports.hash = async function (password) {
-  const iterations = config.security.iterations;
+  const { iterations } = config.security;
   const salt = await exports.generateSalt();
   const hash = await exports.hashPassword(password, salt, iterations);
 

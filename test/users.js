@@ -44,7 +44,7 @@ describe('/users', function () {
       // valid user data
       const user = {
         username: 'test',
-        password: 'asdfasdf',
+        password: 'iX.0*&5mlwf+',
         email: 'test@example.com'
       };
 
@@ -117,7 +117,7 @@ describe('/users', function () {
       // user data with invalid username
       const user = {
         username: 'test*',
-        password: 'asdfasdf',
+        password: 'iX.0*&5mlwf+',
         email: 'test@example.com'
       };
 
@@ -147,7 +147,7 @@ describe('/users', function () {
           type: 'users',
           attributes: {
             username: 'test',
-            password: 'asdfasdf',
+            password: 'iX.0*&5mlwf+',
             email: 'test@example.com'
           }
         }
@@ -176,7 +176,7 @@ describe('/users', function () {
           type: 'users',
           attributes: {
             username: 'test',
-            password: 'asdfasdf',
+            password: 'iX.0*&5mlwf+',
             email: 'test@example'
           }
         }
@@ -214,10 +214,54 @@ describe('/users', function () {
       res.body.should.have.property('errors');
     });
 
+    it('[weak password] should respond with 400', async function () {
+      const userData = {
+        data: {
+          type: 'users',
+          attributes: {
+            username: 'test',
+            password: 'weak.password',
+            email: 'test@example.com'
+          }
+        }
+      };
+
+      const res = await agent
+        .post('/users')
+        .send(userData)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(400);
+
+      res.body.should.have.property('errors');
+    });
+
+    it('[password similar to username] should respond with 400', async function () {
+      const userData = {
+        data: {
+          type: 'users',
+          attributes: {
+            username: 'krui',
+            password: 'krui-lkia',
+            email: 'test@example.com'
+          }
+        }
+      };
+
+      const res = await agent
+        .post('/users')
+        .send(userData)
+        .set('Content-Type', 'application/vnd.api+json')
+        .expect('Content-Type', /^application\/vnd\.api\+json/)
+        .expect(400);
+
+      res.body.should.have.property('errors');
+    });
+
     it('[existent email] should respond with error', async function () {
       const user = {
         username: 'test',
-        password: 'asdfasdf',
+        password: 'iX.0*&5mlwf+',
         email: 'test@example.com'
       };
 
@@ -231,7 +275,7 @@ describe('/users', function () {
       // the second user has the same email as the user
       const user2 = {
         username: 'test2',
-        password: 'asdfasdf',
+        password: 'iX.0*&5mlwf+',
         email: 'test@example.com' // the same email
       };
 
