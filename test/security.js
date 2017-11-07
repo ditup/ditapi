@@ -1,8 +1,14 @@
 'use strict';
 
-const agent = require('./agent')();
+const agentFactory = require('./agent');
 
 describe('Security', () => {
+  let agent;
+
+  beforeEach(() => {
+    agent = agentFactory();
+  });
+
   describe('Restrict http methods', () => {
     it('[unsupported method] should respond with 405', async () => {
       await agent
@@ -43,7 +49,6 @@ describe('Security', () => {
     it('[request Accept header contains application/vnd.api+json] not 406', async() => {
       await agent
         .get('/users/username')
-        .set('Accept', 'application/vnd.api+json, */*')
         .expect(404)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
     });
@@ -52,7 +57,6 @@ describe('Security', () => {
       // negative check
       await agent
         .get('/users/username/avatar')
-        .set('Accept', 'application/vnd.api+json, */*')
         .expect(406)
         .expect('Content-Type', /^application\/vnd\.api\+json/);
 

@@ -1,31 +1,29 @@
 'use strict';
 
-const jwt = require('jsonwebtoken'),
-      should = require('should'),
+const should = require('should'),
       _ = require('lodash'),
       path = require('path');
 
-const agent = require('./agent')(),
-      config = require(path.resolve('./config')),
+const agentFactory = require('./agent'),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
-const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
-
-let dbData,
-    existentUser,
-    loggedUser,
-    unverifiedUser,
-    loggedUserToken,
-    unverifiedUserToken;
-
-const nonexistentUser = {
-  username: 'nonexistent-user',
-  email: 'nonexistent-email@example.com',
-};
-
-
 describe('/users/:username', function () {
+
+  let agent,
+      dbData,
+      existentUser,
+      loggedUser,
+      unverifiedUser;
+
+  const nonexistentUser = {
+    username: 'nonexistent-user',
+    email: 'nonexistent-email@example.com',
+  };
+
+  beforeEach(() => {
+    agent = agentFactory();
+  });
+
   describe('GET', function () {
     beforeEach(async function () {
       const data = {
@@ -42,11 +40,6 @@ describe('/users/:username', function () {
       existentUser = dbData.users[0];
       loggedUser = dbData.users[1];
       unverifiedUser = dbData.users[2];
-      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-      const jwtunverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified || false, givenName:'', familyName:''};
-      unverifiedUserToken = jwt.sign(jwtunverifiedUserPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
     });
 
     afterEach(async function () {
@@ -55,9 +48,8 @@ describe('/users/:username', function () {
 
     context('[user exists]', function () {
       it('[logged] should read user`s profile', async function () {
-        const response = await agent
+        const response = await agentFactory.logged(loggedUser)
           .get(`/users/${existentUser.username}`)
-          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -91,9 +83,8 @@ describe('/users/:username', function () {
       });
 
       it('[logged, not verified] should read simplified profile', async function () {
-        const response = await agent
+        const response = await agentFactory.logged(unverifiedUser)
           .get(`/users/${existentUser.username}`)
-          .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -109,9 +100,8 @@ describe('/users/:username', function () {
       });
 
       it('[logged, unverified] should be treated as not logged', async function () {
-        const response = await agent
+        const response = await agentFactory.logged(unverifiedUser)
           .get(`/users/${unverifiedUser.username}`)
-          .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -133,7 +123,6 @@ describe('/users/:username', function () {
       it('should show 404', async function () {
         await agent
           .get(`/users/${nonexistentUser.username}`)
-          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(404)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -161,8 +150,6 @@ describe('/users/:username', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser, otherUser] = dbData.users;
-      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -170,6 +157,11 @@ describe('/users/:username', function () {
     });
 
     context('logged in', function () {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
       context('the edited user is the logged user', function () {
         // profile fields are givenName, familyName, description, birthday
         //
@@ -185,7 +177,6 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -212,7 +203,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -244,7 +234,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -272,7 +261,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -294,7 +282,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -311,7 +298,6 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -330,7 +316,6 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);
         });

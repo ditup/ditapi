@@ -1,5 +1,4 @@
 const crypto = require('crypto'),
-      jwt = require('jsonwebtoken'),
       fs = require('fs-extra'),
       path = require('path'),
       should = require('should'),
@@ -8,18 +7,16 @@ const crypto = require('crypto'),
       { promisify } = require('util'),
       sizeOf = promisify(require('image-size'));
 
-const agent = require('./agent')(),
-      config = require(path.resolve('./config')),
+const agentFactory = require('./agent'),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models')),
       { clearTemporary } = require(path.resolve('./jobs/files'));
 
-const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
-
 describe('/users/:username/avatar', function () {
 
-  let dbData, sandbox;
+  let agent,
+      dbData,
+      sandbox;
 
   function beforeEachPopulate(data) {
     // put pre-data into database
@@ -53,7 +50,7 @@ describe('/users/:username/avatar', function () {
     should(await fs.readdir(avatarsPath)).Array().length(0);
   });
 
-  let loggedUser, otherUser, loggedUserToken;
+  let loggedUser, otherUser;
 
   beforeEachPopulate({
     users: 2, // how many users to make
@@ -62,21 +59,21 @@ describe('/users/:username/avatar', function () {
 
   beforeEach(function () {
     [loggedUser, otherUser] = dbData.users;
-    const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-    loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
   });
 
   describe('GET', function () {
 
-    before(() => {
-      agent.set('Accept', 'image/jpeg, image/svg+xml');
-    });
-
-    after(() => {
-      agent.set('Accept', 'application/vnd.api+json');
+    beforeEach(() => {
+      agent = agentFactory()
+        .set('Accept', 'image/jpeg, image/svg+xml');
     });
 
     context('logged', function () {
+
+      beforeEach(() => {
+        agent = agentFactory.logged()
+          .set('Accept', 'image/jpeg, image/svg+xml');
+      });
 
       context('valid data', () => {
 
@@ -98,7 +95,6 @@ describe('/users/:username/avatar', function () {
 
             const response = await agent
               .get(`/users/${otherUser.username}/avatar`)
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .buffer()
               .parse(binaryParser)
               .expect(200)
@@ -118,7 +114,6 @@ describe('/users/:username/avatar', function () {
 
             const response = await agent
               .get(`/users/${otherUser.username}/avatar?filter[size]=512`)
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .buffer()
               .parse(binaryParser)
               .expect(200)
@@ -137,7 +132,6 @@ describe('/users/:username/avatar', function () {
           it('responds with 404', async function () {
             await agent
               .get('/users/nonexistent-user/avatar')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -151,7 +145,6 @@ describe('/users/:username/avatar', function () {
         it('[invalid size] 400', async function () {
           await agent
             .get(`/users/${otherUser.username}/avatar?filter[size]=511`)
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -159,7 +152,6 @@ describe('/users/:username/avatar', function () {
         it('[unexpected parameters] 400', async function () {
           await agent
             .get(`/users/${otherUser.username}/avatar?page[limit]=5`)
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -167,7 +159,6 @@ describe('/users/:username/avatar', function () {
         it('[invalid username] 400', async function () {
           await agent
             .get('/users/invalid--username/avatar')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -185,7 +176,6 @@ describe('/users/:username/avatar', function () {
 
           const response = await agent
             .get(`/users/${otherUser.username}/avatar`)
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(500);
 
           should(response.body).have.propertyByPath('errors', 0, 'message').eql('failed');
@@ -208,7 +198,15 @@ describe('/users/:username/avatar', function () {
 
   describe('PATCH', function () {
 
+    beforeEach(() => {
+      agent = agentFactory();
+    });
+
     context('logged as :username', function () {
+
+      beforeEach(() => {
+        agent = agentFactory.logged();
+      });
 
       context('good data type (png, jpeg)', function () {
 
@@ -216,7 +214,6 @@ describe('/users/:username/avatar', function () {
           await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.png')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(204);
 
           // check images' existence
@@ -233,7 +230,6 @@ describe('/users/:username/avatar', function () {
           await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.jpg')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(204);
 
           // check images' existence
@@ -247,7 +243,6 @@ describe('/users/:username/avatar', function () {
           await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.jpg')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(204);
 
           const files = await fs.readdir(path.resolve('./uploads'));
@@ -259,7 +254,6 @@ describe('/users/:username/avatar', function () {
           await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.jpg')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(204);
 
           const { width, height } = await sizeOf(path.resolve(`./files/avatars/${loggedUser.username}/512`));
@@ -274,7 +268,6 @@ describe('/users/:username/avatar', function () {
           await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/bad-avatar.jpg')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400);
         });
 
@@ -282,7 +275,6 @@ describe('/users/:username/avatar', function () {
           await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/large-avatar.jpg')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400);
         });
 
@@ -290,13 +282,11 @@ describe('/users/:username/avatar', function () {
           await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/bad-avatar.jpg')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400);
 
           await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/large-avatar.jpg')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400);
 
           const files = await fs.readdir(path.resolve('./uploads'));
@@ -319,7 +309,6 @@ describe('/users/:username/avatar', function () {
           const response = await agent
             .patch(`/users/${loggedUser.username}/avatar`)
             .attach('avatar', './test/img/avatar.png')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(500);
 
           should(response.body).have.propertyByPath('errors', 0, 'message').eql('The image upload failed. Try again.');
@@ -330,10 +319,9 @@ describe('/users/:username/avatar', function () {
     context('not logged as :username', function () {
 
       it('responds with 403', async () => {
-        await agent
+        await agentFactory.logged(loggedUser)
           .patch(`/users/${otherUser.username}/avatar`)
           .attach('avatar', './test/img/avatar.jpg')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(403);
       });
 

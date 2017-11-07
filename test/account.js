@@ -1,23 +1,25 @@
 'use strict';
 
-const jwt = require('jsonwebtoken'),
-      path = require('path'),
+const path = require('path'),
       should = require('should'),
       sinon = require('sinon');
 
 
-const agent = require('./agent')(),
+const agentFactory = require('./agent'),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models'));
-
-const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
 
 describe('/account', function () {
+
+  let agent;
+
+  beforeEach(() => {
+    agent = agentFactory();
+  });
 
   describe('reset forgotten password', function () {
 
@@ -395,7 +397,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
 
@@ -404,7 +405,7 @@ describe('/account', function () {
   });
 
   describe('change email', function () {
-    let username, password, userToken;
+    let username, password;
     beforeEach(function () {
       sandbox = sinon.sandbox.create();
       sandbox.stub(mailer, 'general');
@@ -423,9 +424,8 @@ describe('/account', function () {
 
       // create data in database
       dbData = await dbHandle.fill(data);
+
       [{ username, password }] = dbData.users;
-      const jwtPayload = {username: username, verified:true, givenName:'', familyName:''};
-      userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -436,6 +436,11 @@ describe('/account', function () {
         sandbox;
 
     context('logged in', function () {
+      let agent;
+
+      beforeEach(() => {
+        agent = agentFactory.logged();
+      });
 
       context('good data', function () {
         it('save unverified email and send verification message', async function () {
@@ -454,7 +459,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + userToken)
             .expect(204);
 
           sinon.assert.calledOnce(mailer.general);
@@ -486,7 +490,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
 
@@ -505,7 +508,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
 
@@ -526,7 +528,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
 
@@ -546,7 +547,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
 
@@ -566,7 +566,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + userToken)
             .expect(403);
         });
 
@@ -586,7 +585,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + userToken)
             .expect(400);
         });
       });
@@ -820,7 +818,7 @@ describe('/account', function () {
   });
 
   describe('change password', function () {
-    let dbData, user0, user0Token;
+    let dbData, user0;
 
     beforeEach(async function () {
       const data = {
@@ -832,8 +830,6 @@ describe('/account', function () {
       dbData = await dbHandle.fill(data);
 
       [user0] = dbData.users;
-      const jwtPayload = {username: user0.username, verified:user0.verified, givenName:'', familyName:''};
-      user0Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -842,18 +838,22 @@ describe('/account', function () {
 
     context('authorized', function () {
 
+      let agent;
+
+      beforeEach(() => {
+        agent = agentFactory.logged();
+      });
+
       context('good data', function () {
         it('should update the password', async function () {
-          const [, user1] = dbData.users;
-          const jwtPayload = {username: user1.username, verified:user1.verified, givenName:'', familyName:''};
-          const user1Token = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+          const [user0] = dbData.users;
 
           const patchBody = {
             data: {
               type: 'users',
-              id: user1.username,
+              id: user0.username,
               attributes: {
-                oldPassword: user1.password,
+                oldPassword: user0.password,
                 password: '&^m.UgOHnnofqb87'
               }
             }
@@ -863,11 +863,10 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + user1Token)
             .expect(204);
 
           // check that we can authenticate with the new password
-          const { authenticated } = await models.user.authenticate(user1.username, patchBody.data.attributes.password);
+          const { authenticated } = await models.user.authenticate(user0.username, patchBody.data.attributes.password);
 
           should(authenticated).eql(true);
 
@@ -892,7 +891,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + user0Token)
             .expect(400);
         });
 
@@ -912,7 +910,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + user0Token)
             .expect(403);
         });
 
@@ -932,7 +929,6 @@ describe('/account', function () {
           const response = await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + user0Token)
             .expect(400);
 
           should(response.body).have.propertyByPath('errors', 0, 'title')
@@ -956,8 +952,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + user0Token)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(400);
         });
 
@@ -979,7 +973,6 @@ describe('/account', function () {
           await agent
             .patch('/account')
             .send(patchBody)
-            .set('Authorization', 'Bearer ' + user0Token)
             .expect(400);
 
         });
@@ -1007,5 +1000,4 @@ describe('/account', function () {
       });
     });
   });
-
 });

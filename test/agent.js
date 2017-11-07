@@ -1,9 +1,12 @@
 'use strict';
 
-const supertest = require('supertest'),
+const jwt = require('jsonwebtoken'),
+      _ = require('lodash'),
       path = require('path'),
       defaults = require('superagent-defaults'),
-      app = require(path.resolve('./app'));
+      supertest = require('supertest'),
+      app = require(path.resolve('./app')),
+      jwtConfig = require(path.resolve('./config')).jwt;
 
 /**
  * Factory of supertest agent, which is able to accept default settings (headers, auth etc).
@@ -25,5 +28,25 @@ function agentFactory(includeDefaults = true) {
 
   return agent;
 }
+
+function loggedAgentFactory(user = {}, includeDefaults = true) {
+  const agent = agentFactory(includeDefaults);
+
+  // create the token
+  const defaultPayload = { username: 'user0', verified: true };
+  const payload = Object.assign(defaultPayload, _.pick(user, ['username', 'verified']));
+
+  const token = jwt.sign(payload, jwtConfig.secret, {
+    algorithm: 'HS256',
+    expiresIn: jwtConfig.expirationTime
+  });
+
+  // set the authorization header
+  agent.set('Authorization', `Bearer ${token}`);
+
+  return agent;
+}
+
+agentFactory.logged = loggedAgentFactory;
 
 module.exports = agentFactory;
