@@ -10,7 +10,7 @@ const agentFactory = require(path.resolve('./test/agent')),
 
 
 const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
+const jwtExpirationTime = 5000;
 
 describe('/auth/token', function() {
   let dbData, verifiedUser, sandbox;
@@ -25,6 +25,9 @@ describe('/auth/token', function() {
     dbData = await dbHandle.fill(data);
     verifiedUser = dbData.users[0];
     sandbox = sinon.sandbox.create();
+
+    // stub the config jwt expiration time
+    sandbox.stub(config.jwt, 'expirationTime').value(jwtExpirationTime);
 
     agent = agentFactory();
   });

@@ -9,7 +9,6 @@ const models = require(path.resolve('./models')),
       config = require(path.resolve('./config'));
 
 const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
 
 async function generateTokenBehavior(data) {
   let token, authenticated, verified, user, username, password;
@@ -73,7 +72,9 @@ async function generateTokenBehavior(data) {
     // TODO - should throw any special error
     const {username, givenName, familyName} = user;
     const jwtPayload = { username, verified, givenName, familyName };
-    token = await jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
+    // passing expirationTime as a config's property, to be able to stub it
+    token = await jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: config.jwt.expirationTime });
     responseData.status = 200;
     responseData.data = {token};
   } catch(e) {

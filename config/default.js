@@ -36,5 +36,5 @@ module.exports = {
     // allowed headers
     allowedHeaders: ['Content-Type', 'Authorization']
   },
-  jwt: { expirationTime: 3000 }
+  jwt: { expirationTime: '7d' }
 };
