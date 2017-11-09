@@ -9,7 +9,6 @@ const models = require(path.resolve('./models')),
       config = require(path.resolve('./config'));
 
 const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
 
 async function generateTokenBehavior(data) {
   let token, authenticated, verified, user, username, password;
@@ -73,7 +72,9 @@ async function generateTokenBehavior(data) {
     // TODO - should throw any special error
     const {username, givenName, familyName} = user;
     const jwtPayload = { username, verified, givenName, familyName };
-    token = await jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+
+    // passing expirationTime as a config's property, to be able to stub it
+    token = await jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: config.jwt.expirationTime });
     responseData.status = 200;
     responseData.data = {token};
   } catch(e) {
@@ -90,4 +91,16 @@ async function generateToken(req, res) {
   return res.status(responseData.status).json({meta:responseData.data});
 }
 
-module.exports = { generateToken, generateTokenBehavior };
+async function expire(req, res) {
+  // get current timestamp in seconds
+  const timestamp = Math.round(Date.now() / 1000);
+  // get expiration value of token
+  const { exp } = jwt.decode(req.headers.authorization.split(' ')[1]);
+
+  // respond with time till expiration
+  return res.status(200).json({
+    meta: { exp: exp - timestamp }
+  });
+}
+
+module.exports = { expire, generateToken, generateTokenBehavior };
