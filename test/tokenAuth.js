@@ -2,6 +2,7 @@
 
 const jwt = require('jsonwebtoken'),
       path = require('path'),
+      should = require('should'),
       sinon = require('sinon');
 
 const agentFactory = require(path.resolve('./test/agent')),
@@ -123,9 +124,12 @@ describe('/auth/token', function() {
 
 describe('authorizing path for logged users', function() {
   describe('authorize show new users path', function () {
-    let dbData,
-        loggedUser, userToken, sandbox,
-        agent;
+    let agent,
+        clock,
+        dbData,
+        loggedUser,
+        sandbox,
+        userToken;
 
     // seed the database with users
     beforeEach(async function () {
@@ -139,6 +143,13 @@ describe('authorizing path for logged users', function() {
       [loggedUser] = dbData.users;
 
       sandbox = sinon.sandbox.create();
+
+      sandbox.stub(config.jwt, 'expirationTime').value(jwtExpirationTime);
+
+      clock = sandbox.useFakeTimers({
+        now: new Date('1999-01-01'),
+        toFake: ['Date']
+      });
 
       const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
       userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
@@ -181,11 +192,49 @@ describe('authorizing path for logged users', function() {
         // TODO limit shoud be set or given in query?
         // diff query /users?filter[newUsers]=<limit>
         it('show new users with uncorrect token 403', async function () {
-          await agent
+          const response = await agent
             .get('/users?sort=-created&page[offset]=0&page[limit]=5')
             .set('Authorization', 'Bearer ' + 'wrongToken')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);
+
+          should(response.body).deepEqual({
+            errors: [{
+              status: '403',
+              title: 'Not Authorized'
+            }]
+          });
+
+        });
+      });
+
+      context('expired token', () => {
+        it('403 and respond "detail: expired"', async () => {
+          // wait almost long enough
+          clock.tick(jwtExpirationTime * 1000 - 1);
+
+          // still correct
+          await agent
+            .get('/users?sort=-created&page[offset]=0&page[limit]=5')
+            .set('Authorization', 'Bearer ' + userToken)
+            .expect(200);
+
+          // wait a bit longer
+          clock.tick(2);
+
+          // failing
+          const response = await agent
+            .get('/users?sort=-created&page[offset]=0&page[limit]=5')
+            .set('Authorization', 'Bearer ' + userToken)
+            .expect(403);
+
+          should(response.body).deepEqual({
+            errors: [{
+              status: '403',
+              title: 'Not Authorized',
+              detail: 'expired'
+            }]
+          });
         });
       });
     });

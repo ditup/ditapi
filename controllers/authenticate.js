@@ -26,13 +26,20 @@ async function setAuthData(req, res, next) {
       username = data.username;
       verified = data.verified;
     } catch (e) {
-      // TODO report some error message
-      return res.status(403).json({
-        errors: [{
-          status: '403',
-          title: 'Not Authorized'
-        }]
-      });
+
+      const error = {
+        status: '403',
+        title: 'Not Authorized'
+      };
+
+      // add error detail
+      switch (e.name) {
+        case 'TokenExpiredError': {
+          error.detail = 'expired';
+          break;
+        }
+      }
+      return res.status(403).json({ errors: [error] });
     }
 
     req.auth.username = username;
