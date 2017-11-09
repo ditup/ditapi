@@ -90,4 +90,16 @@ async function generateToken(req, res) {
   return res.status(responseData.status).json({meta:responseData.data});
 }
 
-module.exports = { generateToken, generateTokenBehavior };
+async function expire(req, res) {
+  // get current timestamp in seconds
+  const timestamp = Math.round(Date.now() / 1000);
+  // get expiration value of token
+  const { exp } = jwt.decode(req.headers.authorization.split(' ')[1]);
+
+  // respond with time till expiration
+  return res.status(200).json({
+    meta: { exp: exp - timestamp }
+  });
+}
+
+module.exports = { expire, generateToken, generateTokenBehavior };
