@@ -198,6 +198,26 @@ types:
             403:
             404:
 /auth:
+  /token:
+    get:
+      description: Send Basic auth header and receive JWT token.
+      responses:
+        200:
+          body:
+            example:
+              meta:
+                token: aaa.bbb.ccc
+        401:
+  /exp:
+    get:
+      description: Get time till a provided token's expiration [seconds].
+      responses:
+        200:
+          body:
+            example:
+              meta:
+                exp: 3600
+        403:
   # TODO JWT Token
   # send Basic auth header and receive JWT token
   # check validity of a given JWT token
