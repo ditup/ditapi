@@ -1,24 +1,17 @@
 'use strict';
 
-const jwt = require('jsonwebtoken'),
-      path = require('path'),
+const path = require('path'),
       should = require('should'),
-      sinon = require('sinon'),
-      supertest = require('supertest');
+      sinon = require('sinon');
 
-const app = require(path.resolve('./app')),
-      config = require(path.resolve('./config')),
+const agentFactory = require('./agent'),
       dbHandle = require(path.resolve('./test/handleDatabase'));
-
-const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
-
-const agent = supertest.agent(app);
 
 let dbData;
 
 describe('Location of people, tags, ideas, projects, ...', function () {
-  let sandbox;
+  let agent,
+      sandbox;
 
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
@@ -26,6 +19,9 @@ describe('Location of people, tags, ideas, projects, ...', function () {
     sandbox.useFakeTimers({
       toFake: ['Date']
     });
+
+    // a default non-logged agent
+    agent = agentFactory();
   });
 
   afterEach(function () {
@@ -34,7 +30,7 @@ describe('Location of people, tags, ideas, projects, ...', function () {
 
   describe('PATCH location of a user', function () {
 
-    let loggedUser, otherUser, loggedUserToken;
+    let loggedUser, otherUser;
 
     beforeEach(async function () {
       const data = {
@@ -45,8 +41,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser, otherUser] = dbData.users;
-      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -57,6 +51,10 @@ describe('Location of people, tags, ideas, projects, ...', function () {
     it('ask for update every 3 months');
 
     context('logged in as me', function () {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
 
       context('valid location', function () {
 
@@ -73,8 +71,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -97,8 +93,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -123,8 +117,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -149,8 +141,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -168,8 +158,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -188,8 +176,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
 
@@ -205,8 +191,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -228,8 +212,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -250,8 +232,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -278,7 +258,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
               }
             }
           })
-          .set('Content-Type', 'application/vnd.api+json')
           .auth(otherUser.username, otherUser.password)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(403);
@@ -294,7 +273,7 @@ describe('Location of people, tags, ideas, projects, ...', function () {
 
   describe('GET people within a rectangle', function () {
 
-    let loggedUser, loggedUserToken;
+    let loggedUser;
 
     beforeEach(async function () {
       const data = {
@@ -317,9 +296,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser] = dbData.users;
-      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
     });
 
     afterEach(async function () {
@@ -327,11 +303,13 @@ describe('Location of people, tags, ideas, projects, ...', function () {
     });
 
     context('logged', function () {
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
       it('show people inside a specified rectangle and don\'t show people outside', async function () {
         const res = await agent
           .get('/users?filter[location]=-5.1,4.9,5.1,15.1')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -351,8 +329,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
       it('don\'t leak the preciseLocation', async function () {
         const res = await agent
           .get('/users?filter[location]=-5.1,4.9,5.1,15.1')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(200);
 
@@ -365,8 +341,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
         it('[wrong corners] error with 400', async function () {
           await agent
             .get('/users?filter[location]=-5.1,15.1,5.1,4.9')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -374,8 +348,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
         it('[wrong amount of coordinates] error with 400', async function () {
           await agent
             .get('/users?filter[location]=-5,5,5,15,0')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -383,8 +355,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
         it('[out of range] error with 400', async () => {
           await agent
             .get('/users?filter[location]=-91,5,-80,15')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -396,7 +366,6 @@ describe('Location of people, tags, ideas, projects, ...', function () {
       it('error with 403', async function () {
         await agent
           .get('/users?filter[location]=-1,-1,1,1')
-          .set('Content-Type', 'application/vnd.api+json')
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(403);
       });
@@ -416,63 +385,3 @@ describe('Location of people, tags, ideas, projects, ...', function () {
     it('show where are the people connected to the idea');
   });
 });
-
-/*
-    context('logged in', function () {
-      context('the edited user is the logged user', function () {
-        // profile fields are givenName, familyName, description, birthday
-        //
-        it('should update 1 profile field', async function () {
-          const res = await agent
-            .patch(`/users/${loggedUser.username}`)
-            .send({
-              data: {
-                type: 'users',
-                id: loggedUser.username,
-                attributes: {
-                  givenName: 'new-given-name'
-                }
-              }
-            })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(200);
-
-          should(res.body).have.property('data');
-          const dt = res.body.data;
-          should(dt).have.property('id', loggedUser.username);
-          should(dt.attributes).have.property('username', loggedUser.username);
-          should(dt.attributes).have.property('givenName', 'new-given-name');
-        });
-
-        it('should update multiple profile fields', async function () {
-          const attributes = {
-            givenName: 'new-given-name',
-            familyName: 'newFamily Name',
-            description: 'this is a description'
-          };
-
-          const res = await agent
-            .patch(`/users/${loggedUser.username}`)
-            .send({
-              data: {
-                type: 'users',
-                id: loggedUser.username,
-                attributes
-              }
-            })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(200);
-
-          should(res.body).have.property('data');
-          const dt = res.body.data;
-          should(dt).have.property('id', loggedUser.username);
-          should(dt.attributes).have.property('username', loggedUser.username);
-          should(dt.attributes).have.property('givenName', attributes.givenName);
-          should(dt.attributes).have.property('familyName', attributes.familyName);
-          should(dt.attributes).have.property('description', attributes.description);
-        });
-*/

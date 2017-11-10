@@ -4,11 +4,13 @@
 const express = require('express'),
       bodyParser = require('body-parser'),
       cors = require('cors'),
+      allowMethods = require('allow-methods'),
       helmet = require('helmet');
 
 // load internal dependencies
 const models = require('./models'),
       config = require('./config'),
+      { validateContentType, validateAccept } = require('./controllers/security'),
       authenticate = require('./controllers/authenticate'),
       deserialize = require('./controllers/deserialize'),
       sanitizer = require('./controllers/validators/sanitizer');
@@ -20,12 +22,29 @@ const app = express();
 
 app.set('env', process.env.NODE_ENV || 'development');
 
+// Protect against some web vulnerabilities by setting some headers with Helmet
+// https://expressjs.com/en/advanced/best-practice-security.html
+app.use(helmet({
+  frameguard: {
+    action: 'deny'
+  }
+}));
+
 // Cross Origin Resource Sharing
 app.use(cors(config.cors));
 
-// Protect against some web vulnerabilities by setting some headers with Helmet
-// https://expressjs.com/en/advanced/best-practice-security.html
-app.use(helmet());
+// set Content-Type header for all responses to JSON API type
+app.use(function (req, res, next) {
+  res.contentType('application/vnd.api+json');
+  return next();
+});
+
+// whitelist allowed methods
+app.use(allowMethods(config.cors.methods));
+// validate content-type header
+app.use(validateContentType);
+// validate accept (content-types) header
+app.use(validateAccept);
 
 app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 

@@ -30,6 +30,6 @@ router.route('/')
 
 router.route('/:tagname')
   .all(validateParams)
-  .get(tagController.getTag);
+  .get(authorize.onlyLogged, tagController.getTag);
 
 module.exports = router;

@@ -1,27 +1,21 @@
 'use strict';
 
-const jwt = require('jsonwebtoken'),
-      path = require('path'),
+const path = require('path'),
       should = require('should'),
-      sinon = require('sinon'),
-      supertest = require('supertest');
+      sinon = require('sinon');
 
-const app = require(path.resolve('./app')),
+const agentFactory = require('./agent'),
       config = require(path.resolve('./config')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       models = require(path.resolve('./models')),
       notificationJobs = require(path.resolve('./jobs/notifications'));
 
-const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
-
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));
 
-const agent = supertest.agent(app);
-
 describe('contacts', function () {
-  let dbData,
+  let agent,
+      dbData,
       sandbox;
 
   afterEach(async function () {
@@ -38,6 +32,7 @@ describe('contacts', function () {
 
     sandbox.stub(mailer, 'general');
 
+    agent = agentFactory();
   });
 
   afterEach(function () {
@@ -106,17 +101,19 @@ describe('contacts', function () {
     // don't create a duplicate contact (both directions)
     // no contact to self can be created
     context('logged in', function () {
+
+      beforeEach(() => {
+        const [loggedUser] = dbData.users;
+        agent = agentFactory.logged(loggedUser);
+      });
+
       context('valid data', function () {
         it('create a contact to a user', async function () {
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           const response = await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -169,9 +166,7 @@ describe('contacts', function () {
         });
 
         it('create multiple contacts between different people', async function () {
-          const [me, user1, user2] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+          const [, user1, user2] = dbData.users;
 
           await agent
             .post('/contacts')
@@ -190,8 +185,6 @@ describe('contacts', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -212,8 +205,6 @@ describe('contacts', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -251,9 +242,7 @@ describe('contacts', function () {
 
       context('invalid data', function () {
         it('[missing attribute \'trust\' in request body] 400', async function () {
-          const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+          const [, other] = dbData.users;
 
           const contactBody = generateContactBody(other, {});
           delete contactBody.data.attributes.trust;
@@ -261,16 +250,12 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
 
         it('[invalid attributes] 400', async function () {
-          const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+          const [, other] = dbData.users;
 
           const contactBody = generateContactBody(other, {});
           contactBody.data.attributes.invalid = 'invalid';
@@ -278,74 +263,54 @@ describe('contacts', function () {
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
 
         it('[invalid other username] error 400', async function () {
-          const [me] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
           const contactBody = generateContactBody({ username: 'invalid username' }, {});
 
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
 
         it('[invalid trust level] error 400', async function () {
-          const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+          const [, other] = dbData.users;
 
           const contactBody = generateContactBody(other, { trust: 7 });
 
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         });
 
         it('[invalid message] 400', async function () {
-          const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+          const [, other] = dbData.users;
 
           const contactBody = generateContactBody(other, { message: '.'.repeat(2049)});
 
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         });
 
         it('[invalid reference] 400', async function () {
-          const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+          const [, other] = dbData.users;
 
           const contactBody = generateContactBody(other, { reference: '.'.repeat(2049)});
 
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -353,28 +318,18 @@ describe('contacts', function () {
 
         it('[contact to oneself] 400', async function () {
           const [me] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
           await agent
             .post('/contacts')
             .send(generateContactBody(me, {}))
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
 
         it('[nonexistent other user] error 404 and info', async function () {
-          const [me] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
           const response = await agent
             .post('/contacts')
             .send(generateContactBody({ username: 'nonexistent-user' }, {}))
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -383,48 +338,33 @@ describe('contacts', function () {
         });
 
         it('[already existent] 409 Conflict', async function () {
-          const [me] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
           await agent
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(409)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
 
         it('[opposite direction exists] 409 Conflict', async function (){
           const [me, other] = dbData.users;
-          const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-          const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-          const jwtOtherPayload = {username: other.username, verified:other.verified, givenName:'', familyName:''};
-          const otherToken = jwt.sign(jwtOtherPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-          await agent
+          await agentFactory.logged(me)
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + meToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
           contactBody.data.relationships.to.data.id = me.username;
-          await agent
+
+          await agentFactory.logged(other)
             .post('/contacts')
             .send(contactBody)
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + otherToken)
             .expect(409)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -436,7 +376,6 @@ describe('contacts', function () {
         await agent
           .post('/contacts')
           .send(contactBody)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -462,14 +401,17 @@ describe('contacts', function () {
 
       context('logged in', function () {
 
+        beforeEach(() => {
+          const [loggedUser] = dbData.users;
+          agent = agentFactory.logged(loggedUser);
+        });
+
         context('valid data', function () {
 
           it('makes the contact confirmed and saves trust & reference', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
                 data: {
@@ -482,8 +424,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -502,10 +442,8 @@ describe('contacts', function () {
         context('invalid data', function () {
           it('[nonexistent contact to confirm] 404 and info', async function () {
             const [, me, another] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${another.username}`)
               .send({
                 data: {
@@ -518,17 +456,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[already confirmed contact to confirm] 403', async function () {
             const [me,,, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
+            // default logged agent
             await agent
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
@@ -542,17 +477,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(403)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[nonexistent user] 404', async function () {
             const [me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
+            // default logged agent
             await agent
               .patch(`/contacts/${me.username}/nonexistent-user`)
               .send({
@@ -566,16 +498,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
+
           it('[url params and id don\'t match] 400', async function () {
             const [me, other, another] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
+            // default logged agent
             await agent
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
@@ -589,18 +519,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[missing parameters (confirmed, trust, reference)] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
                 data: {
@@ -612,18 +538,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[unexpected (invalid) parameters] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
                 data: {
@@ -637,18 +559,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[invalid reference] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
                 data: {
@@ -661,18 +579,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[invalid trust] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
                 data: {
@@ -685,18 +599,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[invalid username] 400', async function () {
             const [, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/invalid..username`)
               .send({
                 data: {
@@ -709,18 +619,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[body.isConfirmed!=true] 400', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
                 data: {
@@ -733,17 +639,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[the same user who created confirms] 404', async function () {
             const [me, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
+            // default logged agent
             await agent
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
@@ -757,18 +660,14 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[confirming contact not directed to me] 403', async function () {
             const [other, me, another] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${other.username}/${another.username}`)
               .send({
                 data: {
@@ -781,8 +680,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(403)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -805,7 +702,6 @@ describe('contacts', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -828,11 +724,15 @@ describe('contacts', function () {
       });
 
       context('logged in', function () {
+
+        beforeEach(() => {
+          const [me] = dbData.users;
+          agent = agentFactory.logged(me);
+        });
+
         context('good data provided', function () {
           it('200 & update & respond with the updated contact', async function () {
             const [me, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const resp = await agent
               .patch(`/contacts/${me.username}/${other.username}`)
@@ -846,8 +746,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -864,10 +762,8 @@ describe('contacts', function () {
 
           it('[opposite direction] 200 & update & respond with the updated contact', async function () {
             const [other, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            const resp = await agent
+            const resp = await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
                 data: {
@@ -879,8 +775,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -899,9 +793,8 @@ describe('contacts', function () {
 
           it('[unconfirmed which i created, including message] 200, update, respond', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
+            // default logged agent
             await agent
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
@@ -915,8 +808,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -928,8 +819,6 @@ describe('contacts', function () {
 
           it('[partial update] 200, update partially, respond', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             await agent
               .patch(`/contacts/${me.username}/${other.username}`)
@@ -942,8 +831,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -956,10 +843,8 @@ describe('contacts', function () {
         context('bad data', function () {
           it('[contact not from me] 400', async function () {
             const [userA, userB, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/contacts/${userA.username}/${userB.username}`)
               .send({
                 data: {
@@ -971,16 +856,12 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
 
           it('[contains invalid attributes (other than trust, reference, message)] 400', async function () {
             const [me, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const resp = await agent
               .patch(`/contacts/${me.username}/${other.username}`)
@@ -995,8 +876,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -1006,8 +885,6 @@ describe('contacts', function () {
 
           it('[jsonapi id doesn\'t match url] 400', async function () {
             const [me, userA, userB] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const resp = await agent
               .patch(`/contacts/${me.username}/${userB.username}`)
@@ -1021,8 +898,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -1031,8 +906,6 @@ describe('contacts', function () {
 
           it('[invalid trust] 400', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const resp = await agent
               .patch(`/contacts/${me.username}/${other.username}`)
@@ -1045,8 +918,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -1055,8 +926,6 @@ describe('contacts', function () {
 
           it('[invalid reference] 400', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const resp = await agent
               .patch(`/contacts/${me.username}/${other.username}`)
@@ -1069,8 +938,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -1079,8 +946,6 @@ describe('contacts', function () {
 
           it('[invalid message] 400', async function () {
             const [me,, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const resp = await agent
               .patch(`/contacts/${me.username}/${other.username}`)
@@ -1093,8 +958,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -1103,8 +966,6 @@ describe('contacts', function () {
 
           it('[provided message when already confirmed] 400', async function () {
             const [me, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const resp = await agent
               .patch(`/contacts/${me.username}/${other.username}`)
@@ -1117,8 +978,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -1127,10 +986,8 @@ describe('contacts', function () {
 
           it('[nonexistent contact] 404', async function () {
             const [, me, other] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            const resp = await agent
+            const resp = await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
                 data: {
@@ -1141,8 +998,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -1151,10 +1006,8 @@ describe('contacts', function () {
 
           it('[updating unconfirmed contact i didn\'t create] 400', async function () {
             const [other,, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-            const resp = await agent
+            const resp = await agentFactory.logged(me)
               .patch(`/contacts/${me.username}/${other.username}`)
               .send({
                 data: {
@@ -1166,8 +1019,6 @@ describe('contacts', function () {
                   }
                 }
               })
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -1191,7 +1042,6 @@ describe('contacts', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -1219,15 +1069,10 @@ describe('contacts', function () {
     context('owner', function () {
       it('[existent contact] returns 204 and removes the contact from database', async function () {
         const [me, other] = dbData.users;
-        const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-        const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
 
         await should(models.contact.read(me.username, other.username)).be.fulfilled();
-        await agent
+        await agentFactory.logged(me)
           .delete(`/contacts/${other.username}/${me.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + meToken)
           .expect(204)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -1236,14 +1081,9 @@ describe('contacts', function () {
 
       it('[nonexistent contact] returns 404', async function () {
         const [, me, other] = dbData.users;
-        const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-        const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-
-        await agent
+        await agentFactory.logged(me)
           .delete(`/contacts/${other.username}/${me.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + meToken)
           .expect(404)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -1252,14 +1092,9 @@ describe('contacts', function () {
     context('not owner', function () {
       it('403', async function () {
         const [userA, userB, me]= dbData.users;
-        const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-        const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-
-        await agent
+        await agentFactory.logged(me)
           .delete(`/contacts/${userA.username}/${userB.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + meToken)
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -1269,9 +1104,9 @@ describe('contacts', function () {
       it('403', async function () {
         const [userA, userB]= dbData.users;
 
+        // default not logged agent
         await agent
           .delete(`/contacts/${userA.username}/${userB.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(403)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -1280,14 +1115,9 @@ describe('contacts', function () {
     context('invalid username(s)', function () {
       it('400', async function () {
         const [me]= dbData.users;
-        const jwtPayload = {username: me.username, verified:me.verified, givenName:'', familyName:''};
-        const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
-
-        await agent
+        await agentFactory.logged(me)
           .delete(`/contacts/${me.username}/invalid..username`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + meToken)
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });

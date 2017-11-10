@@ -1,26 +1,18 @@
 'use strict';
 
-process.env.NODE_ENV = 'test';
-
-const jwt = require('jsonwebtoken'),
-      supertest = require('supertest'),
-      should = require('should'),
+const should = require('should'),
       path = require('path'),
       sinon = require('sinon');
 
-const app = require(path.resolve('./app')),
+const agentFactory = require('./agent'),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       mailer = require(path.resolve('./services/mailer')),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
-const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
-
-const agent = supertest.agent(app);
-
 describe('/users', function () {
-  let sandbox;
+  let agent,
+      sandbox;
 
   // clear database after every test
   afterEach(function () {
@@ -31,6 +23,8 @@ describe('/users', function () {
     sandbox = sinon.sandbox.create();
     // check that the mail was sent
     sandbox.stub(mailer, 'general');
+
+    agent = agentFactory();
   });
 
   afterEach(function () {
@@ -64,7 +58,6 @@ describe('/users', function () {
         const res = await agent
           .post('/users')
           .send(userData)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect('Location', selfLink)
           .expect(201);
@@ -82,13 +75,11 @@ describe('/users', function () {
         const res = await agent
           .post('/users')
           .send(userData)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(201);
 
         // GET the new user in another request to test its presence
         await agent
           .get(`/users/${res.body.data.id}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(200);
       });
 
@@ -97,7 +88,6 @@ describe('/users', function () {
         await agent
           .post('/users')
           .send(userData)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(201);
 
         // check the email
@@ -132,7 +122,6 @@ describe('/users', function () {
       const res = await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(400);
 
@@ -156,14 +145,12 @@ describe('/users', function () {
       await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(201);
 
       const res = await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(409); // Conflict
 
@@ -185,7 +172,6 @@ describe('/users', function () {
       const res = await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(400);
 
@@ -207,7 +193,6 @@ describe('/users', function () {
       const res = await agent
         .post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(400);
 
@@ -290,7 +275,6 @@ describe('/users', function () {
       // post the first user
       await agent.post('/users')
         .send(userData)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(201);
 
@@ -301,7 +285,6 @@ describe('/users', function () {
       const user2Response = await agent
         .post('/users')
         .send(userData2)
-        .set('Content-Type', 'application/vnd.api+json')
         .expect('Content-Type', /^application\/vnd\.api\+json/)
         .expect(409); // Conflict
 
@@ -313,8 +296,7 @@ describe('/users', function () {
     describe('show users with given tags', function () {
 
       let dbData,
-          loggedUser,
-          loggedUserToken;
+          loggedUser;
 
       // seed the database with users and some named tags to do filtering on
       beforeEach(async function () {
@@ -337,194 +319,188 @@ describe('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
       });
 
-      it('show list of users sorted by userTag relevance', async function () {
-        const res = await agent
-          .get('/users?filter[tag]=tag1,tag2')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(200);
+      context('logged', () => {
 
-        should(res.body).have.property('data');
-        const data = res.body.data;
-
-        should(data).have.length(4);
-
-        should(data).have.propertyByPath(0, 'id').eql('user1');
-        should(data).have.propertyByPath(0, 'type').eql('users');
-        should(data).have.propertyByPath(0, 'attributes').containEql({
-          username: 'user1',
-          givenName: '',
-          familyName: ''
+        beforeEach(() => {
+          agent = agentFactory.logged(loggedUser);
         });
 
-        should(data).have.propertyByPath(1, 'id').eql('user2');
-        should(data).have.propertyByPath(1, 'type').eql('users');
-        should(data).have.propertyByPath(1, 'attributes').containEql({
-          username: 'user2',
-          givenName: '',
-          familyName: ''
-        });
-      });
+        it('show list of users sorted by userTag relevance', async function () {
+          const res = await agent
+            .get('/users?filter[tag]=tag1,tag2')
+            .expect(200);
 
-      it('limit the output', async () => {
-        const res = await agent
-          .get('/users?filter[tag]=tag1,tag2&page[limit]=3&page[offset]=0')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(200);
+          should(res.body).have.property('data');
+          const data = res.body.data;
 
-        should(res.body).have.property('data').Array().length(3);
-      });
+          should(data).have.length(4);
 
-      it('offset the output', async () => {
-        const res = await agent
-          .get('/users?filter[tag]=tag1,tag2&page[limit]=5&page[offset]=2')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(200);
-
-        should(res.body).have.property('data').Array().length(2);
-        const { data } = res.body;
-        should(data[0]).match({
-          type: 'users',
-          id: 'user3'
-        });
-      });
-
-      it('include user-tag relationships', async function () {
-        const res = await agent
-          .get('/users?filter[tag]=tag1,tag2')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(200);
-
-        // user with highest tag relevance and her data
-        const [firstUser] = res.body.data;
-        const [, fuData] = dbData.users;
-        should(firstUser).have.properties({
-          type: 'users',
-          id: fuData.username
-        });
-
-        // check relationship tags (list of user-tags)
-        // relationship tags should have self and related links
-        should(firstUser).have.propertyByPath('relationships', 'tags')
-          .properties({
-            links: {
-              self: `${config.url.all}/users/${fuData.username}/relationships/tags`,
-              related: `${config.url.all}/users/${fuData.username}/tags`
-            }
+          should(data).have.propertyByPath(0, 'id').eql('user1');
+          should(data).have.propertyByPath(0, 'type').eql('users');
+          should(data).have.propertyByPath(0, 'attributes').containEql({
+            username: 'user1',
+            givenName: '',
+            familyName: ''
           });
 
-        // check amount of matched tags
-        should(firstUser.relationships.tags.data).have.length(2);
-
-        // the tag with highest relevance of the first user
-        const [firstUserTag] = firstUser.relationships.tags.data;
-        const [futData] = dbData.userTag;
-        should(firstUserTag).deepEqual({
-          type: 'user-tags',
-          id: `${futData.user.username}--${futData.tag.tagname}`
+          should(data).have.propertyByPath(1, 'id').eql('user2');
+          should(data).have.propertyByPath(1, 'type').eql('users');
+          should(data).have.propertyByPath(1, 'attributes').containEql({
+            username: 'user2',
+            givenName: '',
+            familyName: ''
+          });
         });
 
-        should(res.body).have.property('included');
+        it('limit the output', async () => {
+          const res = await agent
+            .get('/users?filter[tag]=tag1,tag2&page[limit]=3&page[offset]=0')
+            .expect(200);
 
-        // include user-tag
-        should(res.body.included).containDeep([{
-          type: 'user-tags',
-          id: `${futData.user.username}--${futData.tag.tagname}`,
-          attributes: {
-            username: futData.user.username,
-            tagname: futData.tag.tagname,
-            story: futData.story,
-            relevance: futData.relevance
-          },
-          links: {
-            self: `${config.url.all}/users/${futData.user.username}/tags/${futData.tag.tagname}`
-          },
-          relationships: {
-            tag: {
-              data: {
-                type: 'tags',
-                id: futData.tag.tagname
+          should(res.body).have.property('data').Array().length(3);
+        });
+
+        it('offset the output', async () => {
+          const res = await agent
+            .get('/users?filter[tag]=tag1,tag2&page[limit]=5&page[offset]=2')
+            .expect(200);
+
+          should(res.body).have.property('data').Array().length(2);
+          const { data } = res.body;
+          should(data[0]).match({
+            type: 'users',
+            id: 'user3'
+          });
+        });
+
+        it('include user-tag relationships', async function () {
+          const res = await agent
+            .get('/users?filter[tag]=tag1,tag2')
+            .expect(200);
+
+          // user with highest tag relevance and her data
+          const [firstUser] = res.body.data;
+          const [, fuData] = dbData.users;
+          should(firstUser).have.properties({
+            type: 'users',
+            id: fuData.username
+          });
+
+          // check relationship tags (list of user-tags)
+          // relationship tags should have self and related links
+          should(firstUser).have.propertyByPath('relationships', 'tags')
+            .properties({
+              links: {
+                self: `${config.url.all}/users/${fuData.username}/relationships/tags`,
+                related: `${config.url.all}/users/${fuData.username}/tags`
+              }
+            });
+
+          // check amount of matched tags
+          should(firstUser.relationships.tags.data).have.length(2);
+
+          // the tag with highest relevance of the first user
+          const [firstUserTag] = firstUser.relationships.tags.data;
+          const [futData] = dbData.userTag;
+          should(firstUserTag).deepEqual({
+            type: 'user-tags',
+            id: `${futData.user.username}--${futData.tag.tagname}`
+          });
+
+          should(res.body).have.property('included');
+
+          // include user-tag
+          should(res.body.included).containDeep([{
+            type: 'user-tags',
+            id: `${futData.user.username}--${futData.tag.tagname}`,
+            attributes: {
+              username: futData.user.username,
+              tagname: futData.tag.tagname,
+              story: futData.story,
+              relevance: futData.relevance
+            },
+            links: {
+              self: `${config.url.all}/users/${futData.user.username}/tags/${futData.tag.tagname}`
+            },
+            relationships: {
+              tag: {
+                data: {
+                  type: 'tags',
+                  id: futData.tag.tagname
+                }
               }
             }
-          }
-        }]);
+          }]);
 
-        // include tag
-        should(res.body.included).containDeep([{
-          type: 'tags',
-          id: futData.tag.tagname,
-          attributes: {
-            tagname: futData.tag.tagname,
-            description: futData.tag.description
-          },
-          links: {
-            self: `${config.url.all}/tags/${futData.tag.tagname}`
-          }
-        }]);
+          // include tag
+          should(res.body.included).containDeep([{
+            type: 'tags',
+            id: futData.tag.tagname,
+            attributes: {
+              tagname: futData.tag.tagname,
+              description: futData.tag.description
+            },
+            links: {
+              self: `${config.url.all}/tags/${futData.tag.tagname}`
+            }
+          }]);
+        });
+
+        context('invalid data', function () {
+          it('[invalid tagnames in a list] error 400', async function () {
+            const res = await agent
+              .get('/users?filter[tag]=t*,11')
+              .expect(400);
+
+            should(res.body).have.propertyByPath('errors', '0', 'title')
+              .eql('invalid tag[0]');
+          });
+
+          it('[too many tags provided] error 400', async () => {
+            // query with 11 provided tags (limit 10)
+            const res = await agent
+              .get('/users?filter[tag]=tag0,tag1,tag2,tag3,tag4,tag5,tag6,tag7,tag8,tag9,tag10')
+              .expect(400);
+
+            should(res.body).have.propertyByPath('errors', '0', 'title')
+              .eql('invalid tag');
+
+            should(res.body).have.propertyByPath('errors', '0', 'meta')
+              .eql('should NOT have more than 10 items');
+          });
+
+          it('[no tags provided] error 400', async () => {
+            const res = await agent
+              .get('/users?filter[tag]=')
+              .expect(400);
+
+            should(res.body).have.propertyByPath('errors', '0', 'title')
+              .eql('invalid tag');
+            should(res.body).have.propertyByPath('errors', '0', 'meta')
+              .eql('should NOT have less than 1 items');
+          });
+
+          it('[too high query.page[limit]] error 400', async () => {
+            const res = await agent
+              .get('/users?filter[tag]=tag1&page[offset]=0&page[limit]=21')
+              .expect(400);
+
+            should(res.body).have.propertyByPath('errors', '0', 'title')
+              .eql('invalid limit');
+            should(res.body).have.propertyByPath('errors', '0', 'meta')
+              .eql('should be <= 20');
+          });
+        });
+
       });
-      context('invalid data', function () {
-        it('[invalid tagnames in a list] error 400', async function () {
-          const res = await agent
-            .get('/users?filter[tag]=t*,11')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-          should(res.body).have.propertyByPath('errors', '0', 'title')
-            .eql('invalid tag[0]');
-        });
 
-        it('[too many tags provided] error 400', async () => {
-          // query with 11 provided tags (limit 10)
-          const res = await agent
-            .get('/users?filter[tag]=tag0,tag1,tag2,tag3,tag4,tag5,tag6,tag7,tag8,tag9,tag10')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-          should(res.body).have.propertyByPath('errors', '0', 'title')
-            .eql('invalid tag');
-
-          should(res.body).have.propertyByPath('errors', '0', 'meta')
-            .eql('should NOT have more than 10 items');
-        });
-
-        it('[no tags provided] error 400', async () => {
-          const res = await agent
-            .get('/users?filter[tag]=')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-          should(res.body).have.propertyByPath('errors', '0', 'title')
-            .eql('invalid tag');
-          should(res.body).have.propertyByPath('errors', '0', 'meta')
-            .eql('should NOT have less than 1 items');
-        });
-
-        it('[too high query.page[limit]] error 400', async () => {
-          const res = await agent
-            .get('/users?filter[tag]=tag1&page[offset]=0&page[limit]=21')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-          should(res.body).have.propertyByPath('errors', '0', 'title')
-            .eql('invalid limit');
-          should(res.body).have.propertyByPath('errors', '0', 'meta')
-            .eql('should be <= 20');
+      context('not logged', () => {
+        it('403', async function () {
+          await agent
+            .get('/users?filter[tag]=tag1,tag2')
+            .expect(403);
         });
       });
 
@@ -533,8 +509,7 @@ describe('/users', function () {
     describe('show users with my tags', function () {
 
       let dbData,
-          loggedUser,
-          loggedUserToken;
+          loggedUser;
 
       // seed the database with users and some named tags to do filtering on
       beforeEach(async function () {
@@ -574,176 +549,176 @@ describe('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
       });
 
-      it('list users sorted by relevance weight', async function () {
-        const res = await agent
-          .get('/users?filter[byMyTags]')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(200);
+      context('logged', () => {
 
-        should(res.body).have.property('data');
-        const data = res.body.data;
-
-        should(data).have.length(3);
-
-        should(data).have.propertyByPath(0, 'id').eql('user1');
-        should(data).have.propertyByPath(0, 'type').eql('users');
-        should(data).have.propertyByPath(0, 'attributes').containEql({
-          username: 'user1',
-          givenName: '',
-          familyName: ''
+        beforeEach(() => {
+          agent = agentFactory.logged(loggedUser);
         });
 
-        should(data).have.propertyByPath(1, 'id').eql('user2');
-        should(data).have.propertyByPath(1, 'type').eql('users');
-        should(data).have.propertyByPath(1, 'attributes').containEql({
-          username: 'user2',
-          givenName: '',
-          familyName: ''
-        });
-      });
+        it('list users sorted by relevance weight', async function () {
+          const res = await agent
+            .get('/users?filter[byMyTags]')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(200);
 
-      it('include user-tag relationships', async function () {
-        const res = await agent
-          .get('/users?filter[byMyTags]')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(200);
+          should(res.body).have.property('data');
+          const data = res.body.data;
 
-        // user with highest tag relevance and her data
-        const [firstUser] = res.body.data;
-        const [, fuData] = dbData.users;
-        should(firstUser).have.properties({
-          type: 'users',
-          id: fuData.username
-        });
+          should(data).have.length(3);
 
-        // check relationship tags (list of user-tags)
-        // relationship tags should have self and related links
-        should(firstUser).have.propertyByPath('relationships', 'tags')
-          .properties({
-            links: {
-              self: `${config.url.all}/users/${fuData.username}/relationships/tags`,
-              related: `${config.url.all}/users/${fuData.username}/tags`
-            }
+          should(data).have.propertyByPath(0, 'id').eql('user1');
+          should(data).have.propertyByPath(0, 'type').eql('users');
+          should(data).have.propertyByPath(0, 'attributes').containEql({
+            username: 'user1',
+            givenName: '',
+            familyName: ''
           });
 
-        // check amount of matched tags
-        should(firstUser.relationships.tags.data).have.length(4);
-
-        // the tag with highest relevance of the first user
-        const [firstUserTag] = firstUser.relationships.tags.data;
-        const futData = dbData.userTag[6];
-        should(firstUserTag).deepEqual({
-          type: 'user-tags',
-          id: `${futData.user.username}--${futData.tag.tagname}`
+          should(data).have.propertyByPath(1, 'id').eql('user2');
+          should(data).have.propertyByPath(1, 'type').eql('users');
+          should(data).have.propertyByPath(1, 'attributes').containEql({
+            username: 'user2',
+            givenName: '',
+            familyName: ''
+          });
         });
 
-        should(res.body).have.property('included');
+        it('include user-tag relationships', async function () {
+          const res = await agent
+            .get('/users?filter[byMyTags]')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(200);
 
-        // include user-tag
-        should(res.body.included).containDeep([{
-          type: 'user-tags',
-          id: `${futData.user.username}--${futData.tag.tagname}`,
-          attributes: {
-            username: futData.user.username,
-            tagname: futData.tag.tagname,
-            story: futData.story,
-            relevance: futData.relevance
-          },
-          links: {
-            self: `${config.url.all}/users/${futData.user.username}/tags/${futData.tag.tagname}`
-          },
-          relationships: {
-            tag: {
-              data: {
-                type: 'tags',
-                id: futData.tag.tagname
+          // user with highest tag relevance and her data
+          const [firstUser] = res.body.data;
+          const [, fuData] = dbData.users;
+          should(firstUser).have.properties({
+            type: 'users',
+            id: fuData.username
+          });
+
+          // check relationship tags (list of user-tags)
+          // relationship tags should have self and related links
+          should(firstUser).have.propertyByPath('relationships', 'tags')
+            .properties({
+              links: {
+                self: `${config.url.all}/users/${fuData.username}/relationships/tags`,
+                related: `${config.url.all}/users/${fuData.username}/tags`
+              }
+            });
+
+          // check amount of matched tags
+          should(firstUser.relationships.tags.data).have.length(4);
+
+          // the tag with highest relevance of the first user
+          const [firstUserTag] = firstUser.relationships.tags.data;
+          const futData = dbData.userTag[6];
+          should(firstUserTag).deepEqual({
+            type: 'user-tags',
+            id: `${futData.user.username}--${futData.tag.tagname}`
+          });
+
+          should(res.body).have.property('included');
+
+          // include user-tag
+          should(res.body.included).containDeep([{
+            type: 'user-tags',
+            id: `${futData.user.username}--${futData.tag.tagname}`,
+            attributes: {
+              username: futData.user.username,
+              tagname: futData.tag.tagname,
+              story: futData.story,
+              relevance: futData.relevance
+            },
+            links: {
+              self: `${config.url.all}/users/${futData.user.username}/tags/${futData.tag.tagname}`
+            },
+            relationships: {
+              tag: {
+                data: {
+                  type: 'tags',
+                  id: futData.tag.tagname
+                }
               }
             }
-          }
-        }]);
+          }]);
 
-        // include tag
-        should(res.body.included).containDeep([{
-          type: 'tags',
-          id: futData.tag.tagname,
-          attributes: {
-            tagname: futData.tag.tagname,
-            description: futData.tag.description
-          },
-          links: {
-            self: `${config.url.all}/tags/${futData.tag.tagname}`
-          }
-        }]);
-      });
-
-      it('limit the output', async () => {
-        const res = await agent
-          .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=2')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(200);
-
-        should(res.body).have.property('data');
-        const data = res.body.data;
-
-        should(data).have.length(2);
-
-      });
-
-      it('offset the output', async () => {
-        const res = await agent
-          .get('/users?filter[byMyTags]&page[offset]=2&page[limit]=5')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(200);
-
-        should(res.body).have.property('data').Array().length(1);
-
-        should(res.body.data[0]).match({
-          type: 'users',
-          id: 'user3'
+          // include tag
+          should(res.body.included).containDeep([{
+            type: 'tags',
+            id: futData.tag.tagname,
+            attributes: {
+              tagname: futData.tag.tagname,
+              description: futData.tag.description
+            },
+            links: {
+              self: `${config.url.all}/tags/${futData.tag.tagname}`
+            }
+          }]);
         });
 
+        it('limit the output', async () => {
+          const res = await agent
+            .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=2')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(200);
+
+          should(res.body).have.property('data');
+          const data = res.body.data;
+
+          should(data).have.length(2);
+
+        });
+
+        it('offset the output', async () => {
+          const res = await agent
+            .get('/users?filter[byMyTags]&page[offset]=2&page[limit]=5')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(200);
+
+          should(res.body).have.property('data').Array().length(1);
+
+          should(res.body.data[0]).match({
+            type: 'users',
+            id: 'user3'
+          });
+
+        });
+
+        it('[invalid query.filter.byMyTags] should fail with 400', async () => {
+          await agent
+            .get('/users?filter[byMyTags]=asdf')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+        });
+
+        it('[too high query.page[limit]] error 400', async () => {
+          const res = await agent
+            .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=21')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(400);
+          should(res.body).have.propertyByPath('errors', '0', 'title')
+            .eql('invalid limit');
+          should(res.body).have.propertyByPath('errors', '0', 'meta')
+            .eql('should be <= 20');
+        });
       });
 
-      it('[invalid query.filter.byMyTags] should fail with 400', async () => {
-        await agent
-          .get('/users?filter[byMyTags]=asdf')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(400);
-      });
-
-      it('[too high query.page[limit]] error 400', async () => {
-        const res = await agent
-          .get('/users?filter[byMyTags]&page[offset]=0&page[limit]=21')
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
-          .expect('Content-Type', /^application\/vnd\.api\+json/)
-          .expect(400);
-        should(res.body).have.propertyByPath('errors', '0', 'title')
-          .eql('invalid limit');
-        should(res.body).have.propertyByPath('errors', '0', 'meta')
-          .eql('should be <= 20');
+      context('not logged', () => {
+        it('403', async function () {
+          await agent
+            .get('/users?filter[byMyTags]')
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(403);
+        });
       });
     });
 
     describe('show new users', function () {
       let dbData,
-          loggedUser,
-          loggedUserToken;
+          loggedUser;
 
       // seed the database with users
       beforeEach(async function () {
@@ -755,12 +730,14 @@ describe('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
       });
 
       context('logged in', function () {
+
+        beforeEach(() => {
+          agent = agentFactory.logged(loggedUser);
+        });
+
         context('valid data', function () {
 
           function testUser(jsonApiUser, { username }) {
@@ -771,8 +748,6 @@ describe('/users', function () {
           it('[example 1] show list of 5 newly created and verified users sorted by creation date', async function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(5);
@@ -788,8 +763,6 @@ describe('/users', function () {
           it('[example 2] show list of 20 newly created and verified users sorted by creation date', async function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=20')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(7);
@@ -807,8 +780,6 @@ describe('/users', function () {
           it('[example 3] show list of 0 newly created and verified users', async function () {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=0')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(0);
@@ -821,8 +792,6 @@ describe('/users', function () {
           it('[limit] data is a string: respond by error 400', async function() {
             await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=str')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -831,8 +800,6 @@ describe('/users', function () {
           it('[lack of limit data in the query] error 400', async function() {
             await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -841,8 +808,6 @@ describe('/users', function () {
           it('[lack of \'page.offset\' parameter in the query] error 404', async function() {
             await agent
               .get('/users?sort=-created&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -851,8 +816,6 @@ describe('/users', function () {
           it('[lack of \'pagination\' parameter in the query] error 404', async function() {
             await agent
               .get('/users?sort=-created')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -861,8 +824,6 @@ describe('/users', function () {
           it('[additional \'includes\' parameter in the query] error 404', async function() {
             await agent
               .get('/users?sort=-created&includes=true&page[offset]=0&page[limit]=0')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
 
@@ -871,8 +832,6 @@ describe('/users', function () {
           it('[too high query.page[limit]] error 400', async () => {
             const res = await agent
               .get('/users?sort=-created&page[offset]=0&page[limit]=21')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(400);
             should(res.body).have.propertyByPath('errors', '0', 'title')
@@ -887,7 +846,6 @@ describe('/users', function () {
         it('error 403', async function() {
           await agent
             .get('/users?sort=-created&page[offset]=0&page[limit]=20')
-            .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);
         });
@@ -896,8 +854,7 @@ describe('/users', function () {
 
     describe('show new users with my tags', function () {
       let dbData,
-          loggedUser,
-          loggedUserToken;
+          loggedUser;
 
       // seed the database with users and some named tags to do filtering on
       beforeEach(async function () {
@@ -967,8 +924,6 @@ describe('/users', function () {
         dbData = await dbHandle.fill(data);
 
         [loggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
       });
 
       function testUser(jsonApiUser, { username }, tagCount) {
@@ -978,14 +933,17 @@ describe('/users', function () {
         }
       }
 
-      context('valid data', function () {
-        context('logged in', function () {
+      context('logged in', function () {
+
+        beforeEach(() => {
+          agent = agentFactory.logged(loggedUser);
+        });
+
+        context('valid data', function () {
 
           it('[example 1] show list of 5 new users who share at leats 2 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(5);
@@ -1001,8 +959,6 @@ describe('/users', function () {
           it('[example 2] show list of 5 new users who share at leats 10 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=10&page[offset]=0&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(0);
@@ -1011,8 +967,6 @@ describe('/users', function () {
           it('[example 3] show list of 2 new users who share at leats 3 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=3&page[offset]=0&page[limit]=2')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(2);
@@ -1025,8 +979,6 @@ describe('/users', function () {
           it('[example 4] show list of 20 new users who share at leats 1 tags with me', async function () {
             const res = await agent
               .get('/users?sort=-created&filter[withMyTags]=1&page[offset]=0&page[limit]=20')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect('Content-Type', /^application\/vnd\.api\+json/)
               .expect(200);
             should(res.body).have.property('data').Array().length(6);
@@ -1041,81 +993,66 @@ describe('/users', function () {
           });
         });
 
-        context('not logged in', function () {
+        context('invalid data', function() {
 
-          it('error 403', async function () {
+          it('[invalid \'shareMyTags\' parameter] error 400', async function () {
             await agent
-              .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
-              .set('Content-Type', 'application/vnd.api+json')
+              .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=0&page[limit]=5')
               .expect('Content-Type', /^application\/vnd\.api\+json/)
-              .expect(403);
+              .expect(400);
           });
 
+          it('[invalid \'page.offset\' parameter] parameter is not a number: error 400', async function () {
+            await agent
+              .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=text&page[limit]=5')
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(400);
+          });
+
+          it('[lack of \'sort\' parameter] error 404', async function () {
+            await agent
+              .get('/users?filter[withMyTags]=2&page[offset]=0&page[limit]=5')
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(404);
+          });
+
+          it('[lack of \'page.offset\' parameter] error 400', async function () {
+            await agent
+              .get('/users?sort=-created&filter[withMyTags]=2&page[limit]=5')
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(400);
+          });
+
+          it('[additional \'page.size\' parameter] error 400', async function () {
+            await agent
+              .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5&page[size]=5')
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(400);
+          });
+
+          it('[too high query.page[limit]] error 400', async () => {
+            const res = await agent
+              .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=21')
+              .expect('Content-Type', /^application\/vnd\.api\+json/)
+              .expect(400);
+            should(res.body).have.propertyByPath('errors', '0', 'title')
+              .eql('invalid limit');
+            should(res.body).have.propertyByPath('errors', '0', 'meta')
+              .eql('should be <= 20');
+          });
         });
       });
 
-      context('invalid data', function() {
+      context('not logged in', function () {
 
-        it('[invalid \'shareMyTags\' parameter] error 400', async function () {
+        it('error 403', async function () {
           await agent
-            .get('/users?sort=-created&filter[withMyTags]=2&fpage[offset]=0&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
+            .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-        });
-
-        it('[invalid \'page.offset\' parameter] parameter is not a number: error 400', async function () {
-          await agent
-            .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=text&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-        });
-
-        it('[lack of \'sort\' parameter] error 404', async function () {
-          await agent
-            .get('/users?filter[withMyTags]=2&page[offset]=0&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(404);
-        });
-
-        it('[lack of \'page.offset\' parameter] error 400', async function () {
-          await agent
-            .get('/users?sort=-created&filter[withMyTags]=2&page[limit]=5')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-        });
-
-        it('[additional \'page.size\' parameter] error 400', async function () {
-          await agent
-            .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=5&page[size]=5')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-        });
-
-        it('[too high query.page[limit]] error 400', async () => {
-          const res = await agent
-            .get('/users?sort=-created&filter[withMyTags]=2&page[offset]=0&page[limit]=21')
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .expect('Content-Type', /^application\/vnd\.api\+json/)
-            .expect(400);
-          should(res.body).have.propertyByPath('errors', '0', 'title')
-            .eql('invalid limit');
-          should(res.body).have.propertyByPath('errors', '0', 'meta')
-            .eql('should be <= 20');
+            .expect(403);
         });
 
       });
     });
-
   });
 });

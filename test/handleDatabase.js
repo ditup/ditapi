@@ -101,7 +101,8 @@ function processData(data) {
       _contacts: [],
       get messages() {
         return _.map(this._messages, message => output.messages[message]);
-      }
+      },
+      verified: false
     };
     if (data.verifiedUsers.indexOf(n) > -1) resp.verified = true;
 

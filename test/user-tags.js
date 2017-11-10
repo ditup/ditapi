@@ -1,27 +1,20 @@
 'use strict';
 
-const jwt = require('jsonwebtoken'),
-      supertest = require('supertest'),
-      should = require('should'),
+const should = require('should'),
       sinon = require('sinon'),
       path = require('path');
 
-const app = require(path.resolve('./app')),
+const agentFactory = require('./agent'),
       models = require(path.resolve('./models')),
       dbHandle = require(path.resolve('./test/handleDatabase')),
       config = require(path.resolve('./config/config'));
 
-const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
-
-const agent = supertest.agent(app);
-
 describe('Tags of user', function () {
-  let dbData,
+  let agent,
+      dbData,
       loggedUser,
       otherUser,
-      sandbox,
-      loggedUserToken;
+      sandbox;
 
   beforeEach(function () {
     sandbox = sinon.sandbox.create();
@@ -29,6 +22,8 @@ describe('Tags of user', function () {
       now: 1500000000,
       toFake: ['Date']
     });
+
+    agent = agentFactory();
   });
 
   afterEach(function () {
@@ -70,17 +65,18 @@ describe('Tags of user', function () {
 
       beforeEach(function () {
         [loggedUser, taggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
       });
 
       context('logged', () => {
+
+        beforeEach(() => {
+          agent = agentFactory.logged(loggedUser);
+        });
+
         context('valid', () => {
           it('list of user\'s tags', async () => {
             const response = await agent
               .get(`/users/${taggedUser.username}/tags`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -114,8 +110,6 @@ describe('Tags of user', function () {
           it('should include the tags themselves as relationships', async () => {
             const response = await agent
               .get(`/users/${taggedUser.username}/tags`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -174,8 +168,6 @@ describe('Tags of user', function () {
           it('[invalid username] 400', async () => {
             await agent
               .get('/users/invalid--username/tags')
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -186,7 +178,6 @@ describe('Tags of user', function () {
         it('403', async () => {
           await agent
             .get(`/users/${taggedUser.username}/tags`)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -208,6 +199,10 @@ describe('Tags of user', function () {
       });
 
       context('logged in', function () {
+
+        beforeEach(() => {
+          agent = agentFactory.logged(loggedUser);
+        });
 
         it('[self] add a tag to the user and respond 201', async function () {
 
@@ -232,8 +227,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(201)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -295,8 +288,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -325,8 +316,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(409)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -354,8 +343,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(404)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -384,8 +371,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -415,8 +400,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -446,8 +429,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -478,8 +459,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -500,8 +479,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -533,7 +510,6 @@ describe('Tags of user', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -547,7 +523,7 @@ describe('Tags of user', function () {
   describe('/users/:username/tags/:tagname', function () {
     // TODO include tag & user as relationships and included to the response
     describe('GET', function () {
-      let loggedUser, taggedUser, loggedUserToken;
+      let loggedUser, taggedUser;
 
       beforeEachPopulate({
         users: 3, // how many users to make
@@ -564,20 +540,20 @@ describe('Tags of user', function () {
 
       beforeEach(function () {
         [loggedUser, taggedUser] = dbData.users;
-        const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-        loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
       });
 
       context('logged', () => {
+
+        beforeEach(() => {
+          agent = agentFactory.logged(loggedUser);
+        });
+
         context('valid', () => {
           it('show tag with user\'s story to it', async () => {
             const userTag = dbData.userTag[2];
 
             const response = await agent
               .get(`/users/${taggedUser.username}/tags/${userTag.tag.tagname}`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -607,8 +583,6 @@ describe('Tags of user', function () {
           it('[nonexistent user-tag] 404', async () => {
             await agent
               .get(`/users/${taggedUser.username}/tags/${dbData.tags[2].tagname}`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -618,8 +592,6 @@ describe('Tags of user', function () {
 
             await agent
               .get(`/users/nonexistent/tags/${userTag.tag.tagname}`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -627,8 +599,6 @@ describe('Tags of user', function () {
           it('[nonexistent tag] 404', async () => {
             await agent
               .get(`/users/${taggedUser.username}/tags/nonexistent`)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + loggedUserToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -642,7 +612,6 @@ describe('Tags of user', function () {
 
           await agent
             .get(`/users/${taggedUser.username}/tags/${userTag.tag.tagname}`)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -661,14 +630,15 @@ describe('Tags of user', function () {
       });
 
       context('logged', function () {
+        beforeEach(() => {
+          const [me] = dbData.users;
+          agent = agentFactory.logged(me);
+        });
         context('valid data', function () {
           it('[story] update user\'s story of a tag', async function () {
             const [userTag] = dbData.userTag;
             const { tag } = userTag;
             const [me] = dbData.users;
-            const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
 
             const patchData = {
               data: {
@@ -683,8 +653,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -699,9 +667,6 @@ describe('Tags of user', function () {
           it('[relevance] update relevance of the tag for user', async function () {
             const [me] = dbData.users;
             const [userTag] = dbData.userTag;
-            const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
 
             const patchData = {
               data: {
@@ -716,8 +681,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(200)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -735,9 +698,6 @@ describe('Tags of user', function () {
           it('[i\'m not the user of user-tag] 403 and message', async function () {
             const [other, me] = dbData.users;
             const [userTag] = dbData.userTag;
-            const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
 
             const patchData = {
               data: {
@@ -750,11 +710,9 @@ describe('Tags of user', function () {
               }
             };
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/users/${other.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(403)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -762,9 +720,6 @@ describe('Tags of user', function () {
           it('[JSON API id doesn\'t match url] 400 and msg', async function () {
             const [me, other] = dbData.users;
             const [userTag] = dbData.userTag;
-            const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
 
             const patchData = {
               data: {
@@ -782,8 +737,6 @@ describe('Tags of user', function () {
               // compare with the mismatch
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -793,9 +746,6 @@ describe('Tags of user', function () {
 
           it('[invalid story] 400 and msg', async function () {
             const { userTag: [userTag], users: [me] } = dbData;
-            const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
 
             const patchData = {
               data: {
@@ -811,8 +761,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -822,8 +770,6 @@ describe('Tags of user', function () {
 
           it('[invalid relevance] 400 and msg', async function () {
             const { users: [me], userTag: [userTag]} = dbData;
-            const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const patchData = {
               data: {
@@ -839,8 +785,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -850,9 +794,7 @@ describe('Tags of user', function () {
           });
 
           it('[invalid tagname] 400 and msg', async function () {
-            const { users: [me] } = dbData;
-            const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+            const [me] = dbData.users;
 
             const invalidTagname = 'invalid.tagname';
 
@@ -869,8 +811,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${invalidTagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -884,8 +824,6 @@ describe('Tags of user', function () {
             const { tag } = userTag;
             // the user 1 has no tags
             const [, me] = dbData.users;
-            const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const patchData = {
               data: {
@@ -897,11 +835,9 @@ describe('Tags of user', function () {
               }
             };
 
-            await agent
+            await agentFactory.logged(me)
               .patch(`/users/${me.username}/tags/${tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(404)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
           });
@@ -911,8 +847,6 @@ describe('Tags of user', function () {
             const { tag } = userTag;
             // the user 1 has no tags
             const [me] = dbData.users;
-            const jwtPayload = {username: me.username, verified: me.verified, givenName: '', familyName: ''};
-            const meToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
 
             const patchData = {
               data: {
@@ -928,8 +862,6 @@ describe('Tags of user', function () {
             const response = await agent
               .patch(`/users/${me.username}/tags/${tag.tagname}`)
               .send(patchData)
-              .set('Content-Type', 'application/vnd.api+json')
-              .set('Authorization', 'Bearer ' + meToken)
               .expect(400)
               .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -959,7 +891,6 @@ describe('Tags of user', function () {
           await agent
             .patch(`/users/${me.username}/tags/${tag.tagname}`)
             .send(patchData)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -982,56 +913,61 @@ describe('Tags of user', function () {
         ]
       });
 
-      it('[user has tag] delete tag from user, respond with 204', async function () {
-        const userTag = dbData.userTag[2];
-        const user = userTag.user;
-        const tag = userTag.tag;
-        const jwtPayload = {username: user.username, verified: user.verified, givenName: '', familyName: ''};
-        const userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+      context('logged', () => {
 
+        beforeEach(() => {
+          agent = agentFactory.logged();
+        });
 
-        const response = await agent
-          .delete(`/users/${user.username}/tags/${tag.tagname}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + userToken)
-          .expect(204)
-          .expect('Content-Type', /^application\/vnd\.api\+json/);
+        it('[user has tag] delete tag from user, respond with 204', async function () {
+          const userTag = dbData.userTag[2];
+          const user = userTag.user;
+          const tag = userTag.tag;
 
-        should(Boolean(response.body)).equal(false);
+          const response = await agentFactory.logged(user)
+            .delete(`/users/${user.username}/tags/${tag.tagname}`)
+            .expect(204)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
 
-        const userTagExists = await models.userTag.exists(user.username, tag.tagname);
-        (userTagExists).should.equal(false);
+          should(Boolean(response.body)).equal(false);
+
+          const userTagExists = await models.userTag.exists(user.username, tag.tagname);
+          (userTagExists).should.equal(false);
+        });
+
+        it('[user doesn\'t have the tag] fail with 404', async function () {
+          const [user] = dbData.users;
+          const [tag] = dbData.tags;
+
+          await agentFactory.logged(user)
+            .delete(`/users/${user.username}/tags/${tag.tagname}`)
+            .expect(404)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+
+        it('[not me] fail with 403', async function () {
+          const userTag = dbData.userTag[2];
+          const user = userTag.user;
+          const tag = userTag.tag;
+          const otherUser = dbData.users[2];
+
+          await agentFactory.logged(otherUser)
+            .delete(`/users/${user.username}/tags/${tag.tagname}`)
+            .expect(403)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
       });
 
-      it('[user doesn\'t have the tag] fail with 404', async function () {
-        const user = dbData.users[0];
-        const tag = dbData.tags[0];
-        const jwtPayload = {username: user.username, verified: user.verified, givenName: '', familyName: ''};
-        const userToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
+      context('not logged', () => {
+        it('403', async function () {
+          const userTag = dbData.userTag[2];
+          const user = userTag.user;
+          const tag = userTag.tag;
 
-        await agent
-          .delete(`/users/${user.username}/tags/${tag.tagname}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + userToken)
-          .expect(404)
-          .expect('Content-Type', /^application\/vnd\.api\+json/);
-      });
-
-      it('[not me] fail with 403', async function () {
-        const userTag = dbData.userTag[2];
-        const user = userTag.user;
-        const tag = userTag.tag;
-        const otherUser = dbData.users[2];
-        const jwtPayload = {username: otherUser.username, verified: otherUser.verified, givenName:'', familyName:''};
-        const otherUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
-
-        await agent
-          .delete(`/users/${user.username}/tags/${tag.tagname}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + otherUserToken)
-          .expect(403)
-          .expect('Content-Type', /^application\/vnd\.api\+json/);
+          await agent
+            .delete(`/users/${user.username}/tags/${tag.tagname}`)
+            .expect(403);
+        });
       });
     });
   });

@@ -1,41 +1,38 @@
 'use strict';
 
-process.env.NODE_ENV = 'test';
-
-const jwt = require('jsonwebtoken'),
-      supertest = require('supertest'),
-      should = require('should'),
+const should = require('should'),
       _ = require('lodash'),
       path = require('path');
 
-const app = require(path.resolve('./app')),
-      config = require(path.resolve('./config')),
+const agentFactory = require('./agent'),
       dbHandle = require(path.resolve('./test/handleDatabase'));
 
-const jwtSecret = config.jwt.secret;
-const jwtExpirationTime = config.jwt.expirationTime;
-
-const agent = supertest.agent(app);
-
-let dbData,
-    existentUser,
-    loggedUser,
-    unverifiedUser,
-    loggedUserToken,
-    unverifiedUserToken;
-
-const nonexistentUser = {
-  username: 'nonexistent-user',
-  email: 'nonexistent-email@example.com',
-};
-
-
 describe('/users/:username', function () {
+
+  let agent,
+      dbData,
+      existentUser,
+      loggedUser,
+      unverifiedUser;
+
+  const nonexistentUser = {
+    username: 'nonexistent-user',
+    email: 'nonexistent-email@example.com',
+  };
+
+  beforeEach(() => {
+    agent = agentFactory();
+  });
+
   describe('GET', function () {
     beforeEach(async function () {
       const data = {
         users: 3, // how many users to make
-        verifiedUsers: [0, 1] // which  users to make verified
+        verifiedUsers: [0, 1], // which  users to make verified
+        userLocations: [
+          [0, 0],
+          [1, 1]
+        ]
       };
       // create data in database
       dbData = await dbHandle.fill(data);
@@ -43,11 +40,6 @@ describe('/users/:username', function () {
       existentUser = dbData.users[0];
       loggedUser = dbData.users[1];
       unverifiedUser = dbData.users[2];
-      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-      const jwtunverifiedUserPayload = {username: unverifiedUser.username, verified: unverifiedUser.verified || false, givenName:'', familyName:''};
-      unverifiedUserToken = jwt.sign(jwtunverifiedUserPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
-
     });
 
     afterEach(async function () {
@@ -56,10 +48,8 @@ describe('/users/:username', function () {
 
     context('[user exists]', function () {
       it('[logged] should read user`s profile', async function () {
-        const response = await agent
+        const response = await agentFactory.logged(loggedUser)
           .get(`/users/${existentUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -77,26 +67,24 @@ describe('/users/:username', function () {
       it('[not logged] should read simplified profile', async function () {
         const response = await agent
           .get(`/users/${existentUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         const user = response.body;
-        user.should.have.property('data');
-        user.data.should.have.property('type', 'users');
-        user.data.should.have.property('id', existentUser.username);
-        user.data.should.have.property('attributes');
 
-        const fields = user.data.attributes;
-        fields.should.have.property('username', existentUser.username);
-        fields.should.not.have.property('givenName');
+        should(user).have.property('data')
+          .deepEqual({
+            type: 'users',
+            id: existentUser.username,
+            attributes: {
+              username: existentUser.username
+            }
+          });
       });
 
       it('[logged, not verified] should read simplified profile', async function () {
-        const response = await agent
+        const response = await agentFactory.logged(unverifiedUser)
           .get(`/users/${existentUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -111,23 +99,23 @@ describe('/users/:username', function () {
         fields.should.not.have.property('givenName');
       });
 
-      it('[logged, unverified] should read her own profile full', async function () {
-        const response = await agent
+      it('[logged, unverified] should be treated as not logged', async function () {
+        const response = await agentFactory.logged(unverifiedUser)
           .get(`/users/${unverifiedUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + unverifiedUserToken)
           .expect(200)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         const user = response.body;
-        user.should.have.property('data');
-        user.data.should.have.property('type', 'users');
-        user.data.should.have.property('id', unverifiedUser.username);
-        user.data.should.have.property('attributes');
 
-        const fields = user.data.attributes;
-        fields.should.have.property('username', unverifiedUser.username);
-        fields.should.have.property('givenName');
+        should(user).have.property('data')
+          .deepEqual({
+            type: 'users',
+            id: unverifiedUser.username,
+            attributes: {
+              username: unverifiedUser.username
+            }
+          });
+
       });
     });
 
@@ -135,8 +123,6 @@ describe('/users/:username', function () {
       it('should show 404', async function () {
         await agent
           .get(`/users/${nonexistentUser.username}`)
-          .set('Content-Type', 'application/vnd.api+json')
-          .set('Authorization', 'Bearer ' + loggedUserToken)
           .expect(404)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -146,7 +132,6 @@ describe('/users/:username', function () {
       it('should show 400', async function () {
         await agent
           .get('/users/this--is-an-invalid--username')
-          .set('Content-Type', 'application/vnd.api+json')
           .expect(400)
           .expect('Content-Type', /^application\/vnd\.api\+json/);
       });
@@ -165,8 +150,6 @@ describe('/users/:username', function () {
       dbData = await dbHandle.fill(data);
 
       [loggedUser, otherUser] = dbData.users;
-      const jwtPayload = {username: loggedUser.username, verified:loggedUser.verified, givenName:'', familyName:''};
-      loggedUserToken = jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: jwtExpirationTime });
     });
 
     afterEach(async function () {
@@ -174,6 +157,11 @@ describe('/users/:username', function () {
     });
 
     context('logged in', function () {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
       context('the edited user is the logged user', function () {
         // profile fields are givenName, familyName, description, birthday
         //
@@ -189,8 +177,6 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -217,8 +203,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -250,8 +234,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(200);
 
@@ -279,8 +261,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -302,8 +282,6 @@ describe('/users/:username', function () {
                 attributes
               }
             })
-            .set('Content-Type', 'application/vnd.api+json')
-            .set('Authorization', 'Bearer ' + loggedUserToken)
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -320,8 +298,6 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(400);
         });
@@ -340,8 +316,6 @@ describe('/users/:username', function () {
                 }
               }
             })
-            .set('Authorization', 'Bearer ' + loggedUserToken)
-            .set('Content-Type', 'application/vnd.api+json')
             .expect('Content-Type', /^application\/vnd\.api\+json/)
             .expect(403);
         });
@@ -361,7 +335,6 @@ describe('/users/:username', function () {
               }
             }
           })
-          .set('Content-Type', 'application/vnd.api+json')
           .expect('Content-Type', /^application\/vnd\.api\+json/)
           .expect(403);
       });
