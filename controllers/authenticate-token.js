@@ -8,8 +8,6 @@ const _ =  require('lodash'),
 const models = require(path.resolve('./models')),
       config = require(path.resolve('./config'));
 
-const jwtSecret = config.jwt.secret;
-
 async function generateTokenBehavior(data) {
   let token, authenticated, verified, user, username, password;
   const responseData = {};
@@ -69,12 +67,7 @@ async function generateTokenBehavior(data) {
   }
   try{
     // creating token
-    // TODO - should throw any special error
-    const {username, givenName, familyName} = user;
-    const jwtPayload = { username, verified, givenName, familyName };
-
-    // passing expirationTime as a config's property, to be able to stub it
-    token = await jwt.sign(jwtPayload, jwtSecret, { algorithm: 'HS256', expiresIn: config.jwt.expirationTime });
+    token = await sign(user);
     responseData.status = 200;
     responseData.data = {token};
   } catch(e) {
@@ -91,6 +84,27 @@ async function generateToken(req, res) {
   return res.status(responseData.status).json({meta:responseData.data});
 }
 
+/**
+ * provided a user, returns token
+ */
+async function sign(user) {
+  const verified = (_.has(user, 'verified'))
+    ? user.verified
+    : Boolean(user.email);
+
+  const { username } = user;
+
+  const { givenName, familyName } = (_.has(user, 'profile'))
+    ? user.profile
+    : user;
+
+  // creating token
+  const payload = { username, verified, givenName, familyName };
+
+  // passing expirationTime as a config's property, to be able to stub it
+  return await jwt.sign(payload, config.jwt.secret, { algorithm: 'HS256', expiresIn: config.jwt.expirationTime });
+}
+
 async function expire(req, res) {
   // get current timestamp in seconds
   const timestamp = Math.round(Date.now() / 1000);
@@ -103,4 +117,4 @@ async function expire(req, res) {
   });
 }
 
-module.exports = { expire, generateToken, generateTokenBehavior };
+module.exports = { expire, generateToken, generateTokenBehavior, sign };

@@ -1,7 +1,9 @@
 const path = require('path'),
       mailer = require(path.resolve('./services/mailer')),
       models = require(path.resolve('./models')),
-      config = require(path.resolve('./config'));
+      config = require(path.resolve('./config')),
+      { sign } = require(path.resolve('./controllers/authenticate-token'));
+
 
 exports.resetPassword = async function (req, res, next) {
 
@@ -99,9 +101,14 @@ exports.verifyEmail = async function (req, res, next) {
   try {
     const { id: username, emailVerificationCode: code } = req.body;
 
-    await models.user.verifyEmail(username, code);
+    const user = await models.user.verifyEmail(username, code);
 
-    return res.status(200).json({});
+    const token = await sign(user);
+
+    return res.status(200).json({ meta: {
+      email: user.email,
+      token
+    } });
 
   } catch (e) {
     return next([e]);

@@ -302,7 +302,7 @@ class User extends Model {
     };
     // if correct, put emailTemporary to email and erase all the rest
     // update the database: move emailTemporary to email and clean the data
-    await this.finalVerifyEmail(username);
+    return await this.finalVerifyEmail(username);
   }
 
   // finish email verification. move emailTemporary to email and clean
@@ -315,9 +315,11 @@ class User extends Model {
           account: MERGE(u.account, { email: null })
         }
         IN users
+        RETURN NEW
     `;
     const params = { username };
-    await this.db.query(query, params);
+    const cursor = await this.db.query(query, params);
+    return await cursor.next();
   }
 
   static async readTags(username) {

@@ -622,9 +622,12 @@ describe('/account', function () {
       sandbox = sinon.sandbox.create();
 
       sandbox.useFakeTimers({
-        now: new Date('1999-09-09'),
+        now: 1000000000000,
         toFake: ['Date']
       });
+
+      sandbox.stub(config.jwt, 'expirationTime').value(1000);
+      sandbox.stub(config.jwt, 'secret').value('superDuperSecret'); // practically, this is a relly bad secret
     });
 
     afterEach(function () {
@@ -649,7 +652,7 @@ describe('/account', function () {
 
     context('valid data', function () {
 
-      it('[correct code] should make the user\'s email verified', async function () {
+      it('should make the user\'s email verified', async function () {
 
         // we verify the email
         await agent
@@ -671,6 +674,30 @@ describe('/account', function () {
         should(user).have.property('email', 'test@example.com');
         should(user).have.property('account');
         should(user.account).have.property('email', null);
+      });
+
+      it('should return email and jwt token in response body', async () => {
+
+        // we verify the email
+        const response = await agent
+          .patch('/account')
+          .send({
+            data: {
+              type: 'users',
+              id: 'test',
+              attributes: {
+                emailVerificationCode: code
+              }
+            }
+          })
+          .expect(200);
+
+        const { body } = response;
+
+        should(body).deepEqual({ meta: {
+          email: 'test@example.com',
+          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3QiLCJ2ZXJpZmllZCI6dHJ1ZSwiZ2l2ZW5OYW1lIjoiIiwiZmFtaWx5TmFtZSI6IiIsImlhdCI6MTAwMDAwMDAwMCwiZXhwIjoxMDAwMDAxMDAwfQ.HLjtky0t-VbMDbut4AmBG6WfDx4cZ0BfLzrSzjmJJDM'
+        } });
       });
     });
 
