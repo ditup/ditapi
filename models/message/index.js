@@ -13,7 +13,7 @@ class Message extends Model {
     const message = schema({ body, created });
     const query = `
       FOR from IN users FILTER from.username == @from
-        FOR to IN users FILTER to.username == @to
+        FOR to IN users FILTER to.username == @to AND TO_BOOL(to.email)
           INSERT MERGE({ _from: from._id, _to: to._id }, @message) IN messages
           LET message = MERGE(KEEP(NEW, 'body', 'created'), { id: NEW._key})
           LET userFrom = MERGE(KEEP(from, 'username'), from.profile)

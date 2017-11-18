@@ -154,6 +154,19 @@ describe('/messages', function () {
 
         }); // end of context existent receiver
 
+        context('receiver with unverified email', function () {
+          it('respond with 404', async () => {
+            validMessage.data.relationships.to.data.id = dbData.users[2].username;
+
+            await agent
+              .post('/messages')
+              .send(validMessage)
+              .expect(404)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+          });
+
+        }); // end of context receiver with unverified email
+
         context('nonexistent receiver', function () {
 
           beforeEach(function () {

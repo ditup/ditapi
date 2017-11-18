@@ -59,11 +59,7 @@ describe('contacts', function () {
       should(email).have.property('html').match(new RegExp(`${to.username}(.|\\n)*${from.username}(.|\\n)*${url}(.|\\n)*${message.html}`));
     }
 
-    function generateContactBody(to, { trust, reference, message }) {
-
-      trust = trust || 1;
-      reference = reference || 'default reference';
-      message = message || 'default message';
+    function generateContactBody(to, { trust = 1, reference = 'default reference', message = 'default message' } = { }) {
 
       return {
         data: {
@@ -241,6 +237,18 @@ describe('contacts', function () {
       });
 
       context('invalid data', function () {
+
+        it('[sending contact to unverified user] error 404', async () => {
+          const unverified = dbData.users[3];
+          const contactBody = generateContactBody(unverified);
+
+          await agent
+            .post('/contacts')
+            .send(contactBody)
+            .expect(404)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+
         it('[missing attribute \'trust\' in request body] 400', async function () {
           const [, other] = dbData.users;
 

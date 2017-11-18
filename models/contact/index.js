@@ -9,7 +9,7 @@ class Contact extends Model {
     const contact = schema({ trust, reference, message, isConfirmed, notified });
     const query = `
       FOR from IN users FILTER from.username == @from
-        FOR to IN users FILTER to.username == @to
+        FOR to IN users FILTER to.username == @to AND TO_BOOL(to.email)
           LET unique = (from._id < to._id) ? CONCAT(from._id, '--', to._id) : CONCAT(to._id, '--', from._id)
           INSERT MERGE({ _from: from._id, _to: to._id, unique }, @contact) IN contacts
           LET contact = MERGE(KEEP(NEW, 'created', 'isConfirmed', 'confirmed'), { trust: NEW.trust01, reference: NEW.reference01})
