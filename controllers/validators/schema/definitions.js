@@ -4,7 +4,9 @@ module.exports = {
   user: {
     username: {
       type: 'string',
-      pattern: '^(?=.{2,32}$)[a-z0-9]+([\\_\\-\\.][a-z0-9]+)*$'
+      minLength: 2,
+      maxLength: 32,
+      pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
     },
     email: {
       type: 'string',
@@ -24,7 +26,7 @@ module.exports = {
     },
     password: {
       type: 'string',
-      minLength: 8,
+      minLength: 10,
       maxLength: 512
     },
     location: {

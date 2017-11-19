@@ -106,7 +106,7 @@ describe('/users', function () {
 
       // user data with invalid username
       const user = {
-        username: 'test*',
+        username: 'te.st',
         password: 'iX.0*&5mlwf+',
         email: 'test@example.com'
       };
@@ -184,7 +184,7 @@ describe('/users', function () {
           type: 'users',
           attributes: {
             username: 'test',
-            password: 'invalid',
+            password: 'invalid00',
             email: 'test@example.com'
           }
         }
