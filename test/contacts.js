@@ -54,7 +54,7 @@ describe('contacts', function () {
       should(email).have.property('to', `<${to.email}>`);
       should(email).have.property('subject', `${from.username} would like to create a contact with you on ditup`);
 
-      const url = `${config.appUrl.all}/user/${to.username}/contact/${from.username}`;
+      const url = `${config.appUrl.all}/contact-with/${from.username}`;
       should(email).have.property('text').match(new RegExp(`${to.username}(.|\\n)*${from.username}(.|\\n)*${url}(.|\\n)*${message.text}`));
       should(email).have.property('html').match(new RegExp(`${to.username}(.|\\n)*${from.username}(.|\\n)*${url}(.|\\n)*${message.html}`));
     }

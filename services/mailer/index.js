@@ -96,7 +96,7 @@ exports.notifyContactRequest = async function ({ from, to, message }) {
   const hasParameters = Boolean(from && from.username && to && to.email, message);
   if(!hasParameters) throw dataNotProvided;
 
-  const url = `${config.appUrl.all}/user/${to.username}/contact/${from.username}`;
+  const url = `${config.appUrl.all}/contact-with/${from.username}`;
   const subject = `${from.username} would like to create a contact with you on ditup`;
 
   const sanitizedMessage = {
