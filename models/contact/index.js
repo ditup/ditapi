@@ -263,7 +263,7 @@ class Contact extends Model {
       throw e;
     }
 
-    return out[0];
+    return contact;
   }
 
   static async remove(from, to) {

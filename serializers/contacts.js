@@ -45,5 +45,15 @@ function generateUserRelation(name) {
 }
 
 exports.contact = function (data) {
+  // set contact id(s)
+  if (Array.isArray(data)) {
+    for(const datum of data) {
+      datum.id = `${datum.from.username}--${datum.to.username}`;
+    }
+  } else {
+    data.id = `${data.from.username}--${data.to.username}`;
+  }
+
+  // serialize
   return contactSerializer.serialize(data);
 };

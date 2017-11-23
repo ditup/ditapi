@@ -442,7 +442,36 @@ describe('contacts', function () {
             should(dbContact).have.property('reference', 'other reference');
           });
 
-          it('TODO returns the updated contact');
+          it('returns the updated contact', async () => {
+            const [other, me] = dbData.users;
+
+            const response = await agentFactory.logged(me)
+              .patch(`/contacts/${me.username}/${other.username}`)
+              .send({
+                data: {
+                  type: 'contacts',
+                  id: `${me.username}--${other.username}`,
+                  attributes: {
+                    isConfirmed: true,
+                    trust: 4,
+                    reference: 'other reference'
+                  }
+                }
+              })
+              .expect(200);
+
+            should(response.body).containDeep({
+              data: {
+                type: 'contacts',
+                id: `${me.username}--${other.username}`,
+                attributes: {
+                  isConfirmed: true,
+                  trust: 4,
+                  reference: 'other reference'
+                }
+              }
+            });
+          });
 
           it('TODO maybe notifications? (not email, just info on login)');
         });

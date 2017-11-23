@@ -17,8 +17,9 @@ exports.patchConfirmContact = async function (req, res, next) {
   const { trust, reference } = req.body;
 
   try {
-    await models.contact.confirm(from, to, { trust, reference });
-    return res.end();
+    const updated = await models.contact.confirm(from, to, { trust, reference });
+    const serializedUpdated = serialize.contact(updated);
+    return res.status(200).json(serializedUpdated);
   } catch (e) {
     if (e.code == 404) {
       return res.status(404).json({
