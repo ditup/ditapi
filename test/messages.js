@@ -559,7 +559,7 @@ describe('/messages/:id', function () {
     describe('mark messages as read', function () {
       it('update message.read and all the older received messages of the thread to true if i\'m the receiver', async function () {
         const [,, msg2, msg3] = dbData.messages;
-        const [, user1] = dbData.users;
+        const [user0, user1] = dbData.users;
 
         msgData.data.id = msg2.id;
 
@@ -582,6 +582,9 @@ describe('/messages/:id', function () {
           .expect('Content-Type', /^application\/vnd\.api\+json/);
 
         should(resp2.body.data).have.length(1);
+
+        // and check that responded messages have the right format
+        testMessage(resp2.body.data[0], msg3, user0, user1);
       });
 
       // the receiver must match logged user

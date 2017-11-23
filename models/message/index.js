@@ -202,8 +202,11 @@ class Message extends Model {
         FILTER msgup._from == msg._from AND msgup._to == msg._to
           AND msgup.created <= msg.created
           AND !msgup.read
+        // read sender and receiver to include in output
+        LET from = DOCUMENT(msg._from)
+        LET to = DOCUMENT(msg._to)
         UPDATE msgup WITH { read: true } IN messages
-        RETURN MERGE(NEW, {id: NEW._key}))
+        RETURN MERGE(NEW, {id: NEW._key}, { from }, { to }))
       // when the original message was not found (bad id or receiver doesn't fit)
       // return 403 Not Authorized
       RETURN msg ? updated : 403
