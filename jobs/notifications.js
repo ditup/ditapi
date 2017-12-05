@@ -19,8 +19,14 @@ async function messages() {
     await mailer.notifyMessages({ messages, from, to });
   }
 
+  // collect ids of the messages
+  // first as array of arrays (an array for each direction of each thread);
+  const threadIds = unnotified.map(({ messages }) => messages.map(msg => msg._key));
+  // and concatenate them to a single array
+  const ids = [].concat(...threadIds);
+
   // mark the messages as notified
-  await models.message.updateNotified(unnotified.map(msg => msg.id));
+  await models.message.updateNotified(ids);
 }
 
 async function contactRequests() {

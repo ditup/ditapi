@@ -180,7 +180,7 @@ class Message extends Model {
    */
   static async updateNotified(ids) {
     const query = `
-      FOR msg IN messages FILTER msg.id IN @ids
+      FOR msg IN messages FILTER msg._key IN @ids
         UPDATE msg WITH { notified: true } IN messages
         RETURN MERGE(NEW, {id: NEW._key})
     `;
