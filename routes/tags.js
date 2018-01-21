@@ -28,6 +28,10 @@ router.route('/')
 router.route('/')
   .get(go.get.random, authorize.onlyLogged, parse, validate.random, tagController.getRandomTags);
 
+// get popular tags (by amount of uses)
+router.route('/')
+  .get(go.get.popularCount, authorize.onlyLogged, parse, validate.popularCount, tagController.getPopularCountTags);
+
 router.route('/:tagname')
   .all(validateParams)
   .get(authorize.onlyLogged, tagController.getTag);
