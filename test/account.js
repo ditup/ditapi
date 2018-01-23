@@ -615,7 +615,8 @@ describe('/account', function () {
 
   describe('verify email', function () {
 
-    let sandbox,
+    let dbData,
+        sandbox,
         code;
 
     beforeEach(function () {
@@ -628,6 +629,7 @@ describe('/account', function () {
 
       sandbox.stub(config.jwt, 'expirationTime').value(1000);
       sandbox.stub(config.jwt, 'secret').value('superDuperSecret'); // practically, this is a relly bad secret
+      sandbox.stub(mailer, 'general');
     });
 
     afterEach(function () {
@@ -644,6 +646,17 @@ describe('/account', function () {
       });
 
       code = emailVerifyCode;
+    });
+
+    // create a verified user
+    beforeEach(async function () {
+      const data = {
+        users: 1, // how many users to make
+        verifiedUsers: [0] // which  users to make verified
+      };
+
+      // create data in database
+      dbData = await dbHandle.fill(data);
     });
 
     afterEach(async function () {
@@ -696,7 +709,78 @@ describe('/account', function () {
 
         should(body).deepEqual({ meta: {
           email: 'test@example.com',
-          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3QiLCJ2ZXJpZmllZCI6dHJ1ZSwiZ2l2ZW5OYW1lIjoiIiwiZmFtaWx5TmFtZSI6IiIsImlhdCI6MTAwMDAwMDAwMCwiZXhwIjoxMDAwMDAxMDAwfQ.HLjtky0t-VbMDbut4AmBG6WfDx4cZ0BfLzrSzjmJJDM'
+          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3QiLCJ2ZXJpZmllZCI6dHJ1ZSwiZ2l2ZW5OYW1lIjoiIiwiZmFtaWx5TmFtZSI6IiIsImlhdCI6MTAwMDAwMDAwMCwiZXhwIjoxMDAwMDAxMDAwfQ.HLjtky0t-VbMDbut4AmBG6WfDx4cZ0BfLzrSzjmJJDM',
+          isNewUser: true
+        } });
+      });
+
+      it('when user is new (no previously verified email), info', async () => {
+        // we verify the email
+        const response = await agent
+          .patch('/account')
+          .send({
+            data: {
+              type: 'users',
+              id: 'test',
+              attributes: {
+                emailVerificationCode: code
+              }
+            }
+          })
+          .expect(200);
+
+        const { body } = response;
+
+        should(body).deepEqual({ meta: {
+          email: 'test@example.com',
+          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3QiLCJ2ZXJpZmllZCI6dHJ1ZSwiZ2l2ZW5OYW1lIjoiIiwiZmFtaWx5TmFtZSI6IiIsImlhdCI6MTAwMDAwMDAwMCwiZXhwIjoxMDAwMDAxMDAwfQ.HLjtky0t-VbMDbut4AmBG6WfDx4cZ0BfLzrSzjmJJDM',
+          isNewUser: true
+        } });
+      });
+
+      it('when user is not new, info', async () => {
+        // update email of verified user
+        const { username, password } = dbData.users[0];
+
+        const patchBody = {
+          data: {
+            type: 'users',
+            id: username,
+            attributes: {
+              email: 'other.email@example.com',
+              password
+            }
+          }
+        };
+
+        await agentFactory.logged(dbData.users[0])
+          .patch('/account')
+          .send(patchBody)
+          .expect(204);
+
+        const email = mailer.general.getCall(0).args[0];
+        const code = email.text.match(/[0-9a-f]{32}/)[0];
+
+        // verify the email
+        const response = await agent
+          .patch('/account')
+          .send({
+            data: {
+              type: 'users',
+              id: username,
+              attributes: {
+                emailVerificationCode: code
+              }
+            }
+          })
+          .expect(200);
+
+        const { body } = response;
+
+        should(body).deepEqual({ meta: {
+          email: 'other.email@example.com',
+          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXIwIiwidmVyaWZpZWQiOnRydWUsImdpdmVuTmFtZSI6IiIsImZhbWlseU5hbWUiOiIiLCJpYXQiOjEwMDAwMDAwMDAsImV4cCI6MTAwMDAwMTAwMH0.cGMkCPbKqzpn7lLGa5UqHIM6hTZ7Emi78wrhypk96bw',
+          isNewUser: false
         } });
       });
     });

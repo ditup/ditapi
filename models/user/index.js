@@ -315,7 +315,7 @@ class User extends Model {
           account: MERGE(u.account, { email: null })
         }
         IN users
-        RETURN NEW
+        RETURN MERGE(NEW, { oldEmail: OLD.email })
     `;
     const params = { username };
     const cursor = await this.db.query(query, params);

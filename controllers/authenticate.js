@@ -4,8 +4,6 @@ const _ = require('lodash'),
 
 const config = require(path.resolve('./config'));
 
-const jwtSecret = config.jwt.secret;
-
 // this middleware shouldn't be applied on some url paths
 // i.e. when using Basic Authorization for login with credentials
 const pathBlacklist = ['/auth/token', '/auth/token/'];
@@ -53,7 +51,7 @@ async function setAuthData(req, res, next) {
 async function tokenGetData(token){
   // cutting away 'Bearer ' part of token
   token = token.split(' ').pop();
-  return await jwt.verify(token, jwtSecret);
+  return await jwt.verify(token, config.jwt.secret);
 }
 
 module.exports = setAuthData;

@@ -107,7 +107,8 @@ exports.verifyEmail = async function (req, res, next) {
 
     return res.status(200).json({ meta: {
       email: user.email,
-      token
+      token,
+      isNewUser: user.oldEmail === null
     } });
 
   } catch (e) {
