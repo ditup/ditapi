@@ -5,7 +5,7 @@ const should = require('should'),
       path = require('path');
 
 const agentFactory = require('./agent'),
-      dbHandle = require(path.resolve('./test/handleDatabase')),
+      dbHandle = require(path.resolve('./test/handle-database')),
       models = require(path.resolve('./models')),
       serializers = require(path.resolve('./serializers')),
       tagJobs = require(path.resolve('./jobs/tags'));

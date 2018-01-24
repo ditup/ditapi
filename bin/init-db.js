@@ -7,7 +7,7 @@ const path = require('path'),
       prompt = require('prompt'),
       config = require(path.resolve('./config')),
       collections = require(path.resolve('./collections')),
-      init = require(path.resolve('./initDatabase'));
+      init = require(path.resolve('./init-database'));
 
 const schema = { properties: {
   username: { required: true },

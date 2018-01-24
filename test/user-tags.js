@@ -6,7 +6,7 @@ const should = require('should'),
 
 const agentFactory = require('./agent'),
       models = require(path.resolve('./models')),
-      dbHandle = require(path.resolve('./test/handleDatabase')),
+      dbHandle = require(path.resolve('./test/handle-database')),
       config = require(path.resolve('./config/config'));
 
 describe('Tags of user', function () {

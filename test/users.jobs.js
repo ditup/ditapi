@@ -7,7 +7,7 @@ const path = require('path'),
 
 const userJobs = require(path.resolve('./jobs/users')),
       config = require(path.resolve('./config')),
-      dbHandle = require(path.resolve('./test/handleDatabase')),
+      dbHandle = require(path.resolve('./test/handle-database')),
       models = require(path.resolve('./models'));
 
 describe('User jobs', function () {

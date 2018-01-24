@@ -8,7 +8,7 @@ const crypto = require('crypto'),
       sizeOf = promisify(require('image-size'));
 
 const agentFactory = require('./agent'),
-      dbHandle = require(path.resolve('./test/handleDatabase')),
+      dbHandle = require(path.resolve('./test/handle-database')),
       models = require(path.resolve('./models')),
       { clearTemporary } = require(path.resolve('./jobs/files'));
 

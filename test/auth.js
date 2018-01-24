@@ -8,7 +8,7 @@ const path = require('path'),
 // file dependencies
 const agentFactory = require('./agent'),
       config = require(path.resolve('./config')),
-      dbHandle = require('./handleDatabase');
+      dbHandle = require('./handle-database');
 
 describe('auth', () => {
   let agent,

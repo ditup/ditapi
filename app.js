@@ -84,7 +84,7 @@ app.use(function(req, res, next) {
 /**
  * Validation Error Handler
  */
-app.use(require('./controllers/validators/errorHandler'));
+app.use(require('./controllers/validators/error-handler'));
 
 // development error handler
 // will print stacktrace
