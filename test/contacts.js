@@ -6,7 +6,7 @@ const path = require('path'),
 
 const agentFactory = require('./agent'),
       config = require(path.resolve('./config')),
-      dbHandle = require(path.resolve('./test/handleDatabase')),
+      dbHandle = require(path.resolve('./test/handle-database')),
       models = require(path.resolve('./models')),
       notificationJobs = require(path.resolve('./jobs/notifications'));
 

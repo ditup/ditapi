@@ -6,7 +6,7 @@ const path = require('path'),
       arangojs = require('arangojs'),
       config = require(path.resolve('./config')),
       collections = require(path.resolve('./collections')),
-      init = require(path.resolve('./initDatabase')),
+      init = require(path.resolve('./init-database')),
       initConfig = require('./init-db-standalone-config');
 
 const rootUser = initConfig.username;

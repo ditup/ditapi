@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken'),
 
 const agentFactory = require(path.resolve('./test/agent')),
       config = require(path.resolve('./config')),
-      dbHandle = require(path.resolve('./test/handleDatabase'));
+      dbHandle = require(path.resolve('./test/handle-database'));
 
 
 const jwtSecret = config.jwt.secret;

@@ -6,7 +6,7 @@ const  _ = require('lodash'),
       sinon = require('sinon');
 
 const agentFactory = require('./agent'),
-      dbHandle = require(path.resolve('./test/handleDatabase'));
+      dbHandle = require(path.resolve('./test/handle-database'));
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));

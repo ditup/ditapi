@@ -8,7 +8,7 @@ const agentFactory = require('./agent'),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       mailer = require(path.resolve('./services/mailer')),
-      dbHandle = require(path.resolve('./test/handleDatabase'));
+      dbHandle = require(path.resolve('./test/handle-database'));
 
 describe('/users', function () {
   let agent,

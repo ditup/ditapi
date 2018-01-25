@@ -9,7 +9,7 @@ const agentFactory = require('./agent'),
       models = require(path.resolve('./models')),
       config = require(path.resolve('./config')),
       notificationJobs = require(path.resolve('./jobs/notifications')),
-      dbHandle = require(path.resolve('./test/handleDatabase'));
+      dbHandle = require(path.resolve('./test/handle-database'));
 
 // to stub the mailer
 const mailer = require(path.resolve('./services/mailer'));

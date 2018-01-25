@@ -5,7 +5,7 @@ const path = require('path'),
       sinon = require('sinon');
 
 const agentFactory = require('./agent'),
-      dbHandle = require(path.resolve('./test/handleDatabase'));
+      dbHandle = require(path.resolve('./test/handle-database'));
 
 let dbData;
 

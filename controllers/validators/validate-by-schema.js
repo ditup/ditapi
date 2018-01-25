@@ -6,7 +6,7 @@ const _ = require('lodash');
  *
  * @param {string} schema - the id of the schema for validating the request. The schema should be specified in ./schema.js. It validates the whole express req object, so the body, query and/or params should be specified in the schema. See examples of `postUserTags` and `patchUserTag` in ./schema.js.
  * @param {[string, string, function][]} consistency - the consistency of request fields
- * @returns {function} - the express middleware function which will execute the validation as needed. The error handler for validation is in ./errorHandler.js
+ * @returns {function} - the express middleware function which will execute the validation as needed. The error handler for validation is in ./error-handler.js
  */
 module.exports = function (schema, consistency) {
   return function (req, res, next) {
