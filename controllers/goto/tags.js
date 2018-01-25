@@ -8,6 +8,6 @@ module.exports = {
     random: route(['query.filter.random']),
     relatedToMyTags: route(['query.filter.relatedToMyTags']),
     relatedToTags: route(['query.filter.relatedToTags']),
-    popularCount: route(['query.sort'], 'popularCount')
+    popularByUses: route(['query.sort'], 'popularByUses')
   }
 };

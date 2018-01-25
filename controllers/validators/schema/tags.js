@@ -71,7 +71,7 @@ const randomTags = {
   required: ['query']
 };
 
-const popularCountTags = {
+const getPopularTagsByUses = {
   properties: {
     query: {
       properties: {
@@ -82,4 +82,4 @@ const popularCountTags = {
   required: ['query']
 };
 
-module.exports = { postTags, getTagsRelatedToTags, getTagsRelatedToMyTags, getTagsLike, randomTags, popularCountTags };
+module.exports = { postTags, getTagsRelatedToTags, getTagsRelatedToMyTags, getTagsLike, randomTags, getPopularTagsByUses };

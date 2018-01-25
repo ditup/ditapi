@@ -57,7 +57,7 @@ class Tag extends Model {
    * @param {number} [limit] - amount of tags to return, defaults to 1
    * @returns Promise<Tag[]> - returns array of tags
    */
-  static async popularCount(limit) {
+  static async popularByUses(limit) {
     limit = limit || 10;
     const query = `
       FOR t IN tags
@@ -66,7 +66,7 @@ class Tag extends Model {
         LET relevanceSum = SUM(userTags[*].relevance)
         SORT uses DESC, relevanceSum DESC, RAND()
         LIMIT @limit
-        RETURN MERGE(KEEP(t, 'tagname'), { popularCount: uses })
+        RETURN MERGE(KEEP(t, 'tagname'), { popularityByUses: uses })
     `;
     const params = { limit };
     const out = await (await this.db.query(query, params)).all();

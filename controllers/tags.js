@@ -49,19 +49,20 @@ exports.getRandomTags = async function (req, res, next) {
 };
 
 /*
- * Having the url with ?sort=-popularCount query
+ * Having the url with ?sort=-popularityByUses query
  * respond with an array of most popular tags. (by default 10 tags)
  */
-exports.getPopularCountTags = async function (req, res, next) {
+exports.getPopularTagsByUses = async function (req, res, next) {
 
   const { limit } = getPage(req, { limit: 10 });
 
   try {
-    // find random tags
-    const foundTags = await models.tag.popularCount(limit);
+    // find popular tags
+    // i.e. tags which are used most often
+    const foundTags = await models.tag.popularByUses(limit);
 
     // define the parameters for self link
-    foundTags.urlParam = encodeURIComponent('?sort=-popularCount');
+    foundTags.urlParam = encodeURIComponent('?sort=-popularityByUses');
 
     // serialize and send the results
     return res.status(200).json(serialize.tag(foundTags));
@@ -193,8 +194,4 @@ exports.getTag = async function (req, res, next) {
   } catch (e) {
     return next(e);
   }
-};
-
-exports.popularCountTags = async function (req, res, next) {
-  return next();
 };

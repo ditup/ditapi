@@ -30,7 +30,7 @@ router.route('/')
 
 // get popular tags (by amount of uses)
 router.route('/')
-  .get(go.get.popularCount, authorize.onlyLogged, parse, validate.popularCount, tagController.getPopularCountTags);
+  .get(go.get.popularByUses, authorize.onlyLogged, parse, validate.popularByUses, tagController.getPopularTagsByUses);
 
 router.route('/:tagname')
   .all(validateParams)

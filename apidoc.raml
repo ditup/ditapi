@@ -320,7 +320,7 @@ types:
       - tags related to my tags `?filter[relatedToMyTags]`
       - tags related to given tags `?filter[relatedToTags]=tag1,tag2,tag3`
       - random tags `?filter[random]`
-      - popular tags by amount of uses `?sort=-popularCount`
+      - popular tags by amount of uses `?sort=-popularityByUses`
       TODO: new tags (which have some uses)
     queryParameters:
       filter?:
@@ -337,9 +337,9 @@ types:
           random:
             type: nil
       sort?:
-        description: if sort=-popularCount is specified, popular tags will be returned
+        description: if sort=-popularityByUses is specified, popular tags will be returned
         enum:
-          - '-popularCount'
+          - '-popularityByUses'
     responses:
       200:
       400:

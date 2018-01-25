@@ -471,7 +471,7 @@ describe('/tags', function () {
       });
     });
 
-    describe('popular tags: GET /tags?sort=-popularCount', () => {
+    describe('popular tags: GET /tags?sort=-popularityByUses', () => {
       beforeEach(async function () {
         const data = {
           users: 4, // how many users to make
@@ -506,22 +506,22 @@ describe('/tags', function () {
 
         it('[default] respond with tags sorted by use count, include use count', async () => {
           const resp = await agent
-            .get('/tags?sort=-popularCount')
+            .get('/tags?sort=-popularityByUses')
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
           should(resp.body).have.property('data').Array().length(7);
 
           const popularTags = resp.body.data.map(tag => tag.id);
-          const popularCounts = resp.body.data.map(tag => tag.attributes.popularCount);
+          const popularityByUsess = resp.body.data.map(tag => tag.attributes.popularityByUses);
           should(popularTags).deepEqual(['tag1', 'tag6', 'tag5', 'tag2', 'tag4', 'tag0', 'tag3']);
-          should(popularCounts).deepEqual([4, 3, 2, 1, 1, 1, 0]);
+          should(popularityByUsess).deepEqual([4, 3, 2, 1, 1, 1, 0]);
 
         });
 
         it('[pagination] respond array with {page[limit]} elements', async function () {
           const resp = await agent
-            .get('/tags?sort=-popularCount&page[offset]=0&page[limit]=3')
+            .get('/tags?sort=-popularityByUses&page[offset]=0&page[limit]=3')
             .expect(200)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
 
@@ -530,7 +530,7 @@ describe('/tags', function () {
 
         it('[too high page[limit]] 400', async function () {
           await agent
-            .get('/tags?sort=-popularCount&page[offset]=0&page[limit]=21')
+            .get('/tags?sort=-popularityByUses&page[offset]=0&page[limit]=21')
             .expect(400)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });
@@ -539,7 +539,7 @@ describe('/tags', function () {
       context('not logged', function () {
         it('403', async function () {
           await agent
-            .get('/tags?sort=-popularCount')
+            .get('/tags?sort=-popularityByUses')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });

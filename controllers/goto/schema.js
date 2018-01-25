@@ -14,12 +14,12 @@ module.exports = {
     },
     required: ['query']
   },
-  popularCount: {
+  popularByUses: {
     properties: {
       query: {
         properties: {
           sort: {
-            enum: ['-popularCount']
+            enum: ['-popularityByUses']
           }
         },
         required: ['sort']
