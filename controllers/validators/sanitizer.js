@@ -44,7 +44,8 @@ module.exports = function sanitizer(req, res, next) {
     'body', // message body
     'reference', // contact reference
     'message', // contact request message
-    'story' // userTag story
+    'story', // userTag story
+    'detail' // detail of idea
   ];
 
   sanitizeObjectProperties(req.body, htmlFields);

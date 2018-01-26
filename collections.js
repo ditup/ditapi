@@ -72,6 +72,10 @@ module.exports = {
         unique: true
       }
     ]
+  },
+
+  ideas: {
+    type: 'document'
   }
 };
 

@@ -88,6 +88,18 @@ module.exports = {
       maxLength: 2048
     },
   },
+  idea: {
+    titl: { // title
+      type: 'string',
+      minLength: 1,
+      maxLength: 256,
+      pattern: '\\S' // at least one non-space character
+    },
+    detail: {
+      type: 'string',
+      maxLength: 2048
+    }
+  },
   message: {
     body: {
       type: 'string',
