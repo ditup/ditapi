@@ -13,5 +13,18 @@ module.exports = {
       }
     },
     required: ['query']
+  },
+  popularByUses: {
+    properties: {
+      query: {
+        properties: {
+          sort: {
+            enum: ['-popularityByUses']
+          }
+        },
+        required: ['sort']
+      }
+    },
+    required: ['query']
   }
 };

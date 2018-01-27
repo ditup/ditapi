@@ -7,6 +7,7 @@ module.exports = {
     like: route(['query.filter.tagname.like']),
     random: route(['query.filter.random']),
     relatedToMyTags: route(['query.filter.relatedToMyTags']),
-    relatedToTags: route(['query.filter.relatedToTags'])
+    relatedToTags: route(['query.filter.relatedToTags']),
+    popularByUses: route(['query.sort'], 'popularByUses')
   }
 };

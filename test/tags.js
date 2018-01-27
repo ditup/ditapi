@@ -233,11 +233,6 @@ describe('/tags', function () {
         dbData = await dbHandle.fill(data);
       });
 
-      // clear database after every test
-      afterEach(async function () {
-        await dbHandle.clear();
-      });
-
       context('logged', function () {
 
         beforeEach(() => {
@@ -470,6 +465,81 @@ describe('/tags', function () {
         it('403', async function () {
           await agent
             .get('/tags?filter[relatedToTags]=tag0,tag1')
+            .expect(403)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+      });
+    });
+
+    describe('popular tags: GET /tags?sort=-popularityByUses', () => {
+      beforeEach(async function () {
+        const data = {
+          users: 4, // how many users to make
+          verifiedUsers: [0, 1, 2, 3], // which  users to make verified
+          tags: 7,
+          userTag: [
+            [0, 0, '', 1],
+            [0, 1, '', 3],
+            [1, 1, '', 3],
+            [2, 1, '', 3],
+            [3, 1, '', 3],
+            [3, 2, '', 3],
+            [0, 4, '', 2],
+            [0, 5, '', 3],
+            [1, 5, '', 3],
+            [1, 6, '', 3],
+            [2, 6, '', 3],
+            [3, 6, '', 3]
+          ]
+        };
+
+        // create data in database
+        dbData = await dbHandle.fill(data);
+        [loggedUser] = dbData.users;
+      });
+
+      context('logged', function () {
+
+        beforeEach(() => {
+          agent = agentFactory.logged(dbData.users[0]);
+        });
+
+        it('[default] respond with tags sorted by use count, include use count', async () => {
+          const resp = await agent
+            .get('/tags?sort=-popularityByUses')
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(resp.body).have.property('data').Array().length(7);
+
+          const popularTags = resp.body.data.map(tag => tag.id);
+          const popularityByUsess = resp.body.data.map(tag => tag.attributes.popularityByUses);
+          should(popularTags).deepEqual(['tag1', 'tag6', 'tag5', 'tag2', 'tag4', 'tag0', 'tag3']);
+          should(popularityByUsess).deepEqual([4, 3, 2, 1, 1, 1, 0]);
+
+        });
+
+        it('[pagination] respond array with {page[limit]} elements', async function () {
+          const resp = await agent
+            .get('/tags?sort=-popularityByUses&page[offset]=0&page[limit]=3')
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(resp.body).have.property('data').Array().length(3);
+        });
+
+        it('[too high page[limit]] 400', async function () {
+          await agent
+            .get('/tags?sort=-popularityByUses&page[offset]=0&page[limit]=21')
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+      });
+
+      context('not logged', function () {
+        it('403', async function () {
+          await agent
+            .get('/tags?sort=-popularityByUses')
             .expect(403)
             .expect('Content-Type', /^application\/vnd\.api\+json/);
         });

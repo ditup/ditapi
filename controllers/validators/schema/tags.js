@@ -71,4 +71,15 @@ const randomTags = {
   required: ['query']
 };
 
-module.exports = { postTags, getTagsRelatedToTags, getTagsRelatedToMyTags, getTagsLike, randomTags };
+const getPopularTagsByUses = {
+  properties: {
+    query: {
+      properties: {
+        page: pageOffset0
+      }
+    }
+  },
+  required: ['query']
+};
+
+module.exports = { postTags, getTagsRelatedToTags, getTagsRelatedToMyTags, getTagsLike, randomTags, getPopularTagsByUses };

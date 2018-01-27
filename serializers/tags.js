@@ -16,7 +16,7 @@ exports.newTag = function (data) {
 
 const tagSerializer = new Serializer('tags', {
   id: 'tagname',
-  attributes: ['tagname'],
+  attributes: ['tagname', 'popularityByUses'],
   keyForAttribute: 'camelCase',
   topLevelLinks: {
     self: generateSelfLink

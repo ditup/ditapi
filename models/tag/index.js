@@ -53,6 +53,27 @@ class Tag extends Model {
   }
 
   /**
+   * Return an array of popular tags by amount of uses
+   * @param {number} [limit] - amount of tags to return, defaults to 1
+   * @returns Promise<Tag[]> - returns array of tags
+   */
+  static async popularByUses(limit) {
+    limit = limit || 10;
+    const query = `
+      FOR t IN tags
+        LET userTags = (FOR v, e IN 1..1 ANY t INBOUND userTag RETURN e)
+        LET uses = LENGTH(userTags)
+        LET relevanceSum = SUM(userTags[*].relevance)
+        SORT uses DESC, relevanceSum DESC, RAND()
+        LIMIT @limit
+        RETURN MERGE(KEEP(t, 'tagname'), { popularityByUses: uses })
+    `;
+    const params = { limit };
+    const out = await (await this.db.query(query, params)).all();
+    return out;
+  }
+
+  /**
    * check if given tag exists
    * @param {string} tagname - tagname to check
    * @returns Boolean
