@@ -196,3 +196,100 @@ describe('/ideas', () => {
     });
   });
 });
+
+describe('/ideas/:id', () => {
+  let agent,
+      dbData,
+      idea,
+      loggedUser;
+
+  beforeEach(() => {
+    agent = agentFactory();
+  });
+
+  afterEach(async () => {
+    await dbHandle.clear();
+  });
+
+  describe('GET', () => {
+
+    beforeEach(async () => {
+      const data = {
+        users: 3, // how many users to make
+        verifiedUsers: [0, 1], // which  users to make verified
+        ideas: [[{}, 0]]
+      };
+      // create data in database
+      dbData = await dbHandle.fill(data);
+
+      loggedUser = dbData.users[0];
+      idea = dbData.ideas[0];
+    });
+
+    context('logged', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
+      context('valid', () => {
+        it('[exists] read idea by id', async () => {
+          const response = await agent
+            .get(`/ideas/${idea.id}`)
+            .expect(200)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+          should(response.body).match({
+            data: {
+              type: 'ideas',
+              id: idea.id,
+              attributes: {
+                title: idea.title,
+                detail: idea.detail
+              },
+              relationships: {
+                creator: {
+                  data: { type: 'users', id: idea.creator.username }
+                }
+              }
+            }
+          });
+        });
+
+        it('[not exist] 404', async () => {
+          await agent
+            .get('/ideas/0013310')
+            .expect(404)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+
+      });
+
+      context('invalid', () => {
+        it('[invalid id] 400', async () => {
+          await agent
+            .get('/ideas/invalid-id')
+            .expect(400)
+            .expect('Content-Type', /^application\/vnd\.api\+json/);
+        });
+      });
+    });
+
+    context('not logged', () => {
+      it('403', async () => {
+        await agent
+          .get(`/ideas/${idea.id}`)
+          .expect(403)
+          .expect('Content-Type', /^application\/vnd\.api\+json/);
+      });
+    });
+  });
+
+  describe('PATCH', () => {
+    it('todo');
+  });
+
+  describe('DELETE', () => {
+    it('todo');
+  });
+});

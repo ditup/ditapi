@@ -20,7 +20,8 @@ exports.fill = async function (data) {
     namedTags: [],
     userTag: [],
     messages: [],
-    contacts: []
+    contacts: [],
+    ideas: []
   };
 
   data = _.defaults(data, def);
@@ -76,6 +77,20 @@ exports.fill = async function (data) {
     }
   }
 
+  for(const idea of processed.ideas) {
+    const creator = idea.creator.username;
+    const title = idea.title;
+    const detail = idea.detail;
+    const created = idea.created;
+    const outIdea = await models.idea.create({ title, detail, created, creator });
+    if (!outIdea) {
+      const e = new Error('idea could not be saved');
+      e.data = idea;
+      throw e;
+    }
+    idea.id = outIdea.id;
+  }
+
   return processed;
 };
 
@@ -99,6 +114,7 @@ function processData(data) {
       tags: [],
       _messages: [],
       _contacts: [],
+      _ideas: [],
       get messages() {
         return _.map(this._messages, message => output.messages[message]);
       },
@@ -200,6 +216,23 @@ function processData(data) {
 
     resp.from._contacts.push(i);
     resp.to._contacts.push(i);
+
+    return resp;
+  });
+
+  output.ideas = data.ideas.map(function ([attrs = { }, _creator = 0], i) {
+    const { title = `idea title ${i}`, detail = `idea detail ${i}`, created = Date.now() + 1000 * i } = attrs;
+    const resp = {
+      _creator,
+      get creator() {
+        return output.users[_creator];
+      },
+      title,
+      detail,
+      created
+    };
+
+    resp.creator._ideas.push(i);
 
     return resp;
   });

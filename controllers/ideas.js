@@ -28,7 +28,31 @@ async function post(req, res, next) {
   }
 }
 
-module.exports = { post };
+/**
+ * Read idea by id
+ */
+async function get(req, res, next) {
+  try {
+    // gather data
+    const { id } = req.params;
+
+    // read the idea from database
+    const idea = await models.idea.read(id);
+
+    if (!idea) return res.status(404).json({ });
+
+    // serialize the idea (JSON API)
+    const serializedIdea = serialize.idea(idea);
+
+    // respond
+    return res.status(200).json(serializedIdea);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+module.exports = { get, post };
 
 
 

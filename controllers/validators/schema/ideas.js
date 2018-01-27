@@ -1,6 +1,6 @@
 'use strict';
 
-const { title, detail } = require('./paths');
+const { title, detail, ideaId } = require('./paths');
 
 const postIdeas = {
   properties: {
@@ -15,4 +15,16 @@ const postIdeas = {
   }
 };
 
-module.exports = { postIdeas };
+const getIdea = {
+  properties: {
+    params: {
+      properties: {
+        id: ideaId
+      },
+      required: ['id'],
+      additionalProperties: false
+    }
+  }
+};
+
+module.exports = { getIdea, postIdeas };
