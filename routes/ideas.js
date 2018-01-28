@@ -6,6 +6,7 @@ const express = require('express'),
 
 const authorize = require(path.resolve('./controllers/authorize')),
       ideaControllers = require(path.resolve('./controllers/ideas')),
+      ideaTagControllers = require(path.resolve('./controllers/idea-tags')),
       ideaValidators = require(path.resolve('./controllers/validators/ideas'));
 
 router.route('/')
@@ -15,5 +16,8 @@ router.route('/')
 router.route('/:id')
   // read idea by id
   .get(authorize.onlyLogged, ideaValidators.get, ideaControllers.get);
+
+router.route('/:id/tags')
+  .post(ideaTagControllers.post);
 
 module.exports = router;

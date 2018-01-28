@@ -2,6 +2,7 @@
 
 const contact = require('./contact'),
       idea = require('./idea'),
+      ideaTag = require('./idea-tag'),
       message = require('./message'),
       model = require('./model'),
       tag = require('./tag'),
@@ -19,4 +20,4 @@ const models = {
   }
 };
 
-module.exports = Object.assign(models, { contact, idea, message, model, tag, user, userTag });
+module.exports = Object.assign(models, { contact, idea, ideaTag, message, model, tag, user, userTag });
