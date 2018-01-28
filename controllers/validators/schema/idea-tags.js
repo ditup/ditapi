@@ -2,6 +2,17 @@
 
 const { ideaId, tagname } = require('./paths');
 
+const getIdeaTags = {
+  properties: {
+    params: {
+      properties: { id: ideaId },
+      required: ['id'],
+      additionalProperties: false
+    },
+  },
+  required: ['params']
+};
+
 const postIdeaTags = {
   properties: {
     body: {
@@ -24,4 +35,4 @@ const postIdeaTags = {
   required: ['body', 'params']
 };
 
-module.exports = { postIdeaTags };
+module.exports = { getIdeaTags, postIdeaTags };

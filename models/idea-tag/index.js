@@ -95,6 +95,41 @@ class IdeaTag extends Model {
 
     return (await cursor.all())[0];
   }
+
+  /**
+   * Read tags of idea
+   */
+  static async readTagsOfIdea(ideaId) {
+
+    const query = `
+      // read idea into array (length 1 or 0)
+      LET is = (FOR i IN ideas FILTER i._key == @ideaId RETURN i)
+      // read ideaTags
+      LET its = (FOR i IN is
+        FOR it IN ideaTags FILTER it._from == i._id
+          FOR t IN tags FILTER it._to == t._id
+            SORT t.tagname
+            LET ideaTag = KEEP(it, 'created')
+            LET tag = KEEP(t, 'tagname')
+            LET idea = MERGE(KEEP(i, 'title', 'detail'), { id: i._key })
+            RETURN MERGE(ideaTag, { tag, idea })
+      )
+      RETURN { ideaTags: its, idea: is[0] }`;
+    const params = { ideaId };
+
+    const cursor = await this.db.query(query, params);
+
+    const [{ idea, ideaTags }] = await cursor.all();
+
+    // when idea not found, error
+    if (!idea) {
+      const e = new Error('idea not found');
+      e.code = 404;
+      throw e;
+    }
+
+    return ideaTags;
+  }
 }
 
 module.exports = IdeaTag;

@@ -20,14 +20,14 @@ const ideaTagsSerializer = new Serializer('idea-tags', {
     ref: 'id',
     attributes: ['title', 'detail', 'created'],
     includedLinks: {
-      self: ({ id }) => `${config.url.all}/ideas/${id}`
+      self: (data, { id }) => `${config.url.all}/ideas/${id}`
     }
   },
   tag: {
     ref: 'tagname',
     attributes: ['tagname'],
     includedLinks: {
-      self: ({ tagname }) => `${config.url.all}/tags/${tagname}`
+      self: (data, { tagname }) => `${config.url.all}/tags/${tagname}`
     },
     relationshipLinks: { }
   },

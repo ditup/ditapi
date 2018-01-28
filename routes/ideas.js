@@ -19,6 +19,7 @@ router.route('/:id')
   .get(authorize.onlyLogged, ideaValidators.get, ideaControllers.get);
 
 router.route('/:id/tags')
-  .post(authorize.onlyLogged, ideaTagValidators.post, ideaTagControllers.post);
+  .post(authorize.onlyLogged, ideaTagValidators.post, ideaTagControllers.post)
+  .get(authorize.onlyLogged, ideaTagValidators.get, ideaTagControllers.get);
 
 module.exports = router;

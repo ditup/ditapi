@@ -52,4 +52,35 @@ async function post(req, res, next) {
   }
 }
 
-module.exports = { post };
+/**
+ * Read list of tags of idea
+ * GET /ideas/:id/tags
+ */
+async function get(req, res, next) {
+  try {
+    // read idea id
+    const { id } = req.params;
+
+    // read ideaTags from database
+    const ideaTags = await models.ideaTag.readTagsOfIdea(id);
+
+    // serialize response body
+    const responseBody = serialize.ideaTag(ideaTags);
+
+    // respond
+    return res.status(200).json(responseBody);
+  } catch (e) {
+    // error when idea doesn't exist
+    if (e.code === 404) {
+      return res.status(404).json({ errors: [{
+        status: 404,
+        detail: 'idea not found'
+      }] });
+    }
+
+    // handle unexpected error
+    return next(e);
+  }
+}
+
+module.exports = { post, get };

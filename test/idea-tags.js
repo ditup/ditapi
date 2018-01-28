@@ -24,10 +24,13 @@ describe('tags of idea', () => {
     const data = {
       users: 3, // how many users to make
       verifiedUsers: [0, 1], // which  users to make verified
-      tags: 2,
+      tags: 5,
       ideas: [
-        [{ }, 0]
-      ]
+        [{ }, 0],
+        [{ }, 1]
+      ],
+      // ideaTag [0, 0] shouldn't be created here; is created in tests for POST
+      ideaTags: [[0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [1, 4]]
     };
     // create data in database
     dbData = await dbHandle.fill(data);
@@ -203,19 +206,50 @@ describe('tags of idea', () => {
 
   describe('GET /ideas/:id/tags', () => {
     context('logged', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged();
+      });
+
       context('valid data', () => {
-        it('[idea exists] 200 and list of idea-tags');
-        it('[idea doesn\'t exist] 404');
+        it('[idea exists] 200 and list of idea-tags', async () => {
+          const response = await agent
+            .get(`/ideas/${existentIdea.id}/tags`)
+            .expect(200);
+
+          const responseData = response.body.data;
+
+          should(responseData).Array().length(4);
+        });
+
+        it('[idea doesn\'t exist] 404', async () => {
+          const response = await agent
+            .get('/ideas/00000001/tags')
+            .expect(404);
+
+          should(response.body).match({ errors: [{
+            status: 404,
+            detail: 'idea not found'
+          }] });
+        });
       });
 
       context('invalid data', () => {
-        it('[invalid id] 400');
+        it('[invalid id] 400', async () => {
+          await agent
+            .get('/ideas/invalidId/tags')
+            .expect(400);
+        });
       });
 
     });
 
     context('not logged', () => {
-      it('403');
+      it('403', async () => {
+        await agent
+          .get(`/ideas/${existentIdea.id}/tags`)
+          .expect(403);
+      });
     });
 
   });
