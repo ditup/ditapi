@@ -25,7 +25,30 @@ async function post(req, res, next) {
     // respond
     return res.status(201).json(responseBody);
   } catch (e) {
-    return next(e);
+
+    // handle errors
+    switch (e.code) {
+      // duplicate idea-tag
+      case 409: {
+        return res.status(409).end();
+      }
+      // missing idea or tag or creator
+      case 404: {
+        const errors = e.missing.map(miss => ({ status: 404, detail: `${miss} not found`}));
+        return res.status(404).json({ errors });
+      }
+      // idea creator is not me
+      case 403: {
+        return res.status(403).json({ errors: [
+          { status: 403, detail: 'not logged in as idea creator' }
+        ]});
+      }
+      // unexpected error
+      default: {
+        return next(e);
+      }
+    }
+
   }
 }
 

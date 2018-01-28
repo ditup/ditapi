@@ -7,7 +7,8 @@ const express = require('express'),
 const authorize = require(path.resolve('./controllers/authorize')),
       ideaControllers = require(path.resolve('./controllers/ideas')),
       ideaTagControllers = require(path.resolve('./controllers/idea-tags')),
-      ideaValidators = require(path.resolve('./controllers/validators/ideas'));
+      ideaValidators = require(path.resolve('./controllers/validators/ideas')),
+      ideaTagValidators = require(path.resolve('./controllers/validators/idea-tags'));
 
 router.route('/')
   // post a new idea
@@ -18,6 +19,6 @@ router.route('/:id')
   .get(authorize.onlyLogged, ideaValidators.get, ideaControllers.get);
 
 router.route('/:id/tags')
-  .post(ideaTagControllers.post);
+  .post(authorize.onlyLogged, ideaTagValidators.post, ideaTagControllers.post);
 
 module.exports = router;
