@@ -130,6 +130,73 @@ class IdeaTag extends Model {
 
     return ideaTags;
   }
+
+  /**
+   * Remove ideaTag from database
+   */
+  static async remove(ideaId, tagname, username) {
+    const query = `
+      // find users (1 or 0)
+      LET us = (FOR u IN users FILTER u.username == @username RETURN u)
+      // find ideas (1 or 0)
+      LET is = (FOR i IN ideas FILTER i._key == @ideaId RETURN i)
+      // find [ideaTag] between idea and tag specified (1 or 0)
+      LET its = (FOR i IN is
+        FOR t IN tags FILTER t.tagname == @tagname
+          FOR it IN ideaTags FILTER it._from == i._id AND it._to == t._id
+            RETURN it)
+      // find and remove [ideaTag] if and only if user is creator of idea
+      // is user authorized to remove the ideaTag in question?
+      LET itsdel = (FOR u IN us FOR i IN is FILTER u._id == i.creator
+        FOR it IN its
+        REMOVE it IN ideaTags
+        RETURN it)
+      // return [ideaTag] between idea and tag
+      RETURN its`;
+
+    const params = { ideaId, tagname, username };
+
+    // execute query and gather database response
+    const cursor = await this.db.query(query, params);
+    const [matchedIdeaTags] = await cursor.all();
+
+    // return or error
+    switch (cursor.extra.stats.writesExecuted) {
+      // ideaTag was removed: ok
+      case 1: {
+        return;
+      }
+      // ideaTag was not removed: error
+      case 0: {
+        throw generateError(matchedIdeaTags);
+      }
+      // unexpected error
+      default: {
+        throw new Error('unexpected error');
+      }
+    }
+
+    /**
+     * When no ideaTag was removed, it can have 2 reasons:
+     * 1. ideaTag was not found
+     * 2. ideaTag was found, but the user is not creator of the idea
+     *    therefore is not authorized to do so
+     */
+    function generateError(response) {
+      let e;
+      if (response.length === 0) {
+        // ideaTag was not found
+        e = new Error('not found');
+        e.code = 404;
+      } else {
+        // ideaTag was found, but user is not idea's creator
+        e = new Error('not authorized');
+        e.code = 403;
+      }
+
+      return e;
+    }
+  }
 }
 
 module.exports = IdeaTag;

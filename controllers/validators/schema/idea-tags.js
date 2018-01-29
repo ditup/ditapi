@@ -35,4 +35,18 @@ const postIdeaTags = {
   required: ['body', 'params']
 };
 
-module.exports = { getIdeaTags, postIdeaTags };
+const deleteIdeaTag = {
+  properties: {
+    params: {
+      properties: {
+        id: ideaId,
+        tagname
+      },
+      required: ['id', 'tagname'],
+      additionalProperties: false
+    },
+  },
+  required: ['params']
+};
+
+module.exports = { deleteIdeaTag, getIdeaTags, postIdeaTags };

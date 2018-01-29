@@ -2,7 +2,8 @@
 
 const validate = require('./validate-by-schema');
 
+const del = validate('deleteIdeaTag');
 const get = validate('getIdeaTags');
 const post = validate('postIdeaTags');
 
-module.exports = { get, post };
+module.exports = { del, get, post };

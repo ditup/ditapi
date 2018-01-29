@@ -22,4 +22,7 @@ router.route('/:id/tags')
   .post(authorize.onlyLogged, ideaTagValidators.post, ideaTagControllers.post)
   .get(authorize.onlyLogged, ideaTagValidators.get, ideaTagControllers.get);
 
+router.route('/:id/tags/:tagname')
+  .delete(authorize.onlyLogged, ideaTagValidators.del, ideaTagControllers.del);
+
 module.exports = router;

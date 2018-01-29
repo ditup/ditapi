@@ -14,7 +14,8 @@ describe('tags of idea', () => {
       existentIdea,
       loggedUser,
       otherUser,
-      tag0;
+      tag0,
+      tag1;
 
   beforeEach(() => {
     agent = agentFactory();
@@ -37,7 +38,7 @@ describe('tags of idea', () => {
 
     [loggedUser, otherUser] = dbData.users;
     [existentIdea] = dbData.ideas;
-    [tag0] = dbData.tags;
+    [tag0, tag1] = dbData.tags;
   });
 
   afterEach(async () => {
@@ -257,24 +258,78 @@ describe('tags of idea', () => {
   describe('DELETE /ideas/:id/tags/:tagname', () => {
 
     context('logged as idea creator', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
       context('valid data', () => {
-        it('[idea-tag exists] 204');
-        it('[idea-tag doesn\'t exist] 404');
+        it('[idea-tag exists] 204', async () => {
+          const ideaTag = await models.ideaTag.read(existentIdea.id, tag1.tagname);
+
+          // first ideaTag exists
+          should(ideaTag).Object();
+
+          await agent
+            .delete(`/ideas/${existentIdea.id}/tags/${tag1.tagname}`)
+            .expect(204);
+
+          const ideaTagAfter = await models.ideaTag.read(existentIdea.id, tag1.tagname);
+          // then ideaTag doesn't exist
+          should(ideaTagAfter).be.undefined();
+
+        });
+
+        it('[idea-tag doesn\'t exist] 404', async () => {
+          await agent
+            .delete(`/ideas/${existentIdea.id}/tags/${tag0.tagname}`)
+            .expect(404);
+        });
       });
 
       context('invalid data', () => {
-        it('[invalid id] 400');
-        it('[invalid tagname] 400');
+        it('[invalid id] 400', async () => {
+          await agent
+            .delete(`/ideas/invalid-id/tags/${tag1.tagname}`)
+            .expect(400);
+        });
+
+        it('[invalid tagname] 400', async () => {
+          await agent
+            .delete(`/ideas/${existentIdea.id}/tags/invalid--tagname`)
+            .expect(400);
+        });
       });
 
     });
 
     context('logged, not idea creator', () => {
-      it('403');
+
+      beforeEach(() => {
+        agent = agentFactory.logged(otherUser);
+      });
+
+      it('403', async () => {
+        const response = await agent
+          .delete(`/ideas/${existentIdea.id}/tags/${tag1.tagname}`)
+          .expect(403);
+
+        should(response.body).deepEqual({
+          errors: [{ status: 403, detail: 'not logged in as idea creator' }]
+        });
+      });
     });
 
     context('not logged', () => {
-      it('403');
+      it('403', async () => {
+        const response = await agent
+          .delete(`/ideas/${existentIdea.id}/tags/${tag1.tagname}`)
+          .expect(403);
+
+        should(response.body).not.deepEqual({
+          errors: [{ status: 403, detail: 'not logged in as idea creator' }]
+        });
+      });
     });
 
   });

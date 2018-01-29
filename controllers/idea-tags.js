@@ -83,4 +83,33 @@ async function get(req, res, next) {
   }
 }
 
-module.exports = { post, get };
+/**
+ * Remove tag from idea
+ * DELETE /ideas/:id/tags/:tagname
+ */
+async function del(req, res, next) {
+  try {
+    const { id, tagname } = req.params;
+    const { username } = req.auth;
+
+    await models.ideaTag.remove(id, tagname, username);
+
+    return res.status(204).end();
+  } catch (e) {
+    switch (e.code) {
+      case 404: {
+        return res.status(404).end();
+      }
+      case 403: {
+        return res.status(403).json({ errors: [
+          { status: 403, detail: 'not logged in as idea creator' }
+        ] });
+      }
+      default: {
+        return next(e);
+      }
+    }
+  }
+}
+
+module.exports = { post, get, del };
