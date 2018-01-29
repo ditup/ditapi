@@ -20,7 +20,7 @@ module.exports = {
       type: 'string',
       maxLength: 128
     },
-    desc: { // description
+    desc: { // description (reserved word in json-schema)
       type: 'string',
       maxLength: 2048
     },
@@ -95,7 +95,7 @@ module.exports = {
       maxLength: 16,
       pattern: '^[0-9]*$'
     },
-    titl: { // title
+    titl: { // title (reserved word in json-schema)
       type: 'string',
       minLength: 1,
       maxLength: 256,
