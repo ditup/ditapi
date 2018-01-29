@@ -724,11 +724,13 @@ describe('Deleting unused tags.', function () {
     const data = {
       users: 1, // how many users to make
       verifiedUsers: [0], // which  users to make verified
-      tags: 5,
+      tags: 7,
       userTag: [
         [0, 1],
         [0, 2]
-      ]
+      ],
+      ideas: [[{}, 0]],
+      ideaTags: [[0, 5], [0, 2]],
     };
 
     // create data in database
@@ -743,14 +745,14 @@ describe('Deleting unused tags.', function () {
   });
 
   it('Unused tags should be deleted regularly with a cron-like job.', async function () {
-    // before we should have 5 tags
+    // before we should have 7 tags
     const countBefore = await models.tag.count();
-    should(countBefore).equal(5);
+    should(countBefore).equal(7);
 
     await tagJobs.deleteAbandoned();
 
     // after running the job function we should have 2 tags left
     const countAfter = await models.tag.count();
-    should(countAfter).equal(2);
+    should(countAfter).equal(3);
   });
 });
