@@ -1,11 +1,12 @@
 'use strict';
 
-const model = require('./model'),
+const contact = require('./contact'),
+      idea = require('./idea'),
+      message = require('./message'),
+      model = require('./model'),
       tag = require('./tag'),
       user = require('./user'),
-      userTag = require('./user-tag'),
-      message = require('./message'),
-      contact = require('./contact');
+      userTag = require('./user-tag');
 
 
 const models = {
@@ -18,12 +19,4 @@ const models = {
   }
 };
 
-models.user = user;
-models.tag = tag;
-models.userTag = userTag;
-models.message = message;
-models.contact = contact;
-models.model = model;
-
-
-module.exports = exports = models;
+module.exports = Object.assign(models, { contact, idea, message, model, tag, user, userTag });

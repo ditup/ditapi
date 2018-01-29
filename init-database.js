@@ -27,25 +27,23 @@ module.exports = async function ({ db, dbUser, dbPasswd, dbName, collections }) 
 
   db.useDatabase(dbName);
 
-  for(const cnm in collections) {
+  for(const collectionName in collections) {
+    const { type, indexes = [] } = collections[collectionName];
+
     // creating the collection
     let col;
-    if(collections[cnm].type === 'document') {
-      col = db.collection(cnm);
+    if(type === 'document') {
+      col = db.collection(collectionName);
     }
-    else if(collections[cnm].type === 'edge') {
-      col = db.edgeCollection(cnm);
+    else if(type === 'edge') {
+      col = db.edgeCollection(collectionName);
     }
     else{
       throw new Error('not document nor edge');
     }
     await col.create();
     // creating indexes
-    //
-    // unique hash index
-    collections[cnm].indexes = collections[cnm].indexes || [];
-
-    for(const index of collections[cnm].indexes){
+    for(const index of indexes){
       await col.createIndex(index);
     }
   }

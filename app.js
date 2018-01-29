@@ -70,6 +70,7 @@ app.use('/auth', require('./routes/auth'));
 app.use('/messages', require('./routes/messages'));
 app.use('/account', require('./routes/account'));
 app.use('/contacts', require('./routes/contacts'));
+app.use('/ideas', require('./routes/ideas'));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

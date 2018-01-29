@@ -1,22 +1,15 @@
 'use strict';
 
-
-const _ = require('lodash');
 const Deserializer = require('jsonapi-serializer').Deserializer;
 
-const users = require('./users'),
+const contacts = require('./contacts'),
+      ideas = require('./ideas'),
+      messages = require('./messages'),
       tags = require('./tags'),
-      contacts = require('./contacts'),
-      messages = require('./messages');
-// _.assign(module.exports, users);
-const serialize = {};
-_.assign(serialize, tags, users, contacts, messages);
-
-exports.serialize = serialize;
-
+      users = require('./users');
 
 // deserializing
-const deserialize = new Deserializer({
+const deserializer = new Deserializer({
   keyForAttribute: 'camelCase',
   users: {
     valueForRelationship: function (relationship) {
@@ -32,11 +25,11 @@ const deserialize = new Deserializer({
       };
     }
   }
-}).deserialize;
+});
 
 // express middleware for deserializing the data in body
-exports.deserialize = function (req, res, next) {
-  deserialize(req.body, function (err, resp) {
+function deserialize(req, res, next) {
+  deserializer.deserialize(req.body, function (err, resp) {
     if (err) return next(err); // TODO
 
     req.rawBody = req.body;
@@ -45,4 +38,9 @@ exports.deserialize = function (req, res, next) {
 
     return next();
   });
+}
+
+module.exports = {
+  serialize: Object.assign({ }, contacts, ideas, messages, tags, users),
+  deserialize
 };
