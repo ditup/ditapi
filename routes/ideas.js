@@ -12,4 +12,8 @@ router.route('/')
   // post a new idea
   .post(authorize.onlyLogged, ideaValidators.post, ideaControllers.post);
 
+router.route('/:id')
+  // read idea by id
+  .get(authorize.onlyLogged, ideaValidators.get, ideaControllers.get);
+
 module.exports = router;

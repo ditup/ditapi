@@ -89,6 +89,12 @@ module.exports = {
     },
   },
   idea: {
+    ideaId: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 16,
+      pattern: '^[0-9]*$'
+    },
     titl: { // title
       type: 'string',
       minLength: 1,

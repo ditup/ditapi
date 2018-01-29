@@ -19,6 +19,7 @@ module.exports = {
   relevance: { $ref: 'sch#/definitions/userTag/relevance' },
   page: { $ref: 'sch#/definitions/query/page' },
   pageOffset0: { $ref: 'sch#/definitions/query/page0' }, // page with offset = 0
+  ideaId: { $ref : 'sch#/definitions/idea/ideaId' },
   title: { $ref: 'sch#/definitions/idea/titl' },
   detail: { $ref: 'sch#/definitions/idea/detail' }
 };
