@@ -16,7 +16,8 @@ router.route('/')
 
 router.route('/:id')
   // read idea by id
-  .get(authorize.onlyLogged, ideaValidators.get, ideaControllers.get);
+  .get(authorize.onlyLogged, ideaValidators.get, ideaControllers.get)
+  .patch(authorize.onlyLogged, ideaValidators.patch, ideaControllers.patch);
 
 router.route('/:id/tags')
   .post(authorize.onlyLogged, ideaTagValidators.post, ideaTagControllers.post)

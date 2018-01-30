@@ -1,4 +1,5 @@
-const path = require('path');
+const _ = require('lodash'),
+      path = require('path');
 
 const Model = require(path.resolve('./models/model')),
       schema = require('./schema');
@@ -44,6 +45,41 @@ class Idea extends Model {
     const out = await cursor.all();
     return out[0];
 
+  }
+
+  /**
+   * Update an idea
+   */
+  static async update(id, newData, username) {
+    const idea = _.pick(newData, ['title', 'detail']);
+    const query = `
+      // read [user]
+      LET us = (FOR u IN users FILTER u.username == @username RETURN u)
+      // read [idea]
+      LET is = (FOR i IN ideas FILTER i._key == @id RETURN i)
+      // update idea if and only if user matches idea creator
+      LET newis = (
+        FOR i IN is FOR u IN us FILTER u._id == i.creator
+          UPDATE i WITH @idea IN ideas
+          LET creator = MERGE(KEEP(u, 'username'), u.profile)
+          RETURN MERGE(KEEP(NEW, 'title', 'detail', 'created'), { id: NEW._key }, { creator })
+      )
+      // return old and new idea (to decide what is the error)
+      RETURN [is[0], newis[0]]`;
+    const params = { id, idea, username };
+    const cursor = await this.db.query(query, params);
+    const [[oldIdea, newIdea]] = await cursor.all();
+
+    // if nothing was updated, throw error
+    if (!newIdea) {
+      const e = new Error('not updated');
+      // if old idea was found, then user doesn't have sufficient writing rights,
+      // otherwise idea not found
+      e.code = (oldIdea) ? 403 : 404;
+      throw e;
+    }
+
+    return newIdea;
   }
 
 }
