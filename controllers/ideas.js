@@ -91,4 +91,27 @@ async function patch(req, res, next) {
   }
 }
 
-module.exports = { get, patch, post };
+/**
+ * Get ideas with my tags
+ */
+async function getIdeasWithMyTags(req, res, next) {
+  try {
+    // gather data
+    const { username } = req.auth;
+    const { page: { offset = 0, limit = 10 } = { } } = req.query;
+
+    // read the ideas from database
+    const foundIdeas = await models.idea.withMyTags(username, { offset, limit });
+
+    // serialize
+    const serializedIdeas = serialize.idea(foundIdeas);
+
+    // respond
+    return res.status(200).json(serializedIdeas);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+module.exports = { get, getIdeasWithMyTags, patch, post };

@@ -82,6 +82,49 @@ class Idea extends Model {
     return newIdea;
   }
 
+  /**
+   * Read ideas with my tags
+   */
+  static async withMyTags(username, { offset, limit }) {
+
+    const query = `
+      // gather the ideas related to me
+      FOR me IN users FILTER me.username == @username
+        FOR t, ut IN 1..1 ANY me OUTBOUND userTag
+          FOR i IN 1..1 ANY t INBOUND ideaTags
+            LET relevance = ut.relevance
+            LET tg = KEEP(t, 'tagname')
+            SORT relevance DESC
+            // collect found tags together
+            COLLECT idea=i INTO collected KEEP relevance, tg
+            LET c = (DOCUMENT(idea.creator))
+            LET creator = MERGE(KEEP(c, 'username'), c.profile)
+            // sort ideas by sum of relevances of related userTags
+            LET relSum = SUM(collected[*].relevance)
+            SORT relSum DESC
+            // format for output
+            LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+            LET tagsOut = collected[*].tg
+            // limit
+            LIMIT @offset, @limit
+            // respond
+            RETURN { idea: ideaOut, tags: tagsOut }`;
+    const params = { username, offset, limit };
+    const cursor = await this.db.query(query, params);
+    const out = await cursor.all();
+
+    // generate idea-tags ids, and add them as attributes to each idea
+    // and return array of the ideas
+    return out.map(({ idea, tags }) => {
+      idea.ideaTags = tags.map(({ tagname }) => ({
+        id: `${idea.id}--${tagname}`,
+        idea,
+        tag: { tagname }
+      }));
+      return idea;
+    });
+  }
+
 }
 
 module.exports = Idea;

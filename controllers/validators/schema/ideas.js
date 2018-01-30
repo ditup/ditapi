@@ -1,6 +1,6 @@
 'use strict';
 
-const { title, detail, ideaId } = require('./paths');
+const { title, detail, ideaId, page } = require('./paths');
 
 const postIdeas = {
   properties: {
@@ -61,4 +61,25 @@ const patchIdea = {
   required: ['body', 'params']
 };
 
-module.exports = { getIdea, patchIdea, postIdeas };
+const getIdeasWithMyTags = {
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            withMyTags: {
+              enum: ['']
+            }
+          },
+          required: ['withMyTags']
+        },
+        page
+      },
+      required: ['filter'],
+      additionalProperties: false
+    },
+  },
+  required: ['query']
+};
+
+module.exports = { getIdea, getIdeasWithMyTags, patchIdea, postIdeas };
