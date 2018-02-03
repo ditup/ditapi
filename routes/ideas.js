@@ -9,7 +9,8 @@ const authorize = require(path.resolve('./controllers/authorize')),
       ideaTagControllers = require(path.resolve('./controllers/idea-tags')),
       ideaValidators = require(path.resolve('./controllers/validators/ideas')),
       ideaTagValidators = require(path.resolve('./controllers/validators/idea-tags')),
-      { parse } = require(path.resolve('./controllers/validators/parser'));
+      { parse } = require(path.resolve('./controllers/validators/parser')),
+      go = require(path.resolve('./controllers/goto/ideas'));
 
 router.route('/')
   // post a new idea
@@ -17,7 +18,11 @@ router.route('/')
 
 // get ideas with my tags
 router.route('/')
-  .get(authorize.onlyLogged, parse, ideaValidators.getIdeasWithMyTags, ideaControllers.getIdeasWithMyTags);
+  .get(go.get.withMyTags, authorize.onlyLogged, parse, ideaValidators.getIdeasWithMyTags, ideaControllers.getIdeasWithMyTags);
+
+// get new ideas
+router.route('/')
+  .get(authorize.onlyLogged, parse, ideaValidators.getNewIdeas, ideaControllers.getNewIdeas);
 
 router.route('/:id')
   // read idea by id

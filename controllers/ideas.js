@@ -114,4 +114,25 @@ async function getIdeasWithMyTags(req, res, next) {
   }
 }
 
-module.exports = { get, getIdeasWithMyTags, patch, post };
+/**
+ * Get new ideas
+ */
+async function getNewIdeas(req, res, next) {
+  try {
+    const { page: { offset = 0, limit = 5 } = { } } = req.query;
+
+    // read ideas from database
+    const foundIdeas = await models.idea.findNew({ offset, limit });
+
+    // serialize
+    const serializedIdeas = serialize.idea(foundIdeas);
+
+    // respond
+    return res.status(200).json(serializedIdeas);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+module.exports = { get, getIdeasWithMyTags, getNewIdeas, patch, post };

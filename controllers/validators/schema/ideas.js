@@ -71,7 +71,8 @@ const getIdeasWithMyTags = {
               enum: ['']
             }
           },
-          required: ['withMyTags']
+          required: ['withMyTags'],
+          additionalProperties: false
         },
         page
       },
@@ -82,4 +83,20 @@ const getIdeasWithMyTags = {
   required: ['query']
 };
 
-module.exports = { getIdea, getIdeasWithMyTags, patchIdea, postIdeas };
+const getNewIdeas = {
+  properties: {
+    query: {
+      properties: {
+        sort: {
+          enum: ['-created']
+        },
+        page
+      },
+      required: ['sort'],
+      additionalProperties: false
+    },
+  },
+  required: ['query']
+};
+
+module.exports = { getIdea, getIdeasWithMyTags, getNewIdeas, patchIdea, postIdeas };

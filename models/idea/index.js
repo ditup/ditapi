@@ -9,9 +9,9 @@ class Idea extends Model {
   /**
    * Create an idea
    */
-  static async create({ title, detail, creator }) {
+  static async create({ title, detail, created, creator }) {
     // create the idea
-    const idea = schema({ title, detail });
+    const idea = schema({ title, detail, created });
 
     const query = `
       FOR u IN users FILTER u.username == @creator
@@ -125,6 +125,28 @@ class Idea extends Model {
     });
   }
 
+  /**
+   * Read new ideas
+   */
+  static async findNew({ offset, limit }) {
+
+    const query = `
+      FOR idea IN ideas
+        // sort from newest
+        SORT idea.created DESC
+        LIMIT @offset, @limit
+        // find creator
+        LET c = (DOCUMENT(idea.creator))
+        LET creator = MERGE(KEEP(c, 'username'), c.profile)
+        // format for output
+        LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+        // limit
+        // respond
+        RETURN ideaOut`;
+    const params = { offset, limit };
+    const cursor = await this.db.query(query, params);
+    return await cursor.all();
+  }
 }
 
 module.exports = Idea;

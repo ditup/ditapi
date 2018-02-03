@@ -8,10 +8,7 @@ const agentFactory = require('./agent'),
 describe('read lists of ideas', () => {
 
   let agent,
-      dbData,
-      tag1,
-      idea0,
-      user0;
+      dbData;
 
   // default supertest agent (not logged in)
   beforeEach(() => {
@@ -24,6 +21,10 @@ describe('read lists of ideas', () => {
   });
 
   describe('GET /ideas?filter[withMyTags]', () => {
+
+    let tag1,
+        idea0,
+        user0;
 
     // create and save testing data
     beforeEach(async () => {
@@ -116,6 +117,11 @@ describe('read lists of ideas', () => {
             .expect(400);
         });
 
+        it('[unexpected query params] 400', async () => {
+          await agent
+            .get('/ideas?filter[withMyTags]&filter[Foo]=bar')
+            .expect(400);
+        });
       });
     });
 
@@ -123,6 +129,86 @@ describe('read lists of ideas', () => {
       it('403', async () => {
         await agent
           .get('/ideas?filter[withMyTags]')
+          .expect(403);
+      });
+    });
+  });
+
+  describe('GET /ideas?sort=-created (new ideas)', () => {
+
+    let loggedUser;
+
+    // create and save testing data
+    beforeEach(async () => {
+      const data = {
+        users: 3,
+        verifiedUsers: [0, 1, 2],
+        tags: 6,
+        ideas: Array(11).fill([])
+      };
+
+      dbData = await dbHandle.fill(data);
+
+      loggedUser = dbData.users[0];
+    });
+
+    context('logged in', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
+      context('valid', () => {
+        it('200 and array of new ideas', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?sort=-created')
+            .expect(200);
+
+          // we should find 5 ideas...
+          should(response.body).have.property('data').Array().length(5);
+
+          // ...sorted from newest to oldest
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([10, 9, 8, 7, 6].map(no => `idea title ${no}`));
+        });
+
+        it('[pagination] 200 and array of new ideas, offseted and limited', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?sort=-created&page[offset]=3&page[limit]=4')
+            .expect(200);
+
+          // we should find 4 ideas...
+          should(response.body).have.property('data').Array().length(4);
+
+          // ...sorted from newest to oldest
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([7, 6, 5, 4].map(no => `idea title ${no}`));
+        });
+      });
+
+      context('invalid', () => {
+        it('[invalid pagination] 400', async () => {
+          await agent
+            .get('/ideas?sort=-created&page[offset]=3&page[limit]=21')
+            .expect(400);
+        });
+
+        it('[unexpected query params] 400', async () => {
+          await agent
+            .get('/ideas?sort=-created&foo=bar')
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged in', () => {
+      it('403', async () => {
+        await agent
+          .get('/ideas?sort=-created')
           .expect(403);
       });
     });
