@@ -365,6 +365,11 @@ types:
       201:
       400:
       403:
+  get:
+    description: |
+      Get a list of ideas
+      - ideas with my tags: `?filter[withMyTags]`
+      - new ideas: `?sort=-created`
   /{id}:
     get:
       description: Read an idea by id.
