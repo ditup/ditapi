@@ -373,6 +373,15 @@ types:
         400:
         403:
         404:
+    patch:
+      description: |
+        Update an idea (title, detail).
+        Currently only creator is authorized to do that.
+      response:
+        200:
+        400:
+        403:
+        404:
     /tags:
       post:
         description: Add tag to idea.
