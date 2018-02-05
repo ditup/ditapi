@@ -189,22 +189,19 @@ class Tag extends Model {
   }
 
   /**
-   * delete all tags which have no userTag edges
-   *
-   *
+   * Delete unused tags:
+   * Delete all tags which have no edges in ditup_graph
    */
   static async deleteAbandoned() {
     const query = `
       FOR t IN tags
-        LET e=(FOR e IN userTag
-            FILTER e._to == t._id
-            RETURN e)
-        FILTER LENGTH(e) < 1
+        LET len = (FOR v IN 1..1 ANY t GRAPH 'ditup_graph'
+          COLLECT WITH COUNT INTO a RETURN a)[0]
+        FILTER len == 0
         REMOVE t IN tags RETURN KEEP(OLD, 'tagname')`;
 
-    const out = await (await this.db.query(query)).all();
-
-    return out;
+    const cursor = await this.db.query(query);
+    return await cursor.all();
   }
 
   /**

@@ -21,7 +21,8 @@ exports.fill = async function (data) {
     userTag: [],
     messages: [],
     contacts: [],
-    ideas: []
+    ideas: [],
+    ideaTags: []
   };
 
   data = _.defaults(data, def);
@@ -89,6 +90,14 @@ exports.fill = async function (data) {
       throw e;
     }
     idea.id = outIdea.id;
+  }
+
+  for(const ideaTag of processed.ideaTags) {
+    const creator = ideaTag.creator.username;
+    const ideaId = ideaTag.idea.id;
+    const tagname = ideaTag.tag.tagname;
+
+    await models.ideaTag.create(ideaId, tagname, { }, creator);
   }
 
   return processed;
@@ -233,6 +242,18 @@ function processData(data) {
     };
 
     resp.creator._ideas.push(i);
+
+    return resp;
+  });
+
+  output.ideaTags = data.ideaTags.map(function ([_idea, _tag]) {
+    const resp = {
+      _idea,
+      _tag,
+      get idea() { return output.ideas[this._idea]; },
+      get tag() { return output.tags[this._tag]; },
+      get creator() { return this.idea.creator; }
+    };
 
     return resp;
   });

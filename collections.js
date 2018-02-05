@@ -76,7 +76,21 @@ module.exports = {
 
   ideas: {
     type: 'document'
+  },
+
+  ideaTags: {
+    type: 'edge',
+    from: ['ideas'],
+    to: ['tags'],
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['_from', '_to'],
+        unique: true
+      }
+    ]
   }
+
 };
 
 /*
