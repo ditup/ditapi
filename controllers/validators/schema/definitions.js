@@ -3,6 +3,14 @@
 const { tagname } = require('./paths');
 
 module.exports = {
+  shared: {
+    objectId: { // id is a reserved word
+      type: 'string',
+      minLength: 1,
+      maxLength: 16,
+      pattern: '^[0-9]*$'
+    }
+  },
   user: {
     username: {
       type: 'string',
@@ -77,6 +85,14 @@ module.exports = {
       enum: [1, 2, 3, 4, 5]
     }
   },
+  comment: {
+    content: {
+      type: 'string',
+      minLength: 1,
+      maxLength: 1024,
+      pattern: '\\S' // at least one non-space character
+    }
+  },
   contact: {
     trust: {
       enum: [1, 2, 4, 8]
@@ -91,12 +107,6 @@ module.exports = {
     },
   },
   idea: {
-    ideaId: {
-      type: 'string',
-      minLength: 1,
-      maxLength: 16,
-      pattern: '^[0-9]*$'
-    },
     titl: { // title (reserved word in json-schema)
       type: 'string',
       minLength: 1,
@@ -114,9 +124,6 @@ module.exports = {
       minLength: 1,
       maxLength: 2048,
       pattern: '\\S' // at least one non-space character
-    },
-    messageId: {
-      type: 'string'
     }
   },
   query: {

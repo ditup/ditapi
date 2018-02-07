@@ -89,6 +89,20 @@ module.exports = {
         unique: true
       }
     ]
+  },
+
+  comments: {
+    type: 'document',
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['primary']
+      },
+      {
+        type: 'hash',
+        fields: ['creator']
+      }
+    ]
   }
 
 };

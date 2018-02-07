@@ -45,6 +45,7 @@ module.exports = function sanitizer(req, res, next) {
     'reference', // contact reference
     'message', // contact request message
     'story', // userTag story
+    'content', // content of comment
     'detail' // detail of idea
   ];
 

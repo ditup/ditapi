@@ -1,6 +1,7 @@
 'use strict';
 
-const contact = require('./contact'),
+const comment = require('./comment'),
+      contact = require('./contact'),
       idea = require('./idea'),
       ideaTag = require('./idea-tag'),
       message = require('./message'),
@@ -20,4 +21,4 @@ const models = {
   }
 };
 
-module.exports = Object.assign(models, { contact, idea, ideaTag, message, model, tag, user, userTag });
+module.exports = Object.assign(models, { comment, contact, idea, ideaTag, message, model, tag, user, userTag });
