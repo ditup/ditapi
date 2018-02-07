@@ -16,9 +16,9 @@ class Comment extends Model {
    * @param {string} creator - username of the comment author
    * @returns Promise<Comment>
    */
-  static async create({ content, primary: { type, id },  creator }) {
+  static async create({ content, primary: { type, id },  creator, created }) {
     // create the comment
-    const comment = schema({ content });
+    const comment = schema({ content, created });
 
     const query = `
       FOR u IN users FILTER u.username == @creator
@@ -61,6 +61,52 @@ class Comment extends Model {
     if (out.length !== 1) return null;
 
     return out[0];
+  }
+
+  /**
+   * Read comments of a primary object (i.e. idea)
+   * @param {string} type - type of primary object, i.e. ideas
+   * @param {string} id - id of the primary object
+   * @param {number} offset - output pagination offset
+   * @param {number} limit - output pagination limit
+   * @param {string} [sort=created] - how to sort output
+   */
+  static async readCommentsOf({ type, id }, { sort = 'created', offset, limit } = { }) {
+
+    // find out by what to sort the comments
+    // @TODO by votes
+    const formattedSort = (sort === '-created')
+      ? 'c.created DESC'
+      : 'c.created ASC';
+
+    const query = `
+      // find the primary object
+      LET primaryRaw = (FOR p IN @@type FILTER p._key == @id RETURN p)
+      // find the comments
+      LET outputComments = (FOR p IN primaryRaw
+        LET primary = MERGE(p, { id: p._key, type: PARSE_IDENTIFIER(p).collection })
+        // find the comments of the primary object
+        FOR c IN comments FILTER c.primary == p._id
+          LET u = DOCUMENT(c.creator)
+          LET creator = MERGE(KEEP(u, 'username'), u.profile)
+          LET formattedComment = MERGE(KEEP(c, 'content', 'created'), { id: c._key }, { creator, primary })
+          SORT ${formattedSort}
+          LIMIT @offset, @limit
+          RETURN formattedComment)
+      RETURN [primaryRaw, outputComments]`;
+    const params = { '@type': type, id, offset, limit };
+    const cursor = await this.db.query(query, params);
+
+    const [[primary, comments]] = await cursor.all();
+
+    // when primary object doesn't exist error
+    if (primary.length === 0) {
+      const e = new Error('primary not found');
+      e.code = 404;
+      throw e;
+    }
+
+    return comments;
   }
 }
 

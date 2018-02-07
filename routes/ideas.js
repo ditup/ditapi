@@ -43,7 +43,9 @@ router.route('/:id/tags/:tagname')
   .delete(authorize.onlyLogged, ideaTagValidators.del, ideaTagControllers.del);
 
 router.route('/:id/comments')
-  // create a new comment to the idea
-  .post(authorize.onlyLogged, commentValidators.post, commentControllers.post);
+  // create a new comment for idea
+  .post(authorize.onlyLogged, commentValidators.post, commentControllers.post)
+  // read comments of idea
+  .get(authorize.onlyLogged, parse, commentValidators.get, commentControllers.get);
 
 module.exports = router;

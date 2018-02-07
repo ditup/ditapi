@@ -2,6 +2,7 @@
 
 const validate = require('./validate-by-schema');
 
-const post = validate('postComments');
+const get = validate('getComments'),
+      post = validate('postComments');
 
-module.exports = { post };
+module.exports = { get, post };

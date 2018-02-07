@@ -1,13 +1,11 @@
 'use strict';
 
-const { id, content } = require('./paths');
+const { id, content, page } = require('./paths');
 
 const postComments = {
   properties: {
     params: {
-      properties: {
-        id
-      },
+      properties: { id },
       required: ['id'],
       additionalProperties: false
     },
@@ -22,4 +20,24 @@ const postComments = {
   }
 };
 
-module.exports = { postComments };
+const getComments = {
+  properties: {
+    params: {
+      properties: { id },
+      required: ['id'],
+      additionalProperties: false
+    },
+    query: {
+      properties: {
+        page,
+        sort: {
+          enum: ['-created', 'created']
+        }
+      },
+      additionalProperties: false
+    }
+  },
+  required: ['params', 'query']
+};
+
+module.exports = { getComments, postComments };

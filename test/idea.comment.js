@@ -207,7 +207,114 @@ describe('comments of idea', () => {
   });
 
   describe('GET /ideas/:id/comments', () => {
-    it('todo');
+
+    // declare variables
+    let idea0,
+        loggedUser;
+
+    // save testing data to database
+    beforeEach(async () => {
+      const data = {
+        users: 4,
+        verifiedUsers: [0, 1, 2, 3],
+        ideas: Array(2).fill([]),
+        ideaComments: [
+          [0, 0], [0, 1], [0, 1], [0, 2], [0, 1], [0, 1], [0, 0], [0, 3],
+          [1, 0], [1, 0], [1, 2]
+        ]
+      };
+
+      dbData = await dbHandle.fill(data);
+
+      idea0 = dbData.ideas[0];
+      loggedUser = dbData.users[0];
+    });
+
+    context('logged', () => {
+
+      // log in supertest agent
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
+      context('valid', () => {
+        it('200 and list of comments', async () => {
+          const response = await agent
+            .get(`/ideas/${idea0.id}/comments`)
+            .expect(200);
+
+          should(response.body).have.property('data').Array().length(8);
+
+          should(response.body.data.map(comment => comment.attributes.content))
+            .eql([0, 1, 2, 3, 4, 5, 6, 7].map(no => `idea comment ${no}`));
+        });
+
+        it('pagination', async () => {
+          const response = await agent
+            .get(`/ideas/${idea0.id}/comments?page[offset]=2&page[limit]=5`)
+            .expect(200);
+
+          should(response.body).have.property('data').Array().length(5);
+
+          should(response.body.data.map(comment => comment.attributes.content))
+            .eql([2, 3, 4, 5, 6].map(no => `idea comment ${no}`));
+        });
+
+        it('sort from newest to oldest', async () => {
+          const response = await agent
+            .get(`/ideas/${idea0.id}/comments?page[offset]=2&page[limit]=5&sort=-created`)
+            .expect(200);
+
+          should(response.body).have.property('data').Array().length(5);
+
+          should(response.body.data.map(comment => comment.attributes.content))
+            .eql([5, 4, 3, 2, 1].map(no => `idea comment ${no}`));
+        });
+
+        it('[idea doesn\'t exist] 404', async () => {
+          const response = await agent
+            .get('/ideas/000111222/comments')
+            .expect(404);
+
+          should(response.body).deepEqual({ errors: [{ status: 404, detail: 'primary object not found' }] });
+        });
+      });
+
+      context('invalid', () => {
+
+        it('[invalid idea id] 400', async () => {
+          await agent
+            .get('/ideas/invalid-id/comments')
+            .expect(400);
+        });
+
+        it('[invalid pagination] 400', async () => {
+          await agent
+            .get(`/ideas/${idea0.id}/comments?page[offset]=1&page[limit]=21`)
+            .expect(400);
+        });
+
+        it('[invalid sort] 400', async () => {
+          await agent
+            .get(`/ideas/${idea0.id}/comments?sort=-foo`)
+            .expect(400);
+        });
+
+        it('[additional query params] 400', async () => {
+          await agent
+            .get(`/ideas/${idea0.id}/comments?foo=bar`)
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged', () => {
+      it('403', async () => {
+        await agent
+          .get(`/ideas/${idea0.id}/comments`)
+          .expect(403);
+      });
+    });
   });
 
   describe('PATCH /comments/:id', () => {
