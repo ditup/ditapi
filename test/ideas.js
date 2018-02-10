@@ -7,7 +7,7 @@ const agentFactory = require('./agent'),
       dbHandle = require('./handle-database'),
       models = require(path.resolve('./models'));
 
-describe('/ideas', () => {
+describe('ideas', () => {
   let agent,
       dbData,
       loggedUser;
@@ -16,7 +16,11 @@ describe('/ideas', () => {
     await dbHandle.clear();
   });
 
-  describe('POST', () => {
+  beforeEach(() => {
+    agent = agentFactory();
+  });
+
+  describe('POST /ideas', () => {
     let newIdeaBody;
 
     beforeEach(() => {
@@ -182,10 +186,6 @@ describe('/ideas', () => {
     });
 
     context('not logged in', () => {
-      beforeEach(() => {
-        agent = agentFactory();
-      });
-
       it('should say 403 Forbidden', async () => {
         await agent
           .post('/ideas')
@@ -195,23 +195,10 @@ describe('/ideas', () => {
       });
     });
   });
-});
 
-describe('/ideas/:id', () => {
-  let agent,
-      dbData,
-      idea,
-      loggedUser;
+  describe('GET /ideas/:id', () => {
 
-  beforeEach(() => {
-    agent = agentFactory();
-  });
-
-  afterEach(async () => {
-    await dbHandle.clear();
-  });
-
-  describe('GET', () => {
+    let idea;
 
     beforeEach(async () => {
       const data = {
@@ -285,11 +272,224 @@ describe('/ideas/:id', () => {
     });
   });
 
-  describe('PATCH', () => {
-    it('todo');
+  describe('PATCH /ideas/:id', () => {
+
+    let idea0,
+        idea1,
+        patchBody;
+
+    beforeEach(async () => {
+      const data = {
+        users: 3, // how many users to make
+        verifiedUsers: [0, 1], // which  users to make verified
+        ideas: [[{ }, 0], [{ }, 1]]
+      };
+      // create data in database
+      dbData = await dbHandle.fill(data);
+
+      loggedUser = dbData.users[0];
+      [idea0, idea1] = dbData.ideas;
+    });
+
+    beforeEach(() => {
+      patchBody = {
+        data: {
+          type: 'ideas',
+          id: idea0.id,
+          attributes: {
+            title: 'this is a new title',
+            detail: 'this is a new detail'
+          }
+        }
+      };
+    });
+
+    context('logged', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
+      context('valid', () => {
+        it('[idea exists, creator, title] 200 and update in db', async () => {
+          delete patchBody.data.attributes.detail;
+
+          const { title } = patchBody.data.attributes;
+          const { id, detail } = idea0;
+
+          const response = await agent
+            .patch(`/ideas/${id}`)
+            .send(patchBody)
+            .expect(200);
+
+          should(response.body).match({
+            data: {
+              type: 'ideas',
+              id,
+              attributes: { title, detail }
+            }
+          });
+
+          const ideaDb = await models.idea.read(idea0.id);
+
+          should(ideaDb).match({ id, title, detail });
+        });
+
+        it('[idea exists, creator, detail] 200 and update in db', async () => {
+          delete patchBody.data.attributes.title;
+
+          const { detail } = patchBody.data.attributes;
+          const { id, title } = idea0;
+
+          const response = await agent
+            .patch(`/ideas/${id}`)
+            .send(patchBody)
+            .expect(200);
+
+          should(response.body).match({
+            data: {
+              type: 'ideas',
+              id,
+              attributes: { title, detail }
+            }
+          });
+
+          const ideaDb = await models.idea.read(idea0.id);
+
+          should(ideaDb).match({ id, title, detail });
+        });
+
+        it('[idea exists, creator, title, detail] 200 and update in db', async () => {
+          const { title, detail } = patchBody.data.attributes;
+          const { id } = idea0;
+
+          const response = await agent
+            .patch(`/ideas/${id}`)
+            .send(patchBody)
+            .expect(200);
+
+          should(response.body).match({
+            data: {
+              type: 'ideas',
+              id,
+              attributes: { title, detail }
+            }
+          });
+
+          const ideaDb = await models.idea.read(idea0.id);
+          should(ideaDb).match({ id, title, detail });
+        });
+
+        it('[idea exists, not creator] 403', async () => {
+          patchBody.data.id = idea1.id;
+
+          const response = await agent
+            .patch(`/ideas/${idea1.id}`)
+            .send(patchBody)
+            .expect(403);
+
+          should(response.body).match({
+            errors: [{
+              status: 403,
+              detail: 'only creator can update'
+            }]
+          });
+        });
+
+        it('[idea not exist] 404', async () => {
+          patchBody.data.id = '00011122';
+
+          const response = await agent
+            .patch('/ideas/00011122')
+            .send(patchBody)
+            .expect(404);
+
+          should(response.body).match({
+            errors: [{
+              status: 404,
+              detail: 'idea not found'
+            }]
+          });
+        });
+      });
+
+      context('invalid', () => {
+        it('[invalid idea id] 400', async () => {
+          patchBody.data.id = 'invalid-id';
+
+          await agent
+            .patch('/ideas/invalid-id')
+            .send(patchBody)
+            .expect(400);
+        });
+
+        it('[id in body doesn\'t equal id in params] 400', async () => {
+          patchBody.data.id = '00011122';
+
+          await agent
+            .patch(`/ideas/${idea0.id}`)
+            .send(patchBody)
+            .expect(400);
+        });
+
+        it('[invalid title] 400', async () => {
+          patchBody.data.attributes.title = '  ';
+
+          await agent
+            .patch(`/ideas/${idea0.id}`)
+            .send(patchBody)
+            .expect(400);
+        });
+
+        it('[invalid detail] 400', async () => {
+          patchBody.data.attributes.detail = '.'.repeat(2049);
+
+          await agent
+            .patch(`/ideas/${idea0.id}`)
+            .send(patchBody)
+            .expect(400);
+        });
+
+        it('[not title nor detail (nothing to update)] 400', async () => {
+          delete patchBody.data.attributes.title;
+          delete patchBody.data.attributes.detail;
+
+          await agent
+            .patch(`/ideas/${idea0.id}`)
+            .send(patchBody)
+            .expect(400);
+        });
+
+        it('[unexpected attribute] 400', async () => {
+          patchBody.data.attributes.foo = 'bar';
+
+          await agent
+            .patch(`/ideas/${idea0.id}`)
+            .send(patchBody)
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged', () => {
+      it('403', async () => {
+        const response = await agent
+          .patch(`/ideas/${idea0.id}`)
+          .send(patchBody)
+          .expect(403);
+
+        // this should fail in authorization controller and not in idea controller
+        should(response.body).not.match({
+          errors: [{
+            status: 403,
+            detail: 'only creator can update'
+          }]
+        });
+      });
+    });
   });
 
-  describe('DELETE', () => {
+  describe('DELETE /ideas/:id', () => {
     it('todo');
   });
 });

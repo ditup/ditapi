@@ -52,7 +52,43 @@ async function get(req, res, next) {
   }
 }
 
-module.exports = { get, post };
+/**
+ * Update idea's title or detail
+ * PATCH /ideas/:id
+ */
+async function patch(req, res, next) {
+  try {
+    // gather data
+    const { title, detail } = req.body;
+    const { id } = req.params;
+    const { username } = req.auth;
 
+    // update idea in database
+    const idea = await models.idea.update(id, { title, detail }, username);
 
+    // serialize the updated idea (JSON API)
+    const serializedIdea = serialize.idea(idea);
 
+    // respond
+    return res.status(200).json(serializedIdea);
+  } catch (e) {
+    // handle errors
+    switch (e.code) {
+      case 403: {
+        return res.status(403).json({
+          errors: [{ status: 403, detail: 'only creator can update' }]
+        });
+      }
+      case 404: {
+        return res.status(404).json({
+          errors: [{ status: 404, detail: 'idea not found' }]
+        });
+      }
+      default: {
+        return next(e);
+      }
+    }
+  }
+}
+
+module.exports = { get, patch, post };
