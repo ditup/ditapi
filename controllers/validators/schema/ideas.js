@@ -30,26 +30,24 @@ const getIdea = {
 const patchIdea = {
   properties: {
     params: {
-      properties: {
-        id: ideaId
-      },
+      properties: { id },
       required: ['id'],
       additionalProperties: false
     },
     body: {
       oneOf: [
         {
-          properties: { title, detail, id: ideaId },
+          properties: { title, detail, id },
           required: ['title', 'detail', 'id'],
           additionalProperties: false
         },
         {
-          properties: { title, id: ideaId },
+          properties: { title, id },
           required: ['title', 'id'],
           additionalProperties: false
         },
         {
-          properties: { detail, id: ideaId },
+          properties: { detail, id },
           required: ['detail', 'id'],
           additionalProperties: false
         }
