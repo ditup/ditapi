@@ -318,11 +318,270 @@ describe('comments of idea', () => {
   });
 
   describe('PATCH /comments/:id', () => {
-    it('todo');
+    // declare variables
+    let comment00,
+        comment01,
+        idea0,
+        patchBody,
+        user0;
+
+    // save testing data to database
+    beforeEach(async () => {
+      const data = {
+        users: 2,
+        verifiedUsers: [0, 1],
+        ideas: Array(1).fill([]),
+        ideaComments: [
+          [0, 0], [0, 1],
+        ]
+      };
+
+      dbData = await dbHandle.fill(data);
+
+      idea0 = dbData.ideas[0];
+      [user0] = dbData.users;
+      [comment00, comment01] = dbData.ideaComments;
+    });
+
+    // valid request body
+    beforeEach(() => {
+      patchBody = { data: {
+        type: 'comments',
+        id: comment00.id,
+        attributes: {
+          content: 'updated content'
+        }
+      } };
+    });
+
+    context('logged', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(user0);
+      });
+
+      context('valid', () => {
+
+        it('200, update comment content and respond with updated', async () => {
+
+          const response = await agent
+            .patch(`/comments/${comment00.id}`)
+            .send(patchBody)
+            .expect(200);
+
+          // check that comment is updated in database
+          const dbComment = await models.comment.read(comment00.id);
+          should(dbComment).match({
+            content: 'updated content',
+            id: comment00.id
+          });
+
+          // check that the response body has a correct format
+          should(response.body).match({
+            data: {
+              type: 'comments',
+              id: comment00.id,
+              attributes: {
+                content: 'updated content',
+              },
+              relationships: {
+                primary: {
+                  data: {
+                    type: 'ideas',
+                    id: idea0.id
+                  },
+                },
+                creator: {
+                  data: {
+                    type: 'users',
+                    id: user0.username
+                  }
+                }
+              }
+            }
+          });
+        });
+
+        it('[nonexistent comment] 404', async () => {
+          patchBody.data.id = '111222333';
+
+          const response = await agent
+            .patch('/comments/111222333')
+            .send(patchBody)
+            .expect(404);
+
+          should(response.body).deepEqual({
+            errors: [
+              { status: 404, detail: 'comment not found' }
+            ]
+          });
+        });
+
+        it('[not creator] 403', async () => {
+          patchBody.data.id = comment01.id;
+
+          const response = await agent
+            .patch(`/comments/${comment01.id}`)
+            .send(patchBody)
+            .expect(403);
+
+          should(response.body).deepEqual({
+            errors: [
+              { status: 403, detail: 'not a creator' }
+            ]
+          });
+        });
+      });
+
+      context('invalid', () => {
+        it('[invalid id] 400', async () => {
+          patchBody.data.id = 'invalid--id';
+
+          await agent
+            .patch('/comments/invalid--id')
+            .send(patchBody)
+            .expect(400);
+        });
+
+        it('[body.id doesn\'t equal params.id]', async () => {
+          patchBody.data.id = '111222333';
+
+          await agent
+            .patch(`/comments/${comment00.id}`)
+            .send(patchBody)
+            .expect(400);
+        });
+
+        it('[invalid content] 400', async () => {
+          patchBody.data.attributes.content = '  ';
+
+          await agent
+            .patch(`/comments/${comment00.id}`)
+            .send(patchBody)
+            .expect(400);
+        });
+
+        it('[missing content] 400', async () => {
+          delete patchBody.data.attributes.content;
+
+          await agent
+            .patch(`/comments/${comment00.id}`)
+            .send(patchBody)
+            .expect(400);
+        });
+
+        it('[unexpected body params] 400', async () => {
+          patchBody.data.attributes.foo = 'bar';
+
+          await agent
+            .patch(`/comments/${comment00.id}`)
+            .send(patchBody)
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged', () => {
+      it('403', async () => {
+        const response = await agent
+          .patch(`/comments/${comment00.id}`)
+          .send(patchBody)
+          .expect(403);
+
+        // shouldn't be the error of "logged, not creator"
+        should(response.body).not.deepEqual({
+          errors: [
+            { status: 403, detail: 'not a creator' }
+          ]
+        });
+      });
+    });
   });
 
   describe('DELETE /comments/:id', () => {
-    it('todo');
+    // declare variables
+    let comment00,
+        comment01,
+        user0;
+
+    // save testing data to database
+    beforeEach(async () => {
+      const data = {
+        users: 2,
+        verifiedUsers: [0, 1],
+        ideas: Array(1).fill([]),
+        ideaComments: [
+          [0, 0], [0, 1],
+        ]
+      };
+
+      dbData = await dbHandle.fill(data);
+
+      [user0] = dbData.users;
+      [comment00, comment01] = dbData.ideaComments;
+    });
+
+    context('logged', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(user0);
+      });
+
+      context('valid', () => {
+
+        it('204 and remove comment', async () => {
+          await agent
+            .delete(`/comments/${comment00.id}`)
+            .expect(204);
+
+          // check that comment is removed from database
+          const dbComment = await models.comment.read(comment00.id);
+          should(dbComment).null();
+        });
+
+        it('[nonexistent comment] 404', async () => {
+          const response = await agent
+            .delete('/comments/123456')
+            .expect(404);
+
+          should(response.body).deepEqual({ errors: [{ status: 404, detail: 'comment not found' }] });
+        });
+
+        it('[not creator] 403', async () => {
+          const response = await agent
+            .delete(`/comments/${comment01.id}`)
+            .expect(403);
+
+          should(response.body).deepEqual({
+            errors: [
+              { status: 403, detail: 'not a creator' }
+            ]
+          });
+        });
+      });
+
+      context('invalid', () => {
+        it('[invalid id] 400', async () => {
+          await agent
+            .delete('/comments/invalid--id')
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged', () => {
+      it('403', async () => {
+        const response = await agent
+          .delete(`/comments/${comment00.id}`)
+          .expect(403);
+
+        should(response.body).not.deepEqual({
+          errors: [
+            { status: 403, detail: 'not a creator' }
+          ]
+        });
+      });
+    });
   });
 
   describe('POST /comments/:id/reactions', () => {

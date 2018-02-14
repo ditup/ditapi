@@ -108,6 +108,100 @@ class Comment extends Model {
 
     return comments;
   }
+
+  /**
+   * Update a comment.
+   * @param {string} id - id of the comment to update
+   * @param {string} content - content of the commment to update
+   * @param {username} string - username of the user who is making the update
+   * @returns Promise<Comment> - updated comment
+   */
+  static async update(id, { content }, username) {
+    const query = `
+      // find the [comment]
+      LET cs = (FOR c IN comments FILTER c._key == @id RETURN c)
+      // update comment and return the updated comment
+      LET out = (
+        FOR comment IN cs
+          // continue only if user is the creator
+          LET u = DOCUMENT(comment.creator)
+          FILTER u.username == @username
+          // read and format primary object and creator
+          LET p = DOCUMENT(comment.primary)
+          LET primary = MERGE(p, { id: p._key, type: PARSE_IDENTIFIER(p).collection })
+          LET creator = MERGE(KEEP(u, 'username'), u.profile)
+          // update
+          UPDATE comment WITH { content: @content } IN comments
+          // return the updated comment
+          LET formattedComment = MERGE(KEEP(NEW, 'content', 'created'), { id: NEW._key }, { creator, primary })
+          RETURN formattedComment
+      )
+      // return comment and formatted comment
+      // if comment is there, but formatted comment not, user is not the creator
+      // and comment was not updated
+      RETURN [cs[0], out[0]]`;
+
+    const params = { id, content, username };
+    const cursor = await this.db.query(query, params);
+
+    const [[comment, updated]] = await cursor.all();
+
+    // comment was not found
+    if (!comment) {
+      const e = new Error('comment not found');
+      e.code = 404;
+      throw e;
+    }
+
+    // user and comment was found, but user & comment.creator don't match
+    // comment not updated
+    if (!updated) {
+      const e = new Error('not a creator');
+      e.code = 403;
+      throw e;
+    }
+
+    return updated;
+  }
+
+  /**
+   * Delete a comment.
+   * @param {string} id - id of the comment to remove
+   * @param {string} username - username of the user who is removing
+   * @returns Promise<void>
+   */
+  static async remove(id, username) {
+    const query = `
+      // find the [comment]
+      LET cs = (FOR c IN comments FILTER c._key == @id RETURN c)
+      // remove the comment
+      LET out = (FOR c IN cs
+        // remove comment only if requesting user is creator
+        FILTER DOCUMENT(c.creator).username == @username
+        REMOVE c IN comments RETURN 0)
+      // return the comment to see if the comment was found
+      RETURN cs
+    `;
+    const params = { id, username };
+    const cursor = await this.db.query(query, params);
+
+    // if the comment was not removed, throw an appropriate error
+    if (cursor.extra.stats.writesExecuted === 0) {
+
+      const [foundComments] = await cursor.all();
+      // either not authorized (comment found but not removed)
+      if (foundComments.length === 1) {
+        const e = new Error('not a creator');
+        e.code = 403;
+        throw e;
+      } else {
+        // or comment was not found
+        const e = new Error('comment not found');
+        e.code = 404;
+        throw e;
+      }
+    }
+  }
 }
 
 module.exports = Comment;

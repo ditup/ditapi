@@ -40,4 +40,31 @@ const getComments = {
   required: ['params', 'query']
 };
 
-module.exports = { getComments, postComments };
+const patchComment = {
+  properties: {
+    params: {
+      properties: { id },
+      required: ['id'],
+      additionalProperties: false
+    },
+    body: {
+      properties: { content, id },
+      required: ['content', 'id'],
+      additionalProperties: false
+    }
+  },
+  required: ['params', 'body']
+};
+
+const deleteComment = {
+  properties: {
+    params: {
+      properties: { id },
+      required: ['id'],
+      additionalProperties: false
+    }
+  },
+  required: ['params']
+};
+
+module.exports = { deleteComment, getComments, patchComment, postComments };

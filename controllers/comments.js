@@ -70,4 +70,72 @@ async function get(req, res, next) {
   }
 }
 
-module.exports = { get, post };
+/**
+ * Edit comment
+ */
+async function patch(req, res, next) {
+  try {
+    // gather data
+    const { id } = req.params;
+    const { content } = req.body;
+    const { username } = req.auth;
+
+    const updated = await models.comment.update(id, { content }, username);
+
+    // serialize the comment (JSON API)
+    const serializedComment = serialize.comment(updated);
+
+
+    return res.status(200).json(serializedComment);
+  } catch (e) {
+
+    switch (e.code) {
+      case 404: {
+        return res.status(404).json({
+          errors: [{ status: 404, detail: e.message }]
+        });
+      }
+      case 403: {
+        return res.status(403).json({
+          errors: [{ status: 403, detail: e.message }]
+        });
+      }
+      default: {
+        return next(e);
+      }
+    }
+  }
+}
+
+/**
+ * Remove comment
+ */
+async function del(req, res, next) {
+  try {
+    // gather data
+    const { id } = req.params;
+    const { username } = req.auth;
+
+    await models.comment.remove(id, username);
+
+    return res.status(204).end();
+  } catch (e) {
+    switch (e.code) {
+      case 404: {
+        return res.status(404).json({
+          errors: [{ status: 404, detail: e.message }]
+        });
+      }
+      case 403: {
+        return res.status(403).json({
+          errors: [{ status: 403, detail: e.message }]
+        });
+      }
+      default: {
+        return next(e);
+      }
+    }
+  }
+}
+
+module.exports = { del, get, patch, post };

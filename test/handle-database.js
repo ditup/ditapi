@@ -107,7 +107,10 @@ exports.fill = async function (data) {
     const { content, created } = ideaComment;
     const primary = { type: 'ideas', id: ideaId };
 
-    await models.comment.create({ primary, creator, content, created });
+    const newComment = await models.comment.create({ primary, creator, content, created });
+
+    // save the comment's id
+    ideaComment.id = newComment.id;
   }
 
   return processed;

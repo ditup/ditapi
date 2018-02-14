@@ -69,6 +69,7 @@ app.use('/tags', require('./routes/tags'));
 app.use('/auth', require('./routes/auth'));
 app.use('/messages', require('./routes/messages'));
 app.use('/account', require('./routes/account'));
+app.use('/comments', require('./routes/comments'));
 app.use('/contacts', require('./routes/contacts'));
 app.use('/ideas', require('./routes/ideas'));
 
