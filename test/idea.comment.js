@@ -210,6 +210,7 @@ describe('comments of idea', () => {
 
     // declare variables
     let idea0,
+        idea2,
         loggedUser;
 
     // save testing data to database
@@ -217,16 +218,18 @@ describe('comments of idea', () => {
       const data = {
         users: 4,
         verifiedUsers: [0, 1, 2, 3],
-        ideas: Array(2).fill([]),
+        ideas: Array(3).fill([]),
         ideaComments: [
           [0, 0], [0, 1], [0, 1], [0, 2], [0, 1], [0, 1], [0, 0], [0, 3],
-          [1, 0], [1, 0], [1, 2]
+          [1, 0], [1, 0], [1, 2],
+          [2, 0], [2, 1], [2, 1], [2, 2], [2, 1], [2, 1], [2, 0], [2, 3],
+          [2, 0], [2, 1], [2, 1], [2, 2], [2, 1], [2, 1], [2, 0], [2, 3]
         ]
       };
 
       dbData = await dbHandle.fill(data);
 
-      idea0 = dbData.ideas[0];
+      [idea0,, idea2] = dbData.ideas;
       loggedUser = dbData.users[0];
     });
 
@@ -258,6 +261,14 @@ describe('comments of idea', () => {
 
           should(response.body.data.map(comment => comment.attributes.content))
             .eql([2, 3, 4, 5, 6].map(no => `idea comment ${no}`));
+        });
+
+        it('when pagination not specified, fetch all', async () => {
+          const response = await agent
+            .get(`/ideas/${idea2.id}/comments`)
+            .expect(200);
+
+          should(response.body).have.property('data').Array().length(16);
         });
 
         it('sort from newest to oldest', async () => {

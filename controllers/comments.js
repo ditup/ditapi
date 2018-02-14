@@ -46,7 +46,7 @@ async function get(req, res, next) {
   try {
     // gather data
     const { id } = req.params;
-    const { page: { offset = 0, limit = 10 } = { }, sort = 'created' } = req.query;
+    const { page: { offset, limit } = { }, sort = 'created' } = req.query;
 
     // primary object whose comments we want to read
     const primary = { type: 'ideas', id };

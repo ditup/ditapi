@@ -79,6 +79,8 @@ class Comment extends Model {
       ? 'c.created DESC'
       : 'c.created ASC';
 
+    const isPagination = typeof offset === 'number' && typeof limit === 'number';
+
     const query = `
       // find the primary object
       LET primaryRaw = (FOR p IN @@type FILTER p._key == @id RETURN p)
@@ -91,7 +93,7 @@ class Comment extends Model {
           LET creator = MERGE(KEEP(u, 'username'), u.profile)
           LET formattedComment = MERGE(KEEP(c, 'content', 'created'), { id: c._key }, { creator, primary })
           SORT ${formattedSort}
-          LIMIT @offset, @limit
+          ${(isPagination) ? 'LIMIT @offset, @limit' : ''}
           RETURN formattedComment)
       RETURN [primaryRaw, outputComments]`;
     const params = { '@type': type, id, offset, limit };
