@@ -103,6 +103,20 @@ module.exports = {
         fields: ['creator']
       }
     ]
+  },
+
+  reactions: {
+    type: 'document',
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['primary']
+      },
+      {
+        type: 'hash',
+        fields: ['creator']
+      }
+    ]
   }
 
 };
