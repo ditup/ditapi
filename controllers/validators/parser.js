@@ -21,6 +21,7 @@ const parametersDictionary = {
   },
   filter: {
     tag: 'array',
+    withTags: 'array',
     withMyTags: 'int',
     location: 'coordinates',
     relatedToTags: 'array',

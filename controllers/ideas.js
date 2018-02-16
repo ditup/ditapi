@@ -115,6 +115,30 @@ async function getIdeasWithMyTags(req, res, next) {
 }
 
 /**
+ * Get ideas with specified tags
+ */
+async function getIdeasWithTags(req, res, next) {
+  try {
+
+    // gather data
+    const { page: { offset = 0, limit = 10 } = { } } = req.query;
+    const { withTags: tagnames } = req.query.filter;
+
+    // read the ideas from database
+    const foundIdeas = await models.idea.withTags(tagnames, { offset, limit });
+
+    // serialize
+    const serializedIdeas = serialize.idea(foundIdeas);
+
+    // respond
+    return res.status(200).json(serializedIdeas);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+/**
  * Get new ideas
  */
 async function getNewIdeas(req, res, next) {
@@ -135,4 +159,4 @@ async function getNewIdeas(req, res, next) {
   }
 }
 
-module.exports = { get, getIdeasWithMyTags, getNewIdeas, patch, post };
+module.exports = { get, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, patch, post };

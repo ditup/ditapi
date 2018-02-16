@@ -22,7 +22,11 @@ router.route('/')
 
 // get new ideas
 router.route('/')
-  .get(authorize.onlyLogged, parse, ideaValidators.getNewIdeas, ideaControllers.getNewIdeas);
+  .get(go.get.new, authorize.onlyLogged, parse, ideaValidators.getNewIdeas, ideaControllers.getNewIdeas);
+
+// get ideas with specified tags
+router.route('/')
+  .get(go.get.withTags, authorize.onlyLogged, parse, ideaValidators.getIdeasWithTags, ideaControllers.getIdeasWithTags);
 
 router.route('/:id')
   // read idea by id

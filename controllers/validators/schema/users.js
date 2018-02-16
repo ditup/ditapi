@@ -1,6 +1,6 @@
 'use strict';
 
-const { username, givenName, familyName, description, location, tagname, page, pageOffset0 } = require('./paths');
+const { username, givenName, familyName, description, location, page, pageOffset0, tagsList } = require('./paths');
 
 const patchUser = {
   id: 'patchUser',
@@ -134,12 +134,7 @@ const getUsersWithTags = {
       properties: {
         filter: {
           properties: {
-            tag: {
-              type: 'array',
-              items: tagname,
-              maxItems: 10,
-              minItems: 1
-            }
+            tag: tagsList
           },
           required: ['tag'],
           additionalProperties: false

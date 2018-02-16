@@ -126,6 +126,51 @@ class Idea extends Model {
   }
 
   /**
+   * Read ideas with tags
+   * @param {string[]} tagnames - list of tagnames to search with
+   * @param {integer} offset - pagination offset
+   * @param {integer} limit - pagination limit
+   * @returns {Promise<Idea[]>} - list of found ideas
+   */
+  static async withTags(tagnames, { offset, limit }) {
+    const query = `
+      // find the provided tags
+      FOR t IN tags FILTER t.tagname IN @tagnames
+        SORT t.tagname
+        LET tg = KEEP(t, 'tagname')
+        // find the related ideas
+        FOR i IN 1..1 ANY t INBOUND ideaTags
+          // collect tags of each idea together
+          COLLECT idea=i INTO collected KEEP tg
+          // sort ideas by amount of matched tags, and from oldest
+          SORT LENGTH(collected) DESC, idea.created ASC
+          // read and format creator
+          LET c = (DOCUMENT(idea.creator))
+          LET creator = MERGE(KEEP(c, 'username'), c.profile)
+          // format for output
+          LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+          LET tagsOut = collected[*].tg
+          // limit
+          LIMIT @offset, @limit
+          // respond
+          RETURN { idea: ideaOut, tags: tagsOut }`;
+    const params = { tagnames, offset, limit };
+    const cursor = await this.db.query(query, params);
+    const out = await cursor.all();
+
+    // generate idea-tags ids, and add them as attributes to each idea
+    // and return array of the ideas
+    return out.map(({ idea, tags }) => {
+      idea.ideaTags = tags.map(({ tagname }) => ({
+        id: `${idea.id}--${tagname}`,
+        idea,
+        tag: { tagname }
+      }));
+      return idea;
+    });
+  }
+
+  /**
    * Read new ideas
    */
   static async findNew({ offset, limit }) {

@@ -1,6 +1,6 @@
 'use strict';
 
-const { title, detail, ideaId, page } = require('./paths');
+const { title, detail, ideaId, page, tagsList } = require('./paths');
 
 const postIdeas = {
   properties: {
@@ -83,6 +83,26 @@ const getIdeasWithMyTags = {
   required: ['query']
 };
 
+const getIdeasWithTags = {
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            withTags: tagsList
+          },
+          required: ['withTags'],
+          additionalProperties: false
+        },
+        page
+      },
+      required: ['filter'],
+      additionalProperties: false
+    }
+  },
+  required: ['query']
+};
+
 const getNewIdeas = {
   properties: {
     query: {
@@ -99,4 +119,4 @@ const getNewIdeas = {
   required: ['query']
 };
 
-module.exports = { getIdea, getIdeasWithMyTags, getNewIdeas, patchIdea, postIdeas };
+module.exports = { getIdea, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, patchIdea, postIdeas };
