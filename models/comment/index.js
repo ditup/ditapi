@@ -222,6 +222,15 @@ class Comment extends Model {
         throw e;
       }
     }
+
+    // remove also orphaned reactions
+    if (comments === 'comments') {
+      const queryReactions = `
+        FOR r IN reactions FILTER r.primary == CONCAT('comments/', @id)
+          REMOVE r IN reactions`;
+      const paramsReactions = { id };
+      await this.db.query(queryReactions, paramsReactions);
+    }
   }
 }
 

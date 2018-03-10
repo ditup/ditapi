@@ -644,7 +644,8 @@ function commentTestsFactory(primary, only=false) {
             ideas: Array(1).fill([]),
             ideaComments: [
               [0, 0], [0, 1],
-            ]
+            ],
+            reactions: [[0, 0], [0, 1], [1, 0]]
           };
 
           dbData = await dbHandle.fill(data);
@@ -671,6 +672,24 @@ function commentTestsFactory(primary, only=false) {
             const dbComment = await models.comment.read(comment00.id, comments);
             should(dbComment).null();
           });
+
+          if (!isReactions) {
+            it('remove the orphaned reactions, too', async () => {
+              await agent
+                .delete(`/${comments}/${comment00.id}`)
+                .expect(204);
+
+              // check that the right reactions are removed from database
+              const [reaction00, reaction01, reaction10] = dbData.reactions;
+              const dbReaction00 = await models.comment.read(reaction00.id, 'reactions');
+              const dbReaction01 = await models.comment.read(reaction01.id, 'reactions');
+              const dbReaction10 = await models.comment.read(reaction10.id, 'reactions');
+
+              should(dbReaction00).null();
+              should(dbReaction01).null();
+              should(dbReaction10).not.null();
+            });
+          }
 
           it(`[nonexistent ${comment}] 404`, async () => {
             const response = await agent
