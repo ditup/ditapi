@@ -1,6 +1,6 @@
 'use strict';
 
-const { tagname, page, pageOffset0 } = require('./paths');
+const { tagname, tagsList, page, pageOffset0 } = require('./paths');
 
 const postTags = {
   id: 'postTags',
@@ -23,10 +23,7 @@ const getTagsRelatedToTags = {
       properties: {
         filter: {
           properties: {
-            relatedToTags: {
-              type: 'array',
-              items: tagname
-            }
+            relatedToTags: tagsList
           },
           required: ['relatedToTags']
         },

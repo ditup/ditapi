@@ -9,9 +9,9 @@ class Idea extends Model {
   /**
    * Create an idea
    */
-  static async create({ title, detail, creator }) {
+  static async create({ title, detail, created, creator }) {
     // create the idea
-    const idea = schema({ title, detail });
+    const idea = schema({ title, detail, created });
 
     const query = `
       FOR u IN users FILTER u.username == @creator
@@ -82,6 +82,116 @@ class Idea extends Model {
     return newIdea;
   }
 
+  /**
+   * Read ideas with my tags
+   */
+  static async withMyTags(username, { offset, limit }) {
+
+    const query = `
+      // gather the ideas related to me
+      FOR me IN users FILTER me.username == @username
+        FOR t, ut IN 1..1 ANY me OUTBOUND userTag
+          FOR i IN 1..1 ANY t INBOUND ideaTags
+            LET relevance = ut.relevance
+            LET tg = KEEP(t, 'tagname')
+            SORT relevance DESC
+            // collect found tags together
+            COLLECT idea=i INTO collected KEEP relevance, tg
+            LET c = (DOCUMENT(idea.creator))
+            LET creator = MERGE(KEEP(c, 'username'), c.profile)
+            // sort ideas by sum of relevances of related userTags
+            LET relSum = SUM(collected[*].relevance)
+            SORT relSum DESC
+            // format for output
+            LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+            LET tagsOut = collected[*].tg
+            // limit
+            LIMIT @offset, @limit
+            // respond
+            RETURN { idea: ideaOut, tags: tagsOut }`;
+    const params = { username, offset, limit };
+    const cursor = await this.db.query(query, params);
+    const out = await cursor.all();
+
+    // generate idea-tags ids, and add them as attributes to each idea
+    // and return array of the ideas
+    return out.map(({ idea, tags }) => {
+      idea.ideaTags = tags.map(({ tagname }) => ({
+        id: `${idea.id}--${tagname}`,
+        idea,
+        tag: { tagname }
+      }));
+      return idea;
+    });
+  }
+
+  /**
+   * Read ideas with tags
+   * @param {string[]} tagnames - list of tagnames to search with
+   * @param {integer} offset - pagination offset
+   * @param {integer} limit - pagination limit
+   * @returns {Promise<Idea[]>} - list of found ideas
+   */
+  static async withTags(tagnames, { offset, limit }) {
+    const query = `
+      // find the provided tags
+      FOR t IN tags FILTER t.tagname IN @tagnames
+        SORT t.tagname
+        LET tg = KEEP(t, 'tagname')
+        // find the related ideas
+        FOR i IN 1..1 ANY t INBOUND ideaTags
+          // collect tags of each idea together
+          COLLECT idea=i INTO collected KEEP tg
+          // sort ideas by amount of matched tags, and from oldest
+          SORT LENGTH(collected) DESC, idea.created ASC
+          // read and format creator
+          LET c = (DOCUMENT(idea.creator))
+          LET creator = MERGE(KEEP(c, 'username'), c.profile)
+          // format for output
+          LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+          LET tagsOut = collected[*].tg
+          // limit
+          LIMIT @offset, @limit
+          // respond
+          RETURN { idea: ideaOut, tags: tagsOut }`;
+    const params = { tagnames, offset, limit };
+    const cursor = await this.db.query(query, params);
+    const out = await cursor.all();
+
+    // generate idea-tags ids, and add them as attributes to each idea
+    // and return array of the ideas
+    return out.map(({ idea, tags }) => {
+      idea.ideaTags = tags.map(({ tagname }) => ({
+        id: `${idea.id}--${tagname}`,
+        idea,
+        tag: { tagname }
+      }));
+      return idea;
+    });
+  }
+
+  /**
+   * Read new ideas
+   */
+  static async findNew({ offset, limit }) {
+
+    const query = `
+      FOR idea IN ideas
+        // sort from newest
+        SORT idea.created DESC
+        LIMIT @offset, @limit
+        // find creator
+        LET c = (DOCUMENT(idea.creator))
+        LET creator = MERGE(KEEP(c, 'username'), c.profile)
+        // format for output
+        LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+        // limit
+        // respond
+        RETURN ideaOut`;
+    const params = { offset, limit };
+    const cursor = await this.db.query(query, params);
+    return await cursor.all();
+  }
 }
 
 module.exports = Idea;

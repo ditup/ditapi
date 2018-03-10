@@ -1,5 +1,7 @@
 'use strict';
 
+const { tagname } = require('./paths');
+
 module.exports = {
   user: {
     username: {
@@ -144,6 +146,12 @@ module.exports = {
       },
       required: ['offset', 'limit'],
       additionalProperties: false
+    },
+    tagsList: {
+      type: 'array',
+      items: tagname,
+      maxItems: 10,
+      minItems: 1
     }
   }
 };
