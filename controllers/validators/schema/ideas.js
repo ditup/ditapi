@@ -1,6 +1,6 @@
 'use strict';
 
-const { title, detail, id, ideaId, page, tagsList } = require('./paths');
+const { title, detail, id, page, tagsList } = require('./paths');
 
 const postIdeas = {
   properties: {
