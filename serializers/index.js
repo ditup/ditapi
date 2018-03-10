@@ -2,7 +2,8 @@
 
 const Deserializer = require('jsonapi-serializer').Deserializer;
 
-const contacts = require('./contacts'),
+const comments = require('./comments'),
+      contacts = require('./contacts'),
       ideas = require('./ideas'),
       ideaTags = require('./idea-tags'),
       messages = require('./messages'),
@@ -42,6 +43,6 @@ function deserialize(req, res, next) {
 }
 
 module.exports = {
-  serialize: Object.assign({ }, contacts, ideas, ideaTags, messages, tags, users),
+  serialize: Object.assign({ }, comments, contacts, ideas, ideaTags, messages, tags, users),
   deserialize
 };

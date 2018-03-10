@@ -1,6 +1,6 @@
 'use strict';
 
-const { username, messageId, messageBody } = require('./paths');
+const { username, id, messageBody } = require('./paths');
 
 const postMessages = {
   properties: {
@@ -26,7 +26,7 @@ const patchMessage = {
         read: {
           enum: [true]
         },
-        id: messageId
+        id
       },
       required: ['id', 'read'],
       additionalProperties: false

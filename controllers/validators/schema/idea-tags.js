@@ -1,11 +1,11 @@
 'use strict';
 
-const { ideaId, tagname } = require('./paths');
+const { id, tagname } = require('./paths');
 
 const getIdeaTags = {
   properties: {
     params: {
-      properties: { id: ideaId },
+      properties: { id },
       required: ['id'],
       additionalProperties: false
     },
@@ -27,7 +27,7 @@ const postIdeaTags = {
       additionalProperties: false
     },
     params: {
-      properties: { id: ideaId },
+      properties: { id },
       required: ['id'],
       additionalProperties: false
     },
@@ -39,7 +39,7 @@ const deleteIdeaTag = {
   properties: {
     params: {
       properties: {
-        id: ideaId,
+        id,
         tagname
       },
       required: ['id', 'tagname'],

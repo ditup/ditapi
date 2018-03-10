@@ -14,7 +14,6 @@ module.exports = {
   contactMessage: { $ref : 'sch#/definitions/contact/message' },
   reference: { $ref : 'sch#/definitions/contact/reference' },
   messageBody: { $ref : 'sch#/definitions/message/body' },
-  messageId: { $ref : 'sch#/definitions/message/messageId' },
   story: { $ref: 'sch#/definitions/userTag/story' },
   relevance: { $ref: 'sch#/definitions/userTag/relevance' },
   page: { $ref: 'sch#/definitions/query/page' },
@@ -22,5 +21,7 @@ module.exports = {
   tagsList: { $ref: 'sch#/definitions/query/tagsList' },
   ideaId: { $ref : 'sch#/definitions/idea/ideaId' },
   title: { $ref: 'sch#/definitions/idea/titl' },
-  detail: { $ref: 'sch#/definitions/idea/detail' }
+  detail: { $ref: 'sch#/definitions/idea/detail' },
+  content: { $ref: 'sch#/definitions/comment/content' },
+  id: { $ref: 'sch#/definitions/shared/objectId' }
 };

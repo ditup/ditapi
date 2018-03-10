@@ -3,6 +3,7 @@
 const account = require('./account'),
       authenticate = require('./authenticate'),
       avatar = require('./avatar'),
+      comments = require('./comments'),
       contacts = require('./contacts'),
       definitions = require('./definitions'),
       ideas = require('./ideas'),
@@ -14,4 +15,5 @@ const account = require('./account'),
       users = require('./users');
 
 
-module.exports = Object.assign({ definitions }, account, authenticate, avatar, contacts, ideas, ideaTags, messages, params, tags, users, userTags);
+module.exports = Object.assign({ definitions }, account, authenticate, avatar,
+  comments, contacts, ideas, ideaTags, messages, params, tags, users, userTags);

@@ -2,6 +2,7 @@
 
 exports.authenticate = require('./authenticate');
 exports.avatar = require('./avatar');
+exports.comments = require('./comments');
 exports.contacts = require('./contacts');
 exports.messages = require('./messages');
 exports.account = require('./account');

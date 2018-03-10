@@ -1,6 +1,6 @@
 'use strict';
 
-const { title, detail, ideaId, page, tagsList } = require('./paths');
+const { title, detail, id, page, tagsList } = require('./paths');
 
 const postIdeas = {
   properties: {
@@ -19,9 +19,7 @@ const postIdeas = {
 const getIdea = {
   properties: {
     params: {
-      properties: {
-        id: ideaId
-      },
+      properties: { id },
       required: ['id'],
       additionalProperties: false
     }
@@ -32,26 +30,24 @@ const getIdea = {
 const patchIdea = {
   properties: {
     params: {
-      properties: {
-        id: ideaId
-      },
+      properties: { id },
       required: ['id'],
       additionalProperties: false
     },
     body: {
       oneOf: [
         {
-          properties: { title, detail, id: ideaId },
+          properties: { title, detail, id },
           required: ['title', 'detail', 'id'],
           additionalProperties: false
         },
         {
-          properties: { title, id: ideaId },
+          properties: { title, id },
           required: ['title', 'id'],
           additionalProperties: false
         },
         {
-          properties: { detail, id: ideaId },
+          properties: { detail, id },
           required: ['detail', 'id'],
           additionalProperties: false
         }

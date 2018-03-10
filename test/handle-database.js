@@ -22,7 +22,8 @@ exports.fill = async function (data) {
     messages: [],
     contacts: [],
     ideas: [],
-    ideaTags: []
+    ideaTags: [],
+    ideaComments: []
   };
 
   data = _.defaults(data, def);
@@ -98,6 +99,18 @@ exports.fill = async function (data) {
     const tagname = ideaTag.tag.tagname;
 
     await models.ideaTag.create(ideaId, tagname, { }, creator);
+  }
+
+  for(const ideaComment of processed.ideaComments) {
+    const creator = ideaComment.creator.username;
+    const ideaId = ideaComment.idea.id;
+    const { content, created } = ideaComment;
+    const primary = { type: 'ideas', id: ideaId };
+
+    const newComment = await models.comment.create({ primary, creator, content, created });
+
+    // save the comment's id
+    ideaComment.id = newComment.id;
   }
 
   return processed;
@@ -253,6 +266,20 @@ function processData(data) {
       get idea() { return output.ideas[this._idea]; },
       get tag() { return output.tags[this._tag]; },
       get creator() { return this.idea.creator; }
+    };
+
+    return resp;
+  });
+
+  output.ideaComments = data.ideaComments.map(([_idea, _creator, attrs = { }], i) => {
+    const { content = `idea comment ${i}`, created = Date.now() + 1000 * i } = attrs;
+    const resp = {
+      _creator,
+      _idea,
+      get creator() { return output.users[this._creator]; },
+      get idea() { return output.ideas[this._idea]; },
+      content,
+      created
     };
 
     return resp;
