@@ -69,9 +69,15 @@ app.use('/tags', require('./routes/tags'));
 app.use('/auth', require('./routes/auth'));
 app.use('/messages', require('./routes/messages'));
 app.use('/account', require('./routes/account'));
-app.use('/comments', require('./routes/comments'));
 app.use('/contacts', require('./routes/contacts'));
 app.use('/ideas', require('./routes/ideas'));
+
+// following are route factories
+// they need to know what is the primary object (i.e. idea, comment, etc.)
+app.use('/ideas', require('./routes/primary-comments')('idea'));
+app.use('/comments', require('./routes/comments')(''));
+app.use('/comments', require('./routes/primary-comments')('comment'));
+app.use('/reactions', require('./routes/comments')('comment'));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

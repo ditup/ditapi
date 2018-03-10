@@ -17,15 +17,20 @@ class Comment extends Model {
    * @returns Promise<Comment>
    */
   static async create({ content, primary: { type, id },  creator, created }) {
+
+    // Are we creating comment or reaction?
+    // If primary is comment, we create reaction; otherwise we create comment.
+    const comments = (type === 'comments') ? 'reactions' : 'comments';
+
     // create the comment
     const comment = schema({ content, created });
 
     const query = `
       FOR u IN users FILTER u.username == @creator
         FOR t IN @@type FILTER t._key == @id
-        INSERT MERGE(@comment, { creator: u._id, primary: t._id }) IN comments
+        INSERT MERGE(@comment, { creator: u._id, primary: t._id }) IN ${comments}
         LET creator = MERGE(KEEP(u, 'username'), u.profile)
-        LET primary = MERGE(t, { id: t._key })
+        LET primary = MERGE(t, { id: t._key, type: PARSE_IDENTIFIER(t).collection })
         LET savedComment = MERGE(KEEP(NEW, 'content', 'created'), { id: NEW._key }, { creator, primary })
         RETURN savedComment`;
     const params = { comment, creator, '@type': type, id };
@@ -42,11 +47,12 @@ class Comment extends Model {
   /**
    * Read a comment by id
    * @param {string} id - id of the comment
+   * @param {string} [comments=comments] - treat comments as reactions when 'reactions'
    * @returns Promise<Comment>
    */
-  static async read(id) {
+  static async read(id, comments='comments') {
     const query = `
-      FOR c IN comments FILTER c._key == @id
+      FOR c IN ${comments} FILTER c._key == @id
         LET p = DOCUMENT(c.primary)
         LET u = DOCUMENT(c.creator)
         LET creator = MERGE(KEEP(u, 'username'), u.profile)
@@ -92,9 +98,20 @@ class Comment extends Model {
           LET u = DOCUMENT(c.creator)
           LET creator = MERGE(KEEP(u, 'username'), u.profile)
           LET formattedComment = MERGE(KEEP(c, 'content', 'created'), { id: c._key }, { creator, primary })
+
+          // find reactions of each comment
+          LET commentReactions = (
+            FOR r IN reactions FILTER r.primary == c._id
+              LET ru = DOCUMENT(r.creator)
+              LET rCreator = MERGE(KEEP(ru, 'username'), ru.profile)
+              LET formatted = MERGE(KEEP(r, 'content', 'created'), { id: r._key }, { creator: rCreator, primary: MERGE(KEEP(formattedComment, 'id'), { type: 'comments' }) })
+              SORT formatted.created ASC
+              RETURN formatted
+          )
+
           SORT ${formattedSort}
           ${(isPagination) ? 'LIMIT @offset, @limit' : ''}
-          RETURN formattedComment)
+          RETURN MERGE(formattedComment, { reactions: commentReactions }))
       RETURN [primaryRaw, outputComments]`;
     const params = { '@type': type, id, offset, limit };
     const cursor = await this.db.query(query, params);
@@ -116,12 +133,13 @@ class Comment extends Model {
    * @param {string} id - id of the comment to update
    * @param {string} content - content of the commment to update
    * @param {username} string - username of the user who is making the update
+   * @param {string} [comments=comments] - treat comments as reactions when 'reactions'
    * @returns Promise<Comment> - updated comment
    */
-  static async update(id, { content }, username) {
+  static async update(id, { content }, username, comments='comments') {
     const query = `
       // find the [comment]
-      LET cs = (FOR c IN comments FILTER c._key == @id RETURN c)
+      LET cs = (FOR c IN ${comments} FILTER c._key == @id RETURN c)
       // update comment and return the updated comment
       LET out = (
         FOR comment IN cs
@@ -133,7 +151,7 @@ class Comment extends Model {
           LET primary = MERGE(p, { id: p._key, type: PARSE_IDENTIFIER(p).collection })
           LET creator = MERGE(KEEP(u, 'username'), u.profile)
           // update
-          UPDATE comment WITH { content: @content } IN comments
+          UPDATE comment WITH { content: @content } IN ${comments}
           // return the updated comment
           LET formattedComment = MERGE(KEEP(NEW, 'content', 'created'), { id: NEW._key }, { creator, primary })
           RETURN formattedComment
@@ -150,7 +168,7 @@ class Comment extends Model {
 
     // comment was not found
     if (!comment) {
-      const e = new Error('comment not found');
+      const e = new Error(`${comments.slice(0, -1)} not found`);
       e.code = 404;
       throw e;
     }
@@ -170,17 +188,18 @@ class Comment extends Model {
    * Delete a comment.
    * @param {string} id - id of the comment to remove
    * @param {string} username - username of the user who is removing
+   * @param {string} [comments=comments] - treat comments as reactions when 'reactions'
    * @returns Promise<void>
    */
-  static async remove(id, username) {
+  static async remove(id, username, comments='comments') {
     const query = `
       // find the [comment]
-      LET cs = (FOR c IN comments FILTER c._key == @id RETURN c)
+      LET cs = (FOR c IN ${comments} FILTER c._key == @id RETURN c)
       // remove the comment
       LET out = (FOR c IN cs
         // remove comment only if requesting user is creator
         FILTER DOCUMENT(c.creator).username == @username
-        REMOVE c IN comments RETURN 0)
+        REMOVE c IN ${comments} RETURN 0)
       // return the comment to see if the comment was found
       RETURN cs
     `;
@@ -198,10 +217,19 @@ class Comment extends Model {
         throw e;
       } else {
         // or comment was not found
-        const e = new Error('comment not found');
+        const e = new Error(`${comments.slice(0, -1)} not found`);
         e.code = 404;
         throw e;
       }
+    }
+
+    // remove also orphaned reactions
+    if (comments === 'comments') {
+      const queryReactions = `
+        FOR r IN reactions FILTER r.primary == CONCAT('comments/', @id)
+          REMOVE r IN reactions`;
+      const paramsReactions = { id };
+      await this.db.query(queryReactions, paramsReactions);
     }
   }
 }

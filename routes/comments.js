@@ -1,17 +1,28 @@
 'use strict';
 
 const express = require('express'),
-      path = require('path'),
-      router = express.Router();
+      path = require('path');
 
 const authorize = require(path.resolve('./controllers/authorize')),
-      commentControllers = require(path.resolve('./controllers/comments')),
+      commentControllersFactory = require(path.resolve('./controllers/comments')),
       commentValidators = require(path.resolve('./controllers/validators/comments'));
 
-router.route('/:id')
-  // update a comment
-  .patch(authorize.onlyLogged, commentValidators.patch, commentControllers.patch)
-  // delete a comment
-  .delete(authorize.onlyLogged, commentValidators.del, commentControllers.del);
+/**
+ * This factory can create routes for comments/reactions of various primary objects
+ * @param {string} primary: i.e. idea, comment, ...
+ * @returns object - Express router
+ */
+module.exports = function routeFactory(primary) {
 
-module.exports = router;
+  // create router and controllers
+  const router = express.Router();
+  const commentControllers = commentControllersFactory(primary);
+
+  router.route('/:id')
+    // update a comment or reaction
+    .patch(authorize.onlyLogged, commentValidators.patch, commentControllers.patch)
+    // delete a comment or reaction
+    .delete(authorize.onlyLogged, commentValidators.del, commentControllers.del);
+
+  return router;
+};
