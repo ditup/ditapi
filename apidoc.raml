@@ -421,6 +421,14 @@ types:
           403:
           404:
       get:
+    /votes:
+      post:
+        description: Vote for an idea.
+        responses:
+          201:
+          400:
+          403:
+          404:
 /comments:
   /{id}:
     patch:

@@ -9,4 +9,5 @@ exports.account = require('./account');
 exports.users = require('./users');
 exports.tags = require('./tags');
 exports.userTags = require('./user-tags');
+exports.votes = require('./votes');
 exports.params = require('./params');

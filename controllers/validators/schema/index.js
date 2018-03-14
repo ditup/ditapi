@@ -12,8 +12,9 @@ const account = require('./account'),
       params = require('./params'),
       tags = require('./tags'),
       userTags = require('./user-tags'),
-      users = require('./users');
+      users = require('./users'),
+      votes = require('./votes');
 
 
 module.exports = Object.assign({ definitions }, account, authenticate, avatar,
-  comments, contacts, ideas, ideaTags, messages, params, tags, users, userTags);
+  comments, contacts, ideas, ideaTags, messages, params, tags, users, userTags, votes);
