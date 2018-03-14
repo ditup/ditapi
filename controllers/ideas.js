@@ -35,11 +35,16 @@ async function get(req, res, next) {
   try {
     // gather data
     const { id } = req.params;
+    const { username } = req.auth;
 
     // read the idea from database
     const idea = await models.idea.read(id);
 
     if (!idea) return res.status(404).json({ });
+
+    // see how many votes were given to idea and if/how logged user voted (0, -1, 1)
+    idea.votes = await models.vote.readVotesTo({ type: 'ideas', id });
+    idea.myVote = await models.vote.read({ from: username, to: { type: 'ideas', id } });
 
     // serialize the idea (JSON API)
     const serializedIdea = serialize.idea(idea);

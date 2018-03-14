@@ -141,7 +141,7 @@ describe('votes for ideas, ...', () => {
       });
     });
 
-    context('not logged in', () => {
+    context('not logged', () => {
       it('403', async () => {
         await agent
           .post(`/ideas/${existentIdea.id}/votes`)
@@ -227,10 +227,78 @@ describe('votes for ideas, ...', () => {
   });
 
   describe('PATCH /ideas/:id/votes/vote (change vote value)', () => {
-
+    it('maybe todo');
   });
 
   describe('show amount of votes up and down and current user\'s vote when GET /ideas/:id', () => {
+
+    beforeEach(async () => {
+      const data = {
+        users: 5, // how many users to make
+        verifiedUsers: [0, 1, 2, 3, 4], // which  users to make verified
+        ideas: [[{}, 0], [{}, 0]],
+        votes: [
+          [0, ['ideas', 0], -1],
+          [1, ['ideas', 0], 1],
+          [2, ['ideas', 0], 1],
+          [2, ['ideas', 1], -1],
+          [3, ['ideas', 0], -1],
+          [4, ['ideas', 0], 1],
+        ] // user, idea, value
+      };
+      // create data in database
+      dbData = await dbHandle.fill(data);
+
+      [loggedUser, otherUser] = dbData.users;
+      [idea0, idea1] = dbData.ideas;
+    });
+
+    beforeEach(() => {
+      agent = agentFactory.logged(loggedUser);
+    });
+
+    it('show amount of votes up and down', async () => {
+      const response = await agent
+        .get(`/ideas/${idea0.id}`)
+        .expect(200);
+
+      should(response.body).match({
+        data: {
+          meta: {
+            votesUp: 3,
+            votesDown: 2
+          }
+        }
+      });
+    });
+
+    it('show my vote', async () => {
+      const response = await agent
+        .get(`/ideas/${idea0.id}`)
+        .expect(200);
+
+      should(response.body).match({
+        data: {
+          meta: {
+            myVote: -1
+          }
+        }
+      });
+    });
+
+    it('show 0 as my vote if I didn\'t vote', async () => {
+      const response = await agent
+        .get(`/ideas/${idea1.id}`)
+        .expect(200);
+
+      should(response.body).match({
+        data: {
+          meta: {
+            myVote: 0
+          }
+        }
+      });
+    });
 
   });
 });

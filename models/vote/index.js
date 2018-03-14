@@ -87,6 +87,23 @@ class Vote extends Model {
       throw e;
     }
   }
+
+  /**
+   * Read votes of a primary object.
+   * @param {string} type - type of the receiver (collection name, i.e. 'ideas')
+   * @param {string} id - id of the receiver
+   * @returns Promise - array of votes
+   */
+  static async readVotesTo({ type, id }) {
+    const query = `
+      FOR i IN @@type FILTER i._key == @id
+        FOR v, e IN 1..1 INBOUND i INBOUND votes
+          RETURN e`;
+    const params = { '@type': type, id };
+    const cursor = await this.db.query(query, params);
+
+    return await cursor.all();
+  }
 }
 
 module.exports = Vote;
