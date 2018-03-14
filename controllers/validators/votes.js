@@ -2,6 +2,7 @@
 
 const validate = require('./validate-by-schema');
 
+const del = validate('deleteVote');
 const post = validate('postVotes');
 
-module.exports = { post };
+module.exports = { del, post };

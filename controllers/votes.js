@@ -36,4 +36,32 @@ async function post(req, res, next) {
   }
 }
 
-module.exports = { post };
+/**
+ * Middleware to DELETE a vote from an idea (and other objects in the future).
+ */
+async function del(req, res, next) {
+
+  // read data from request
+  const { id } = req.params;
+  const { username } = req.auth;
+
+  try {
+    // remove the vote from database
+    await models.vote.remove({ from: username, to: { type: 'ideas', id } });
+    // respond
+    return res.status(204).end();
+  } catch (e) {
+    // handle errors
+    switch (e.code) {
+      // missing idea
+      case 404: {
+        return res.status(404).end();
+      }
+      default: {
+        return next(e);
+      }
+    }
+  }
+}
+
+module.exports = { del, post };

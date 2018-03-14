@@ -11,7 +11,10 @@ describe('votes for ideas, ...', () => {
   let agent,
       dbData,
       existentIdea,
-      loggedUser;
+      idea0,
+      idea1,
+      loggedUser,
+      otherUser;
 
   afterEach(async () => {
     await dbHandle.clear();
@@ -47,7 +50,7 @@ describe('votes for ideas, ...', () => {
       existentIdea = dbData.ideas[0];
     });
 
-    context('logged in', () => {
+    context('logged', () => {
 
       beforeEach(() => {
         agent = agentFactory.logged(loggedUser);
@@ -149,22 +152,77 @@ describe('votes for ideas, ...', () => {
   });
 
   describe('DELETE /ideas/:id/votes/vote (remove a vote)', () => {
+
+    beforeEach(async () => {
+      const data = {
+        users: 3, // how many users to make
+        verifiedUsers: [0, 1, 2], // which  users to make verified
+        ideas: [[{}, 0], [{}, 0]],
+        votes: [
+          [0, ['ideas', 0], -1],
+          [1, ['ideas', 0], 1]
+        ] // user, idea, value
+      };
+      // create data in database
+      dbData = await dbHandle.fill(data);
+
+      [loggedUser, otherUser] = dbData.users;
+      [idea0, idea1] = dbData.ideas;
+    });
+
     context('logged', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
       context('valid data', () => {
-        it('[vote exists] remove the vote and 204');
+        it('[vote exists] remove the vote and 204', async () => {
+          // first the vote should exist
+          const dbVote = await models.vote.read({ from: loggedUser.username, to: { type: 'ideas', id: idea0.id } });
+          should(dbVote).ok();
 
-        it('[vote doesn\'t exist] 404');
+          // then we remove the vote
+          await agent
+            .delete(`/ideas/${idea0.id}/votes/vote`)
+            .expect(204);
 
-        it('[idea doesn\'t exist] 404');
+          // then the vote should not exist
+          const dbVoteAfter = await models.vote.read({ from: loggedUser.username, to: { type: 'ideas', id: idea0.id } });
+          should(dbVoteAfter).not.ok();
+          // and other votes are still there
+          const dbOtherVote = await models.vote.read({ from: otherUser.username, to: { type: 'ideas', id: idea0.id } });
+          should(dbOtherVote).ok();
+        });
+
+        it('[vote doesn\'t exist] 404', async () => {
+          await agent
+            .delete(`/ideas/${idea1.id}/votes/vote`)
+            .expect(404);
+        });
+
+        it('[idea doesn\'t exist] 404', async () => {
+          await agent
+            .delete('/ideas/111111/votes/vote')
+            .expect(404);
+        });
       });
 
       context('invalid data', () => {
-        it('[invalid idea id] 400');
+        it('[invalid idea id] 400', async () => {
+          await agent
+            .delete('/ideas/invalid--id/votes/vote')
+            .expect(400);
+        });
       });
     });
 
     context('not logged', () => {
-      it('403');
+      it('403', async () => {
+        await agent
+          .delete(`/ideas/${idea0.id}/votes/vote`)
+          .expect(403);
+      });
     });
   });
 

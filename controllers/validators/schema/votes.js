@@ -18,4 +18,15 @@ const postVotes = {
   }
 };
 
-module.exports = { postVotes };
+const deleteVote = {
+  properties: {
+    params: {
+      properties: { id },
+      required: ['id'],
+      additionalProperties: false
+    },
+    required: ['params']
+  }
+};
+
+module.exports = { deleteVote, postVotes };

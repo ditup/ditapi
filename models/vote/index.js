@@ -64,6 +64,29 @@ class Vote extends Model {
     return (await cursor.all())[0];
   }
 
+  /**
+   * Remove a vote.
+   * @param {string} from - username of the vote giver
+   * @param {object} to - receiver object of the vote
+   * @param {string} to.type - type of the receiver (collection name, i.e. 'ideas')
+   * @param {string} to.id - id of the receiver
+   * @returns Promise
+   */
+  static async remove({ from: username, to: { type, id } }) {
+    const query = `
+      FOR u IN users FILTER u.username == @username
+        FOR i IN @@type FILTER i._key == @id
+          FOR v IN votes FILTER v._from == u._id AND v._to == i._id
+          REMOVE v IN votes`;
+    const params = { username, '@type': type, id };
+    const cursor = await this.db.query(query, params);
+
+    if (cursor.extra.stats.writesExecuted === 0) {
+      const e = new Error('primary or vote not found');
+      e.code = 404;
+      throw e;
+    }
+  }
 }
 
 module.exports = Vote;
