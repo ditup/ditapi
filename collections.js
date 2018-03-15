@@ -122,7 +122,7 @@ module.exports = {
   votes: {
     type: 'edge',
     from: ['users'],
-    to: ['ideas'],
+    to: ['ideas', 'comments'],
     indexes: [
       {
         type: 'hash',

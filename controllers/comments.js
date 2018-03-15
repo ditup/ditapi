@@ -57,6 +57,9 @@ module.exports = function controllersFactory(primary) {
    * Middleware to read comments of a primary object (i.e. idea)
    */
   async function get(req, res, next) {
+
+    const { username } = req.auth;
+
     try {
       // gather data
       const { id } = req.params;
@@ -66,6 +69,20 @@ module.exports = function controllersFactory(primary) {
       const primary = { type: primarys, id };
       // read the comments from database
       const comments = await models.comment.readCommentsOf(primary, { offset, limit, sort });
+
+      // read votes of comments
+      if (comment === 'comment') {
+        const ids = comments.map(comment => comment.id);
+        // read votes of the comments from database
+        const votes = await models.vote.readVotesToMany({ type: 'comments', ids });
+        const myVotes = await models.vote.readMany({ from: username, to: { type: 'comments', ids } });
+
+        // add the votes to their comments
+        comments.forEach((comment, i) => {
+          comment.votes = votes[i];
+          comment.myVote = myVotes[i];
+        });
+      }
 
       // serialize the comments
       const serializedComments = serialize.comment(comments);

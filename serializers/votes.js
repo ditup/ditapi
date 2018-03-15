@@ -6,9 +6,9 @@ const voteSerializer = new Serializer('votes', {
   id: 'id',
   attributes: ['title', 'detail', 'created', 'value', 'from', 'to'],
   keyForAttribute: 'camelCase',
-  typeForAttribute(attribute) {
+  typeForAttribute(attribute, doc) {
     if (attribute === 'from') return 'users';
-    if (attribute === 'to') return 'ideas';
+    if (attribute === 'to') return doc.type;
   },
   from: {
     ref: 'username',

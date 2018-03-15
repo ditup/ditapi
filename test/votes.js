@@ -7,298 +7,327 @@ const agentFactory = require('./agent'),
       dbHandle = require('./handle-database'),
       models = require(path.resolve('./models'));
 
-describe('votes for ideas, ...', () => {
-  let agent,
-      dbData,
-      existentIdea,
-      idea0,
-      idea1,
-      loggedUser,
-      otherUser;
+voteTestFactory('idea');
+voteTestFactory('comment');
 
-  afterEach(async () => {
-    await dbHandle.clear();
-  });
+/**
+ * We can test votes to different objects.
+ * @param {string} primary - what is the object we vote for? i.e. comment, idea
+ * @param {boolean} [only=false] - should we run only these tests or not? (describe vs. describe.only in mocha)
+ */
+function voteTestFactory(primary, only=false) {
+  const primarys = primary + 's';
 
-  beforeEach(() => {
-    agent = agentFactory();
-  });
+  const ds = (only) ? describe.only : describe;
 
-  describe('POST /ideas/:id/votes (create a vote)', () => {
-    let voteBody;
+  function fillPrimary(data, count) {
+    switch (primary) {
+      case 'comment':
+        data.ideas = Array(1).fill([]);
+        data.ideaComments = Array(count).fill([0, 0]);
+        break;
+
+      default:
+        data[primarys] = Array(count).fill([{}, 0]);
+    }
+  }
+
+  ds(`votes for ${primarys}, ...`, () => {
+    let agent,
+        dbData,
+        existentPrimary,
+        primary0,
+        primary1,
+        loggedUser,
+        otherUser;
+
+    afterEach(async () => {
+      await dbHandle.clear();
+    });
 
     beforeEach(() => {
-      voteBody = { data: {
-        type: 'votes',
-        attributes: {
-          value: -1
-        }
-      } };
+      agent = agentFactory();
     });
 
-    // put pre-data into database
-    beforeEach(async () => {
-      const data = {
-        users: 3, // how many users to make
-        verifiedUsers: [0, 1], // which  users to make verified
-        ideas: [[{}, 0]]
-      };
-      // create data in database
-      dbData = await dbHandle.fill(data);
-
-      loggedUser = dbData.users[0];
-      existentIdea = dbData.ideas[0];
-    });
-
-    context('logged', () => {
+    describe(`POST /${primarys}/:id/votes (create a vote)`, () => {
+      let voteBody;
 
       beforeEach(() => {
-        agent = agentFactory.logged(loggedUser);
+        voteBody = { data: {
+          type: 'votes',
+          attributes: {
+            value: -1
+          }
+        } };
       });
 
-      context('valid data', () => {
-        it('[all is fine] save the vote', async () => {
-          const response = await agent
-            .post(`/ideas/${existentIdea.id}/votes`)
-            .send(voteBody)
-            .expect(201);
+      // put pre-data into database
+      beforeEach(async () => {
+        const data = {
+          users: 3, // how many users to make
+          verifiedUsers: [0, 1], // which  users to make verified
+        };
 
-          // saved into database?
-          const dbVote = await models.vote.read({ from: loggedUser.username, to: { type: 'ideas', id: existentIdea.id } });
-          should(dbVote).ok();
+        fillPrimary(data, 1);
 
-          // correct response?
-          should(response.body).match({
-            data: {
-              type: 'votes',
-              attributes: {
-                value: -1
-              },
-              relationships: {
-                from: { data: { type: 'users', id: loggedUser.username } },
-                to: { data: { type: 'ideas', id: existentIdea.id } }
+        // create data in database
+        dbData = await dbHandle.fill(data);
+
+        loggedUser = dbData.users[0];
+        existentPrimary = dbData[primarys][0];
+      });
+
+      context('logged', () => {
+
+        beforeEach(() => {
+          agent = agentFactory.logged(loggedUser);
+        });
+
+        context('valid data', () => {
+          it('[all is fine] save the vote', async () => {
+            const response = await agent
+              .post(`/${primarys}/${existentPrimary.id}/votes`)
+              .send(voteBody)
+              .expect(201);
+
+            // saved into database?
+            const dbVote = await models.vote.read({ from: loggedUser.username, to: { type: primarys, id: existentPrimary.id } });
+            should(dbVote).ok();
+
+            // correct response?
+            should(response.body).match({
+              data: {
+                type: 'votes',
+                attributes: {
+                  value: -1
+                },
+                relationships: {
+                  from: { data: { type: 'users', id: loggedUser.username } },
+                  to: { data: { type: primarys, id: existentPrimary.id } }
+                }
               }
-            }
+            });
+          });
+
+          it('[a vote already exists] 409', async () => {
+            await agent
+              .post(`/${primarys}/${existentPrimary.id}/votes`)
+              .send(voteBody)
+              .expect(201);
+
+            voteBody.data.attributes.value = 1;
+
+            await agent
+              .post(`/${primarys}/${existentPrimary.id}/votes`)
+              .send(voteBody)
+              .expect(409);
+          });
+
+          it(`[${primary} doesn't exist] 404`, async () => {
+            await agent
+              .post(`/${primarys}/1111111/votes`)
+              .send(voteBody)
+              .expect(404);
           });
         });
 
-        it('[a vote already exists] 409', async () => {
-          await agent
-            .post(`/ideas/${existentIdea.id}/votes`)
-            .send(voteBody)
-            .expect(201);
+        context('invalid data', () => {
+          it('[not +1 or -1] 400', async () => {
+            voteBody.data.attributes.value = 0;
 
-          voteBody.data.attributes.value = 1;
+            await agent
+              .post(`/${primarys}/${existentPrimary.id}/votes`)
+              .send(voteBody)
+              .expect(400);
+          });
 
-          await agent
-            .post(`/ideas/${existentIdea.id}/votes`)
-            .send(voteBody)
-            .expect(409);
-        });
+          it('[missing value in body] 400', async () => {
+            delete voteBody.data.attributes.value;
 
-        it('[idea doesn\'t exist] 404', async () => {
-          await agent
-            .post('/ideas/1111111/votes')
-            .send(voteBody)
-            .expect(404);
+            await agent
+              .post(`/${primarys}/${existentPrimary.id}/votes`)
+              .send(voteBody)
+              .expect(400);
+          });
+
+          it('[additional body parameters] 400', async () => {
+            voteBody.data.attributes.foo = 'bar';
+
+            await agent
+              .post(`/${primarys}/${existentPrimary.id}/votes`)
+              .send(voteBody)
+              .expect(400);
+          });
+
+          it(`[invalid ${primary} id] 400`, async () => {
+            await agent
+              .post(`/${primarys}/invalid--id/votes`)
+              .send(voteBody)
+              .expect(400);
+          });
         });
       });
 
-      context('invalid data', () => {
-        it('[not +1 or -1] 400', async () => {
-          voteBody.data.attributes.value = 0;
-
+      context('not logged', () => {
+        it('403', async () => {
           await agent
-            .post(`/ideas/${existentIdea.id}/votes`)
+            .post(`/${primarys}/${existentPrimary.id}/votes`)
             .send(voteBody)
-            .expect(400);
-        });
-
-        it('[missing value in body] 400', async () => {
-          delete voteBody.data.attributes.value;
-
-          await agent
-            .post(`/ideas/${existentIdea.id}/votes`)
-            .send(voteBody)
-            .expect(400);
-        });
-
-        it('[additional body parameters] 400', async () => {
-          voteBody.data.attributes.foo = 'bar';
-
-          await agent
-            .post(`/ideas/${existentIdea.id}/votes`)
-            .send(voteBody)
-            .expect(400);
-        });
-
-        it('[invalid idea id] 400', async () => {
-          await agent
-            .post('/ideas/invalid--id/votes')
-            .send(voteBody)
-            .expect(400);
+            .expect(403);
         });
       });
     });
 
-    context('not logged', () => {
-      it('403', async () => {
-        await agent
-          .post(`/ideas/${existentIdea.id}/votes`)
-          .send(voteBody)
-          .expect(403);
+    describe(`DELETE /${primarys}/:id/votes/vote (remove a vote)`, () => {
+
+      beforeEach(async () => {
+        const data = {
+          users: 3, // how many users to make
+          verifiedUsers: [0, 1, 2], // which  users to make verified
+          votes: [
+            [0, [primarys, 0], -1],
+            [1, [primarys, 0], 1]
+          ] // user, primary, value
+        };
+
+        fillPrimary(data, 2);
+
+        // create data in database
+        dbData = await dbHandle.fill(data);
+
+        [loggedUser, otherUser] = dbData.users;
+        [primary0, primary1] = dbData[primarys];
+      });
+
+      context('logged', () => {
+
+        beforeEach(() => {
+          agent = agentFactory.logged(loggedUser);
+        });
+
+        context('valid data', () => {
+          it('[vote exists] remove the vote and 204', async () => {
+            // first the vote should exist
+            const dbVote = await models.vote.read({ from: loggedUser.username, to: { type: primarys, id: primary0.id } });
+            should(dbVote).ok();
+
+            // then we remove the vote
+            await agent
+              .delete(`/${primarys}/${primary0.id}/votes/vote`)
+              .expect(204);
+
+            // then the vote should not exist
+            const dbVoteAfter = await models.vote.read({ from: loggedUser.username, to: { type: primarys, id: primary0.id } });
+            should(dbVoteAfter).not.ok();
+            // and other votes are still there
+            const dbOtherVote = await models.vote.read({ from: otherUser.username, to: { type: primarys, id: primary0.id } });
+            should(dbOtherVote).ok();
+          });
+
+          it('[vote doesn\'t exist] 404', async () => {
+            await agent
+              .delete(`/${primarys}/${primary1.id}/votes/vote`)
+              .expect(404);
+          });
+
+          it(`[${primary} doesn't exist] 404`, async () => {
+            await agent
+              .delete(`/${primarys}/111111/votes/vote`)
+              .expect(404);
+          });
+        });
+
+        context('invalid data', () => {
+          it(`[invalid ${primary} id] 400`, async () => {
+            await agent
+              .delete(`/${primarys}/invalid--id/votes/vote`)
+              .expect(400);
+          });
+        });
+      });
+
+      context('not logged', () => {
+        it('403', async () => {
+          await agent
+            .delete(`/${primarys}/${primary0.id}/votes/vote`)
+            .expect(403);
+        });
       });
     });
-  });
 
-  describe('DELETE /ideas/:id/votes/vote (remove a vote)', () => {
-
-    beforeEach(async () => {
-      const data = {
-        users: 3, // how many users to make
-        verifiedUsers: [0, 1, 2], // which  users to make verified
-        ideas: [[{}, 0], [{}, 0]],
-        votes: [
-          [0, ['ideas', 0], -1],
-          [1, ['ideas', 0], 1]
-        ] // user, idea, value
-      };
-      // create data in database
-      dbData = await dbHandle.fill(data);
-
-      [loggedUser, otherUser] = dbData.users;
-      [idea0, idea1] = dbData.ideas;
+    describe(`PATCH /${primarys}/:id/votes/vote (change vote value)`, () => {
+      it('maybe todo');
     });
 
-    context('logged', () => {
+    describe(`show amount of votes up and down and current user\`s vote when GET /${primarys}${(primary === 'comment') ? '' : '/:id'}`, () => {
+
+      let idea0,
+          url;
+
+      beforeEach(async () => {
+        const data = {
+          users: 5, // how many users to make
+          verifiedUsers: [0, 1, 2, 3, 4], // which  users to make verified
+          votes: [
+            [0, [primarys, 0], -1],
+            [1, [primarys, 0], 1],
+            [2, [primarys, 0], 1],
+            [2, [primarys, 1], -1],
+            [3, [primarys, 0], -1],
+            [4, [primarys, 0], 1],
+          ] // user, primary, value
+        };
+
+        fillPrimary(data, 2);
+
+        // create data in database
+        dbData = await dbHandle.fill(data);
+
+        [loggedUser, otherUser] = dbData.users;
+        [primary0, primary1] = dbData[primarys];
+        [idea0] = dbData.ideas;
+      });
 
       beforeEach(() => {
         agent = agentFactory.logged(loggedUser);
       });
 
-      context('valid data', () => {
-        it('[vote exists] remove the vote and 204', async () => {
-          // first the vote should exist
-          const dbVote = await models.vote.read({ from: loggedUser.username, to: { type: 'ideas', id: idea0.id } });
-          should(dbVote).ok();
-
-          // then we remove the vote
-          await agent
-            .delete(`/ideas/${idea0.id}/votes/vote`)
-            .expect(204);
-
-          // then the vote should not exist
-          const dbVoteAfter = await models.vote.read({ from: loggedUser.username, to: { type: 'ideas', id: idea0.id } });
-          should(dbVoteAfter).not.ok();
-          // and other votes are still there
-          const dbOtherVote = await models.vote.read({ from: otherUser.username, to: { type: 'ideas', id: idea0.id } });
-          should(dbOtherVote).ok();
-        });
-
-        it('[vote doesn\'t exist] 404', async () => {
-          await agent
-            .delete(`/ideas/${idea1.id}/votes/vote`)
-            .expect(404);
-        });
-
-        it('[idea doesn\'t exist] 404', async () => {
-          await agent
-            .delete('/ideas/111111/votes/vote')
-            .expect(404);
-        });
+      beforeEach(() => {
+        url = (primary === 'comment') ? `/ideas/${idea0.id}/comments` : `/${primarys}/${primary0.id}`;
       });
 
-      context('invalid data', () => {
-        it('[invalid idea id] 400', async () => {
-          await agent
-            .delete('/ideas/invalid--id/votes/vote')
-            .expect(400);
-        });
+      it('show amount of votes up and down', async () => {
+        const response = await agent
+          .get(url)
+          .expect(200);
+
+        const objectToTest = (primary === 'comment') ? response.body.data[0] : response.body.data;
+
+        should(objectToTest).match({ meta: { votesUp: 3, votesDown: 2 } });
       });
-    });
 
-    context('not logged', () => {
-      it('403', async () => {
-        await agent
-          .delete(`/ideas/${idea0.id}/votes/vote`)
-          .expect(403);
+      it('show my vote', async () => {
+        const response = await agent
+          .get(url)
+          .expect(200);
+
+        const objectToTest = (primary === 'comment') ? response.body.data[0] : response.body.data;
+
+        should(objectToTest).match({ meta: { myVote: -1 } });
       });
-    });
-  });
 
-  describe('PATCH /ideas/:id/votes/vote (change vote value)', () => {
-    it('maybe todo');
-  });
+      it('show 0 as my vote if I didn\'t vote', async () => {
+        const url2 = (primary === 'comment') ? `/ideas/${idea0.id}/comments` : `/${primarys}/${primary1.id}`;
 
-  describe('show amount of votes up and down and current user\'s vote when GET /ideas/:id', () => {
+        const response = await agent
+          .get(url2)
+          .expect(200);
 
-    beforeEach(async () => {
-      const data = {
-        users: 5, // how many users to make
-        verifiedUsers: [0, 1, 2, 3, 4], // which  users to make verified
-        ideas: [[{}, 0], [{}, 0]],
-        votes: [
-          [0, ['ideas', 0], -1],
-          [1, ['ideas', 0], 1],
-          [2, ['ideas', 0], 1],
-          [2, ['ideas', 1], -1],
-          [3, ['ideas', 0], -1],
-          [4, ['ideas', 0], 1],
-        ] // user, idea, value
-      };
-      // create data in database
-      dbData = await dbHandle.fill(data);
+        const objectToTest = (primary === 'comment') ? response.body.data[1] : response.body.data;
 
-      [loggedUser, otherUser] = dbData.users;
-      [idea0, idea1] = dbData.ideas;
-    });
-
-    beforeEach(() => {
-      agent = agentFactory.logged(loggedUser);
-    });
-
-    it('show amount of votes up and down', async () => {
-      const response = await agent
-        .get(`/ideas/${idea0.id}`)
-        .expect(200);
-
-      should(response.body).match({
-        data: {
-          meta: {
-            votesUp: 3,
-            votesDown: 2
-          }
-        }
-      });
-    });
-
-    it('show my vote', async () => {
-      const response = await agent
-        .get(`/ideas/${idea0.id}`)
-        .expect(200);
-
-      should(response.body).match({
-        data: {
-          meta: {
-            myVote: -1
-          }
-        }
-      });
-    });
-
-    it('show 0 as my vote if I didn\'t vote', async () => {
-      const response = await agent
-        .get(`/ideas/${idea1.id}`)
-        .expect(200);
-
-      should(response.body).match({
-        data: {
-          meta: {
-            myVote: 0
-          }
-        }
+        should(objectToTest).match({ meta: { myVote: 0 } });
       });
     });
 
   });
-});
+}

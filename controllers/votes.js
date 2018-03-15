@@ -12,9 +12,12 @@ async function post(req, res, next) {
   const { value } = req.body;
   const { username } = req.auth;
 
+  // what is the type of the object we vote for (i.e. ideas, comments, ...)
+  const primarys = req.baseUrl.substring(1);
+
   try {
     // save the vote to database
-    const vote = await models.vote.create({ from: username, to: { type: 'ideas', id }, value });
+    const vote = await models.vote.create({ from: username, to: { type: primarys, id }, value });
     // respond
     const serializedVote = serializers.serialize.vote(vote);
     return res.status(201).json(serializedVote);
@@ -45,9 +48,12 @@ async function del(req, res, next) {
   const { id } = req.params;
   const { username } = req.auth;
 
+  // what is the type of the object we vote for (i.e. ideas, comments, ...)
+  const primarys = req.baseUrl.substring(1);
+
   try {
     // remove the vote from database
-    await models.vote.remove({ from: username, to: { type: 'ideas', id } });
+    await models.vote.remove({ from: username, to: { type: primarys, id } });
     // respond
     return res.status(204).end();
   } catch (e) {

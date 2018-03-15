@@ -41,6 +41,9 @@ class Vote extends Model {
       throw e;
     }
 
+    // what is the type of the object the vote was given to (important for serialization)
+    out[0].to.type = type;
+
     return out[0];
   }
 
@@ -62,6 +65,28 @@ class Vote extends Model {
     const cursor = await this.db.query(query, params);
 
     return (await cursor.all())[0];
+  }
+
+  /**
+   * Read a vote from user to multiple ideas or comments or something
+   * @param {string} from - username of the vote giver
+   * @param {object} to - receiver object of the vote
+   * @param {string} to.type - type of the receiver (collection name, i.e. 'ideas')
+   * @param {string[]} to.ids - array of ids of the receivers
+   * @returns Promise - the array of found votes or nulls
+   */
+  static async readMany({ from: username, to: { type, ids } }) {
+    const query = `
+      FOR id IN @ids
+        LET vote = (FOR u IN users FILTER u.username == @username
+          FOR i IN @@type FILTER i._key == id
+            FOR v IN votes FILTER v._from == u._id && v._to == i._id
+              RETURN v)
+        RETURN vote[0]`;
+    const params = { username, '@type': type, ids };
+    const cursor = await this.db.query(query, params);
+
+    return await cursor.all();
   }
 
   /**
@@ -100,6 +125,25 @@ class Vote extends Model {
         FOR v, e IN 1..1 INBOUND i INBOUND votes
           RETURN e`;
     const params = { '@type': type, id };
+    const cursor = await this.db.query(query, params);
+
+    return await cursor.all();
+  }
+
+  /**
+   * Read votes of array of primary objects.
+   * @param {string} type - type of the receiver (collection name, i.e. 'ideas')
+   * @param {string[]} ids - array of ids of the receivers
+   * @returns Promise - array of arrays of votes
+   */
+  static async readVotesToMany({ type, ids }) {
+    const query = `
+      FOR id IN @ids
+        LET votes = (FOR i IN @@type FILTER i._key == id
+          FOR v, e IN 1..1 INBOUND i INBOUND votes
+            RETURN e)
+        RETURN votes`;
+    const params = { '@type': type, ids };
     const cursor = await this.db.query(query, params);
 
     return await cursor.all();
