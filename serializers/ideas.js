@@ -44,6 +44,20 @@ const ideaSerializer = new Serializer('ideas', {
     tag: {
       ref: 'tagname'
     }
+  },
+  dataMeta: {
+    votesUp(record, current) {
+      if (!current.votes) return;
+      return current.votes.filter(vote => vote.value === 1).length;
+    },
+    votesDown(record, current) {
+      if (!current.votes) return;
+      return current.votes.filter(vote => vote.value === -1).length;
+    },
+    myVote(record, current) {
+      if (!current.hasOwnProperty('myVote')) return;
+      return (current.myVote) ? current.myVote.value : 0;
+    }
   }
 
 });

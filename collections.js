@@ -117,6 +117,19 @@ module.exports = {
         fields: ['creator']
       }
     ]
+  },
+
+  votes: {
+    type: 'edge',
+    from: ['users'],
+    to: ['ideas', 'comments'],
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['_from', '_to'],
+        unique: true
+      }
+    ]
   }
 
 };

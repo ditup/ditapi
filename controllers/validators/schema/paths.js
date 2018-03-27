@@ -23,5 +23,6 @@ module.exports = {
   title: { $ref: 'sch#/definitions/idea/titl' },
   detail: { $ref: 'sch#/definitions/idea/detail' },
   content: { $ref: 'sch#/definitions/comment/content' },
-  id: { $ref: 'sch#/definitions/shared/objectId' }
+  id: { $ref: 'sch#/definitions/shared/objectId' },
+  voteValue: { $ref: 'sch#/definitions/vote/value' },
 };

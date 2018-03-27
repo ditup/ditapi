@@ -126,6 +126,11 @@ module.exports = {
       pattern: '\\S' // at least one non-space character
     }
   },
+  vote: {
+    value: {
+      enum: [-1, 1]
+    }
+  },
   query: {
     page: {
       properties: {

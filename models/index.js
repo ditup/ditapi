@@ -8,7 +8,8 @@ const comment = require('./comment'),
       model = require('./model'),
       tag = require('./tag'),
       user = require('./user'),
-      userTag = require('./user-tag');
+      userTag = require('./user-tag'),
+      vote = require('./vote');
 
 
 const models = {
@@ -21,4 +22,4 @@ const models = {
   }
 };
 
-module.exports = Object.assign(models, { comment, contact, idea, ideaTag, message, model, tag, user, userTag });
+module.exports = Object.assign(models, { comment, contact, idea, ideaTag, message, model, tag, user, userTag, vote });
