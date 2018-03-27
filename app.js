@@ -71,7 +71,7 @@ app.use('/messages', require('./routes/messages'));
 app.use('/account', require('./routes/account'));
 app.use('/contacts', require('./routes/contacts'));
 app.use('/ideas', require('./routes/ideas'));
-// vote for ideas, ... TODO to be generalized for not only ideas
+// vote for ideas, ...
 app.use('/ideas', require('./routes/votes'));
 app.use('/comments', require('./routes/votes'));
 

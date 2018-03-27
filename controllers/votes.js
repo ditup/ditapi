@@ -14,6 +14,7 @@ async function post(req, res, next) {
 
   // what is the type of the object we vote for (i.e. ideas, comments, ...)
   const primarys = req.baseUrl.substring(1);
+  const primary = primarys.slice(0, -1);
 
   try {
     // save the vote to database
@@ -26,11 +27,22 @@ async function post(req, res, next) {
     switch (e.code) {
       // duplicate vote
       case 409: {
-        return res.status(409).end();
+        return res.status(409).json({
+          errors: [{
+            status: 409,
+            detail: 'duplicate vote'
+          }]
+        });
       }
       // missing idea
       case 404: {
-        return res.status(404).end();
+        return res.status(404).json({
+          errors: [{
+            status: 404,
+            detail: `${primary} doesn't exist`
+          }]
+        });
+
       }
       default: {
         return next(e);
@@ -50,6 +62,7 @@ async function del(req, res, next) {
 
   // what is the type of the object we vote for (i.e. ideas, comments, ...)
   const primarys = req.baseUrl.substring(1);
+  const primary = primarys.slice(0, -1);
 
   try {
     // remove the vote from database
@@ -59,9 +72,14 @@ async function del(req, res, next) {
   } catch (e) {
     // handle errors
     switch (e.code) {
-      // missing idea
+      // primary object or vote doesn't exist
       case 404: {
-        return res.status(404).end();
+        return res.status(404).json({
+          errors: [{
+            status: 404,
+            detail: `vote or ${primary} doesn't exist`
+          }]
+        });
       }
       default: {
         return next(e);

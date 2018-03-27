@@ -117,17 +117,31 @@ function voteTestFactory(primary, only=false) {
 
             voteBody.data.attributes.value = 1;
 
-            await agent
+            const response = await agent
               .post(`/${primarys}/${existentPrimary.id}/votes`)
               .send(voteBody)
               .expect(409);
+
+            should(response.body).deepEqual({
+              errors: [{
+                status: 409,
+                detail: 'duplicate vote'
+              }]
+            });
           });
 
           it(`[${primary} doesn't exist] 404`, async () => {
-            await agent
+            const response = await agent
               .post(`/${primarys}/1111111/votes`)
               .send(voteBody)
               .expect(404);
+
+            should(response.body).deepEqual({
+              errors: [{
+                status: 404,
+                detail: `${primary} doesn't exist`
+              }]
+            });
           });
         });
 
@@ -225,15 +239,30 @@ function voteTestFactory(primary, only=false) {
           });
 
           it('[vote doesn\'t exist] 404', async () => {
-            await agent
+            const response = await agent
               .delete(`/${primarys}/${primary1.id}/votes/vote`)
               .expect(404);
+
+            should(response.body).deepEqual({
+              errors: [{
+                status: 404,
+                detail: `vote or ${primary} doesn't exist`
+              }]
+            });
+
           });
 
           it(`[${primary} doesn't exist] 404`, async () => {
-            await agent
+            const response = await agent
               .delete(`/${primarys}/111111/votes/vote`)
               .expect(404);
+
+            should(response.body).deepEqual({
+              errors: [{
+                status: 404,
+                detail: `vote or ${primary} doesn't exist`
+              }]
+            });
           });
         });
 
