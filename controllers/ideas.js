@@ -164,4 +164,25 @@ async function getNewIdeas(req, res, next) {
   }
 }
 
-module.exports = { get, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, patch, post };
+/**
+ * Get random ideas
+ */
+async function getRandomIdeas(req, res, next) {
+  try {
+    const { page: { limit = 1 } = { } } = req.query;
+
+    // read ideas from database
+    const foundIdeas = await models.idea.random({ limit });
+
+    // serialize
+    const serializedIdeas = serialize.idea(foundIdeas);
+
+    // respond
+    return res.status(200).json(serializedIdeas);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+module.exports = { get, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };
