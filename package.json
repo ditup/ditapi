@@ -7,6 +7,7 @@
     "start": "NODE_ENV=development node ./bin/www",
     "start:production": "NODE_ENV=production PORT=3001 node ./bin/www",
     "test": "NODE_ENV=test mocha ./test/",
+    "test:nyan": "NODE_ENV=test mocha -R nyan ./test/",
     "test:watch": "NODE_ENV=test mocha ./test/ --watch",
     "unit": "NODE_ENV=test mocha ./test/unit/ --recursive",
     "unit:watch": "NODE_ENV=test mocha ./test/unit/ --watch --recursive",

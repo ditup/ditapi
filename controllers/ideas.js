@@ -185,4 +185,27 @@ async function getRandomIdeas(req, res, next) {
   }
 }
 
-module.exports = { get, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };
+/**
+ * Get ideas with specified creators
+ */
+async function getIdeasWithCreators(req, res, next) {
+  try {
+    // gather data
+    const { page: { offset = 0, limit = 10 } = { } } = req.query;
+    const { creators } = req.query.filter;
+
+    // read ideas from database
+    const foundIdeas = await models.idea.findWithCreators(creators, { offset, limit });
+
+    // serialize
+    const serializedIdeas = serialize.idea(foundIdeas);
+
+    // respond
+    return res.status(200).json(serializedIdeas);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+module.exports = { get, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };

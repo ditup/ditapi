@@ -32,6 +32,10 @@ router.route('/')
 router.route('/')
   .get(go.get.random, authorize.onlyLogged, parse, ideaValidators.getRandomIdeas, ideaControllers.getRandomIdeas);
 
+// get ideas with creators
+router.route('/')
+  .get(go.get.withCreators, authorize.onlyLogged, parse, ideaValidators.getIdeasWithCreators, ideaControllers.getIdeasWithCreators);
+
 router.route('/:id')
   // read idea by id
   .get(authorize.onlyLogged, ideaValidators.get, ideaControllers.get)

@@ -25,7 +25,8 @@ const parametersDictionary = {
     withMyTags: 'int',
     location: 'coordinates',
     relatedToTags: 'array',
-    size: 'int'
+    size: 'int',
+    creators: 'array'
   },
 };
 
