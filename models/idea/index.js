@@ -192,6 +192,30 @@ class Idea extends Model {
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
+
+  /**
+   * Read random ideas
+   * @param {number} [limit] - max amount of random ideas to return
+   */
+  static async random({ limit }) {
+
+    const query = `
+      FOR idea IN ideas
+        // sort from newest
+        SORT RAND()
+        LIMIT @limit
+        // find creator
+        LET c = (DOCUMENT(idea.creator))
+        LET creator = MERGE(KEEP(c, 'username'), c.profile)
+        // format for output
+        LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+        // limit
+        // respond
+        RETURN ideaOut`;
+    const params = { limit };
+    const cursor = await this.db.query(query, params);
+    return await cursor.all();
+  }
 }
 
 module.exports = Idea;

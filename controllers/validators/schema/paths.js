@@ -18,6 +18,7 @@ module.exports = {
   relevance: { $ref: 'sch#/definitions/userTag/relevance' },
   page: { $ref: 'sch#/definitions/query/page' },
   pageOffset0: { $ref: 'sch#/definitions/query/page0' }, // page with offset = 0
+  random: { $ref: 'sch#/definitions/query/random' },
   tagsList: { $ref: 'sch#/definitions/query/tagsList' },
   ideaId: { $ref : 'sch#/definitions/idea/ideaId' },
   title: { $ref: 'sch#/definitions/idea/titl' },

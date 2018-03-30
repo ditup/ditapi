@@ -337,4 +337,81 @@ describe('read lists of ideas', () => {
       });
     });
   });
+
+  describe('GET /ideas?filter[random]', () => {
+
+    let loggedUser;
+
+    // create and save testing data
+    beforeEach(async () => {
+      const data = {
+        users: 3,
+        verifiedUsers: [0, 1, 2],
+        ideas: Array(11).fill([])
+      };
+
+      dbData = await dbHandle.fill(data);
+
+      loggedUser = dbData.users[0];
+    });
+
+    context('logged in', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
+      context('valid', () => {
+        it('200 and array of random ideas', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?filter[random]')
+            .expect(200);
+
+          // we should find 1 idea by default
+          should(response.body).have.property('data').Array().length(1);
+        });
+
+        it('[pagination] 200 and array of random ideas, limited', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?filter[random]&page[offset]=0&page[limit]=4')
+            .expect(200);
+
+          // we should find 4 ideas...
+          should(response.body).have.property('data').Array().length(4);
+        });
+      });
+
+      context('invalid', () => {
+        it('[invalid pagination] 400', async () => {
+          await agent
+            .get('/ideas?filter[random]&page[offset]=3&page[limit]=21')
+            .expect(400);
+        });
+
+        it('[unexpected query params] 400', async () => {
+          await agent
+            .get('/ideas?filter[random]&foo=bar')
+            .expect(400);
+        });
+
+        it('[random with value] 400', async () => {
+          await agent
+            .get('/ideas?filter[random]=bar')
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged in', () => {
+      it('403', async () => {
+        await agent
+          .get('/ideas?filter[random]')
+          .expect(403);
+      });
+    });
+  });
 });

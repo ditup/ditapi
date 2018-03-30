@@ -1,6 +1,6 @@
 'use strict';
 
-const { title, detail, id, page, tagsList } = require('./paths');
+const { title, detail, id, page, pageOffset0, random, tagsList } = require('./paths');
 
 const postIdeas = {
   properties: {
@@ -115,4 +115,22 @@ const getNewIdeas = {
   required: ['query']
 };
 
-module.exports = { getIdea, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, patchIdea, postIdeas };
+const getRandomIdeas = {
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: { random },
+          required: ['random'],
+          additionalProperties: false
+        },
+        page: pageOffset0
+      },
+      required: ['filter'],
+      additionalProperties: false
+    },
+  },
+  required: ['query']
+};
+
+module.exports = { getIdea, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };

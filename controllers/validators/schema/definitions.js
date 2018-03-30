@@ -159,6 +159,10 @@ module.exports = {
       required: ['offset', 'limit'],
       additionalProperties: false
     },
+    random: {
+      type: 'string',
+      enum: ['']
+    },
     tagsList: {
       type: 'array',
       items: tagname,

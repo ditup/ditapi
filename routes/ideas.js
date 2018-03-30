@@ -28,6 +28,10 @@ router.route('/')
 router.route('/')
   .get(go.get.withTags, authorize.onlyLogged, parse, ideaValidators.getIdeasWithTags, ideaControllers.getIdeasWithTags);
 
+// get random ideas
+router.route('/')
+  .get(go.get.random, authorize.onlyLogged, parse, ideaValidators.getRandomIdeas, ideaControllers.getRandomIdeas);
+
 router.route('/:id')
   // read idea by id
   .get(authorize.onlyLogged, ideaValidators.get, ideaControllers.get)
