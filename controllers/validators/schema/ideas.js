@@ -144,7 +144,7 @@ const getIdeasWithCreators = {
           required: ['creators'],
           additionalProperties: false
         },
-        page: pageOffset0
+        page
       },
       required: ['filter'],
       additionalProperties: false

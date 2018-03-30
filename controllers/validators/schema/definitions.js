@@ -1,6 +1,6 @@
 'use strict';
 
-const { tagname, user } = require('./paths');
+const { tagname, username } = require('./paths');
 
 module.exports = {
   shared: {
@@ -171,7 +171,7 @@ module.exports = {
     },
     usersList: {
       type: 'array',
-      items: user,
+      items: username,
       maxItems: 10,
       minItems: 1
     }

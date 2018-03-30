@@ -415,7 +415,7 @@ describe('read lists of ideas', () => {
     });
   });
 
-  describe('GET /ideas?filter[creators]=user0,user1,user2', () => {
+  describe.only('GET /ideas?filter[creators]=user0,user1,user2', () => {
     let user0,
         user2,
         user3,
@@ -527,7 +527,7 @@ describe('read lists of ideas', () => {
 
       context('invalid data', () => {
 
-        it('[invalid query.filter.withMyTags] 400', async () => {
+        it('[invalid query.filter.creators] 400', async () => {
           await agent
             .get('/ideas?filter[creators]=1')
             .expect(400);
