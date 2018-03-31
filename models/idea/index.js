@@ -265,7 +265,7 @@ class Idea extends Model {
           FOR idea IN ideas 
           FILTER idea._id == comment.primary
           // sort from newest
-          SORT idea.created DESC
+          SORT idea._id DESC, idea.created DESC
           LIMIT @offset, @limit
       RETURN DISTINCT idea`;
 
