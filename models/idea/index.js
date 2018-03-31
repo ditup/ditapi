@@ -266,7 +266,7 @@ class Idea extends Model {
           FILTER idea._id == comment.primary
           COLLECT i = idea
           // sort from newest
-          SORT i.created ASC
+          SORT i.created DESC
           LIMIT @offset, @limit
       RETURN i`;
 
