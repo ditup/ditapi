@@ -542,4 +542,146 @@ describe('read lists of ideas', () => {
       });
     });
   });
+
+  describe('GET /ideas?filter[commentedBy]=user0,user1,user2', () => {
+    let user0,
+        user2,
+        user3,
+        user4;
+    // create and save testing data
+    beforeEach(async () => {
+      const data = {
+        users: 6,
+        tags: 6,
+        verifiedUsers: [0, 1, 2, 3, 4],
+        ideas: [[{}, 0], [{}, 0],[{}, 1],[{}, 2],[{}, 2],[{}, 2],[{}, 3]],
+        userTag: [
+          [0,0,'',5],[0,1,'',4],[0,2,'',3],[0,4,'',1],
+          [1,1,'',4],[1,3,'',2],
+          [2,5,'',2]
+        ],
+        ideaTags: [
+          [0,0],[0,1],[0,2],
+          [1,1],[1,2],
+          [2,1],[2,2],[2,4],
+          [4,0],[4,1],[4,2],[4,3],[4,4],
+          [5,2],[5,3],
+          [6,3]
+        ],
+        ideaComments: [[0, 0],[0, 1], [0,2],[0,2], [0,4], [1,1], [1,2], [2,1], [2,2], [3,4] ]
+      };
+
+      dbData = await dbHandle.fill(data);
+
+      [user0, , user2, user3, user4, ] = dbData.users;
+    });
+
+    context('logged in', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(user0);
+      });
+
+      context('valid data', () => {
+
+        it('[ideas commented by one user] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get(`/ideas?filter[commentedBy]=${user2.username}`)
+            .expect(200);
+
+          // we should find 3 ideas...
+          should(response.body).have.property('data').Array().length(3);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([2, 1, 0].map(no => `idea title ${no}`));
+
+        });
+
+
+        it('[ideas commented by two users] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get(`/ideas?filter[commentedBy]=${user2.username},${user4.username}`)
+            .expect(200);
+
+          // we should find 4 ideas...
+          should(response.body).have.property('data').Array().length(4);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([3, 2, 1, 0].map(no => `idea title ${no}`));
+        });
+
+        it('[ideas commented by user who didn\'t commented anyting] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get(`/ideas?filter[commentedBy]=${user3.username}`)
+            .expect(200);
+
+          // we should find 0 ideas...
+          should(response.body).have.property('data').Array().length(0);
+
+        });
+
+        it('[pagination] offset and limit the results', async () => {
+          const response = await agent
+            .get(`/ideas?filter[commentedBy]=${user2.username},${user4.username}&page[offset]=1&page[limit]=3`)
+            .expect(200);
+
+          // we should find 3 ideas
+          should(response.body).have.property('data').Array().length(3);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([2, 1, 0].map(no => `idea title ${no}`));
+        });
+
+        it('[nonexistent user who commented] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?filter[commentedBy]=nonexistentuser')
+            .expect(200);
+
+          // we should find 0 ideas...
+          should(response.body).have.property('data').Array().length(0);
+
+        });
+      });
+
+      context('invalid data', () => {
+
+        it('[invalid query.filter.commentedBy] 400', async () => {
+          await agent
+            .get('/ideas?filter[commentedBy]=1')
+            .expect(400);
+        });
+
+        it('[invalid pagination] 400', async () => {
+          await agent
+            .get(`/ideas?filter[commentedBy]=${user2.username},${user3.username}&page[offset]=1&page[limit]=21`)
+            .expect(400);
+        });
+
+        it('[unexpected query params] 400', async () => {
+          await agent
+            .get(`/ideas?filter[commentedBy]=${user2.username},${user3.username}&additional[param]=3&page[offset]=1&page[limit]=3`)
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged in', () => {
+      it('403', async () => {
+        await agent
+          .get(`/ideas?filter[commentedBy]=${user2.username}`)
+          .expect(403);
+      });
+    });
+  });
 });

@@ -26,7 +26,8 @@ const parametersDictionary = {
     location: 'coordinates',
     relatedToTags: 'array',
     size: 'int',
-    creators: 'array'
+    creators: 'array',
+    commentedBy: 'array'
   },
 };
 
