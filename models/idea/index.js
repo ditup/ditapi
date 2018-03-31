@@ -246,7 +246,7 @@ class Idea extends Model {
     return await cursor.all();
   }
 
-  
+
   /**
    * Read ideas commented by specified users
    * @param {string[]} usernames - list of usernames to search with
@@ -255,7 +255,7 @@ class Idea extends Model {
    * @returns {Promise<Idea[]>} - list of found ideas
    */
   static async findCommentedBy(commentedBy, { offset, limit }) {
-    
+
     const query = `
       FOR user IN users 
       FILTER user.username IN @commentedBy
