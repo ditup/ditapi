@@ -153,4 +153,24 @@ const getIdeasWithCreators = {
   required: ['query']
 };
 
-module.exports = { getIdea, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };
+const getIdeasCommentedBy = {
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            commentedBy: usersList
+          },
+          required: ['commentedBy'],
+          additionalProperties: false
+        },
+        page
+      },
+      required: ['filter'],
+      additionalProperties: false
+    },
+  },
+  required: ['query']
+};
+
+module.exports = { getIdea, getIdeasCommentedBy, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };

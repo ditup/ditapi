@@ -245,6 +245,35 @@ class Idea extends Model {
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
+
+
+  /**
+   * Read ideas commented by specified users
+   * @param {string[]} usernames - list of usernames to search with
+   * @param {integer} offset - pagination offset
+   * @param {integer} limit - pagination limit
+   * @returns {Promise<Idea[]>} - list of found ideas
+   */
+  static async findCommentedBy(commentedBy, { offset, limit }) {
+
+    const query = `
+      FOR user IN users 
+      FILTER user.username IN @commentedBy
+        FOR comment IN comments 
+        FILTER comment.creator == user._id 
+        AND IS_SAME_COLLECTION('ideas', comment.primary)
+          FOR idea IN ideas 
+          FILTER idea._id == comment.primary
+          COLLECT i = idea
+          // sort from newest
+          SORT i.created DESC
+          LIMIT @offset, @limit
+      RETURN i`;
+
+    const params = { commentedBy, offset, limit };
+    const cursor = await this.db.query(query, params);
+    return await cursor.all();
+  }
 }
 
 module.exports = Idea;

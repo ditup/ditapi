@@ -208,4 +208,28 @@ async function getIdeasWithCreators(req, res, next) {
   }
 }
 
-module.exports = { get, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };
+/**
+ * Get ideas commented by specified users
+ */
+async function getIdeasCommentedBy(req, res, next) {
+  try {
+    // gather data
+    const { page: { offset = 0, limit = 10 } = { } } = req.query;
+    const { commentedBy } = req.query.filter;
+
+    // read ideas from database
+    const foundIdeas = await models.idea.findCommentedBy(commentedBy, { offset, limit });
+
+    // serialize
+    const serializedIdeas = serialize.idea(foundIdeas);
+
+    // respond
+    return res.status(200).json(serializedIdeas);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+
+module.exports = { get, getIdeasCommentedBy, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };

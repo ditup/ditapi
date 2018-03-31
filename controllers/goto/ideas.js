@@ -8,6 +8,7 @@ module.exports = {
     withTags: route(['query.filter.withTags']),
     new: route(['query.sort'], 'newQuery'),
     random: route(['query.filter.random']),
-    withCreators: route(['query.filter.creators'])
+    withCreators: route(['query.filter.creators']),
+    commentedBy: route(['query.filter.commentedBy'])
   },
 };
