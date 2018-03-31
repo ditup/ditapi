@@ -227,19 +227,19 @@ class Idea extends Model {
   static async findWithCreators(creators, { offset, limit }) {
     // TODO  to be checked for query optimization or unnecessary things
     const query = `
-      FOR idea IN ideas
-        // sort from newest
-        SORT idea.created DESC
-        LIMIT @offset, @limit
-        // find creator
-        LET c = (DOCUMENT(idea.creator))
-        LET creator = MERGE(KEEP(c, 'username'), c.profile)
-        // format for output
-        LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
-        // limit
-        // respond
-        FILTER creator.username in @creators
-        RETURN ideaOut`;
+      LET creators = (FOR u IN users FILTER u.username IN @creators RETURN u)
+        FOR idea IN ideas FILTER idea.creator IN creators[*]._id
+            // find creator
+            LET c = (DOCUMENT(idea.creator))
+            // format for output
+            LET creator = MERGE(KEEP(c, 'username'), c.profile)
+            LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+            // sort from newest
+            SORT idea.created DESC
+            // limit
+            LIMIT @offset, @limit
+            // respond
+            RETURN ideaOut`;
 
     const params = { offset, limit , creators };
     const cursor = await this.db.query(query, params);
