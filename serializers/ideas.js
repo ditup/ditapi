@@ -7,7 +7,8 @@ const config = require(path.resolve('./config'));
 
 const ideaSerializer = new Serializer('ideas', {
   id: 'id',
-  attributes: ['title', 'detail', 'created', 'creator', 'ideaTags'],
+  // TODO where to put rate in this serialization
+  attributes: ['title', 'detail', 'created', 'creator', 'ideaTags', 'rate'],
   keyForAttribute: 'camelCase',
   typeForAttribute(attribute) {
     if (attribute === 'creator') {

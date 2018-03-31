@@ -27,7 +27,8 @@ const parametersDictionary = {
     relatedToTags: 'array',
     size: 'int',
     creators: 'array',
-    commentedBy: 'array'
+    commentedBy: 'array',
+    highlyRated: 'int'
   },
 };
 

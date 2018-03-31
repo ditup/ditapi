@@ -173,4 +173,26 @@ const getIdeasCommentedBy = {
   required: ['query']
 };
 
-module.exports = { getIdea, getIdeasCommentedBy, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };
+const getIdeasHighlyRated = {
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            highlyRated: {
+              type: 'number'
+            }
+          },
+          required: ['highlyRated'],
+          additionalProperties: false
+        },
+        page
+      },
+      required: ['filter'],
+      additionalProperties: false
+    },
+  },
+  required: ['query']
+};
+
+module.exports = { getIdea, getIdeasCommentedBy, getIdeasHighlyRated, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };
