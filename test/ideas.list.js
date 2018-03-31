@@ -684,4 +684,150 @@ describe('read lists of ideas', () => {
       });
     });
   });
+
+  describe('GET /ideas?filter[highlyVoted]', () => {
+    let user0;
+    // create and save testing data
+    beforeEach(async () => {
+      const primarys = 'ideas';
+      const data = {
+        users: 6,
+        tags: 6,
+        verifiedUsers: [0, 1, 2, 3, 4],
+        ideas: [[{}, 0], [{}, 0],[{}, 1],[{}, 2],[{}, 2],[{}, 2],[{}, 3]],
+        userTag: [
+          [0,0,'',5],[0,1,'',4],[0,2,'',3],[0,4,'',1],
+          [1,1,'',4],[1,3,'',2],
+          [2,5,'',2]
+        ],
+        ideaTags: [
+          [0,0],[0,1],[0,2],
+          [1,1],[1,2],
+          [2,1],[2,2],[2,4],
+          [4,0],[4,1],[4,2],[4,3],[4,4],
+          [5,2],[5,3],
+          [6,3]
+        ],
+        // odeas with votes: 3:3, 1:3, 5:1, 2:1, 0:0, 6: -1, 4:-2
+        votes: [
+          [0, [primarys, 0], -1],
+          [1, [primarys, 0],  1],
+          [0, [primarys, 1],  1],
+          [1, [primarys, 1],  1],
+          [2, [primarys, 1],  1],
+          [0, [primarys, 2], -1],
+          [1, [primarys, 2],  1],
+          [2, [primarys, 2],  1],
+          [0, [primarys, 3],  1],
+          [1, [primarys, 3],  1],
+          [2, [primarys, 3],  1],
+          [3, [primarys, 3],  1],
+          [4, [primarys, 3], -1],
+          [0, [primarys, 4], -1],
+          [1, [primarys, 4], -1],
+          [3, [primarys, 5],  1],
+          [3, [primarys, 6], -1]
+        ]
+      };
+
+      dbData = await dbHandle.fill(data);
+
+      [user0, , , , , ] = dbData.users;
+    });
+
+    context('logged in', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(user0);
+      });
+
+      context('valid data', () => {
+
+        it('[highly voted ideas] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?filter[highlyVoted]=0')
+            .expect(200);
+
+          // without pagination, limit for ideas 5 we should find 5 ideas...
+          should(response.body).have.property('data').Array().length(5);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([3, 1, 5, 2, 0].map(no => `idea title ${no}`));
+
+        });
+
+        it('[highly voted ideas with at least 2 votes in plus] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?filter[highlyVoted]=2')
+            .expect(200);
+
+          // without pagination, limit for ideas 5 we should find 5 ideas...
+          should(response.body).have.property('data').Array().length(2);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([3, 1].map(no => `idea title ${no}`));
+
+          // shoud value be at least 2
+          should(Math.min(...response.body.data.map(idea => idea.meta.voteSum)))
+            .aboveOrEqual(2);
+        });
+
+
+        it('[pagination] offset and limit the results', async () => {
+          const response = await agent
+            .get('/ideas?filter[highlyVoted]=0&page[offset]=1&page[limit]=3')
+            .expect(200);
+
+          // we should find 3 ideas
+          should(response.body).have.property('data').Array().length(3);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([1, 5, 2].map(no => `idea title ${no}`));
+        });
+
+      });
+
+      context('invalid data', () => {
+
+        it('[invalid query.filter.highlyVoted] 400', async () => {
+          await agent
+            .get('/ideas?filter[highlyVoted]=string')
+            .expect(400);
+        });
+
+        it('[invalid query.filter.highlyVoted] 400', async () => {
+          await agent
+            .get('/ideas?filter[highlyVoted]')
+            .expect(400);
+        });
+
+        it('[invalid pagination] 400', async () => {
+          await agent
+            .get('/ideas?filter[highlyVoted]=0&page[offset]=1&page[limit]=21')
+            .expect(400);
+        });
+
+        it('[unexpected query params] 400', async () => {
+          await agent
+            .get('/ideas?filter[highlyVoted]=0&additional[param]=3&page[offset]=1&page[limit]=3')
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged in', () => {
+      it('403', async () => {
+        await agent
+          .get('/ideas?filter[highlyVoted]=0')
+          .expect(403);
+      });
+    });
+  });
 });

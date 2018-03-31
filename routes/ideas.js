@@ -40,6 +40,11 @@ router.route('/')
 router.route('/')
   .get(go.get.commentedBy, authorize.onlyLogged, parse, ideaValidators.getIdeasCommentedBy, ideaControllers.getIdeasCommentedBy);
 
+// get ideas commented by specified users
+router.route('/')
+  .get(go.get.highlyVoted, authorize.onlyLogged, parse, ideaValidators.getIdeasHighlyVoted, ideaControllers.getIdeasHighlyVoted);
+
+
 
 router.route('/:id')
   // read idea by id
