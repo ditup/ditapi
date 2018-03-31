@@ -414,4 +414,132 @@ describe('read lists of ideas', () => {
       });
     });
   });
+
+  describe('GET /ideas?filter[creators]=user0,user1,user2', () => {
+    let user0,
+        user2,
+        user3,
+        user4;
+    // create and save testing data
+    beforeEach(async () => {
+      const data = {
+        users: 6,
+        tags: 6,
+        verifiedUsers: [0, 1, 2, 3, 4],
+        ideas: [[{}, 0], [{}, 0],[{}, 1],[{}, 2],[{}, 2],[{}, 2],[{}, 3]]
+      };
+
+      dbData = await dbHandle.fill(data);
+
+      [user0, , user2, user3, user4, ] = dbData.users;
+    });
+
+    context('logged in', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(user0);
+      });
+
+      context('valid data', () => {
+
+        it('[one creator] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get(`/ideas?filter[creators]=${user2.username}`)
+            .expect(200);
+
+          // we should find 2 ideas...
+          should(response.body).have.property('data').Array().length(3);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([5, 4, 3].map(no => `idea title ${no}`));
+
+        });
+
+
+        it('[two creators] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get(`/ideas?filter[creators]=${user2.username},${user3.username}`)
+            .expect(200);
+
+          // we should find 5 ideas...
+          should(response.body).have.property('data').Array().length(4);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([6, 5, 4, 3].map(no => `idea title ${no}`));
+        });
+
+        it('[creator without ideas] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get(`/ideas?filter[creators]=${user4.username}`)
+            .expect(200);
+
+          // we should find 0 ideas...
+          should(response.body).have.property('data').Array().length(0);
+
+        });
+
+        it('[pagination] offset and limit the results', async () => {
+          const response = await agent
+            .get(`/ideas?filter[creators]=${user2.username},${user3.username}&page[offset]=1&page[limit]=3`)
+            .expect(200);
+
+          // we should find 3 ideas
+          should(response.body).have.property('data').Array().length(3);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([5, 4, 3].map(no => `idea title ${no}`));
+        });
+
+        it('[nonexistent creator] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?filter[creators]=nonexistentcreator')
+            .expect(200);
+
+          // we should find 0 ideas...
+          should(response.body).have.property('data').Array().length(0);
+
+        });
+      });
+
+      context('invalid data', () => {
+
+        it('[invalid query.filter.creators] 400', async () => {
+          await agent
+            .get('/ideas?filter[creators]=1')
+            .expect(400);
+        });
+
+        it('[invalid pagination] 400', async () => {
+          await agent
+            .get(`/ideas?filter[creators]=${user2.username},${user3.username}&page[offset]=1&page[limit]=21`)
+            .expect(400);
+        });
+
+        it('[unexpected query params] 400', async () => {
+          await agent
+            .get(`/ideas?filter[creators]=${user2.username},${user3.username}&additional[param]=3&page[offset]=1&page[limit]=3`)
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged in', () => {
+      it('403', async () => {
+        await agent
+          .get(`/ideas?filter[creators]=${user2.username}`)
+          .expect(403);
+      });
+    });
+  });
 });
