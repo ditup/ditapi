@@ -261,13 +261,14 @@ class Idea extends Model {
       FILTER user.username IN @commentedBy
         FOR comment IN comments 
         FILTER comment.creator == user._id 
-        AND SUBSTRING(comment.primary, 0, 5) == 'ideas' 
+        AND IS_SAME_COLLECTION('ideas', comment.primary)
           FOR idea IN ideas 
           FILTER idea._id == comment.primary
+          COLLECT i = idea
           // sort from newest
-          SORT idea._id DESC, idea.created ASC
+          SORT i._id DESC, i.created ASC
           LIMIT @offset, @limit
-      RETURN DISTINCT idea`;
+      RETURN i`;
 
     const params = { commentedBy, offset, limit };
     const cursor = await this.db.query(query, params);
