@@ -44,7 +44,9 @@ router.route('/')
 router.route('/')
   .get(go.get.highlyVoted, authorize.onlyLogged, parse, ideaValidators.getIdeasHighlyVoted, ideaControllers.getIdeasHighlyVoted);
 
-
+// get trending ideas
+router.route('/')
+  .get(go.get.trending, authorize.onlyLogged, parse, ideaValidators.getIdeasTrending, ideaControllers.getIdeasTrending);
 
 router.route('/:id')
   // read idea by id

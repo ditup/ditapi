@@ -1,6 +1,10 @@
 'use strict';
 
-const should = require('should');
+const path = require('path'),
+      should = require('should'),
+      sinon = require('sinon');
+
+const  models = require(path.resolve('./models'));
 
 const agentFactory = require('./agent'),
       dbHandle = require('./handle-database');
@@ -424,7 +428,6 @@ describe('read lists of ideas', () => {
     beforeEach(async () => {
       const data = {
         users: 6,
-        tags: 6,
         verifiedUsers: [0, 1, 2, 3, 4],
         ideas: [[{}, 0], [{}, 0],[{}, 1],[{}, 2],[{}, 2],[{}, 2],[{}, 3]]
       };
@@ -520,6 +523,12 @@ describe('read lists of ideas', () => {
             .expect(400);
         });
 
+        it('[too many users] 400', async () => {
+          await agent
+            .get('/ideas?filter[creators]=user1,user2,user3,user4,user5,user6,user7,user8,user9,user190,user11')
+            .expect(400);
+        });
+
         it('[invalid pagination] 400', async () => {
           await agent
             .get(`/ideas?filter[creators]=${user2.username},${user3.username}&page[offset]=1&page[limit]=21`)
@@ -552,22 +561,8 @@ describe('read lists of ideas', () => {
     beforeEach(async () => {
       const data = {
         users: 6,
-        tags: 6,
         verifiedUsers: [0, 1, 2, 3, 4],
-        ideas: [[{}, 0], [{}, 0],[{}, 1],[{}, 2],[{}, 2],[{}, 2],[{}, 3]],
-        userTag: [
-          [0,0,'',5],[0,1,'',4],[0,2,'',3],[0,4,'',1],
-          [1,1,'',4],[1,3,'',2],
-          [2,5,'',2]
-        ],
-        ideaTags: [
-          [0,0],[0,1],[0,2],
-          [1,1],[1,2],
-          [2,1],[2,2],[2,4],
-          [4,0],[4,1],[4,2],[4,3],[4,4],
-          [5,2],[5,3],
-          [6,3]
-        ],
+        ideas: Array(7).fill([]),
         ideaComments: [[0, 0],[0, 1], [0,2],[0,2], [0,4], [1,1], [1,2], [2,1], [2,2], [3,4] ]
       };
 
@@ -662,6 +657,12 @@ describe('read lists of ideas', () => {
             .expect(400);
         });
 
+        it('[too many users] 400', async () => {
+          await agent
+            .get('/ideas?filter[commentedBy]=user1,user2,user3,user4,user5,user6,user7,user8,user9,user190,user11')
+            .expect(400);
+        });
+
         it('[invalid pagination] 400', async () => {
           await agent
             .get(`/ideas?filter[commentedBy]=${user2.username},${user3.username}&page[offset]=1&page[limit]=21`)
@@ -685,30 +686,16 @@ describe('read lists of ideas', () => {
     });
   });
 
-  describe('GET /ideas?filter[highlyVoted]', () => {
+  describe('GET /ideas?filter[highlyVoted]=voteSumBottomLimit', () => {
     let user0;
     // create and save testing data
     beforeEach(async () => {
       const primarys = 'ideas';
       const data = {
         users: 6,
-        tags: 6,
         verifiedUsers: [0, 1, 2, 3, 4],
-        ideas: [[{}, 0], [{}, 0],[{}, 1],[{}, 2],[{}, 2],[{}, 2],[{}, 3]],
-        userTag: [
-          [0,0,'',5],[0,1,'',4],[0,2,'',3],[0,4,'',1],
-          [1,1,'',4],[1,3,'',2],
-          [2,5,'',2]
-        ],
-        ideaTags: [
-          [0,0],[0,1],[0,2],
-          [1,1],[1,2],
-          [2,1],[2,2],[2,4],
-          [4,0],[4,1],[4,2],[4,3],[4,4],
-          [5,2],[5,3],
-          [6,3]
-        ],
-        // odeas with votes: 3:3, 1:3, 5:1, 2:1, 0:0, 6: -1, 4:-2
+        ideas: Array(7).fill([]),
+        // ideas with votes: 3:3, 1:3, 5:1, 2:1, 0:0, 6: -1, 4:-2
         votes: [
           [0, [primarys, 0], -1],
           [1, [primarys, 0],  1],
@@ -826,6 +813,197 @@ describe('read lists of ideas', () => {
       it('403', async () => {
         await agent
           .get('/ideas?filter[highlyVoted]=0')
+          .expect(403);
+      });
+    });
+  });
+
+  describe('GET /ideas?filter[trending]', () => {
+    let user0,
+        user1,
+        user2,
+        user3,
+        user4,
+        user5,
+        user6,
+        user7,
+        user8,
+        idea1,
+        idea2,
+        idea3,
+        idea4,
+        idea5,
+        idea6;
+    const now = new Date();
+    let sandbox, clock;
+    const threeMonths = 7776000000;
+    const threeWeeks = 1814400000;
+    const oneWeek = 604800000;
+    const twoDays = 172800000;
+    // create and save testing data
+    beforeEach(async () => {
+      sandbox = sinon.sandbox.create();
+      const primarys = 'ideas';
+      const data = {
+        users: 10,
+        verifiedUsers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        ideas: Array(11).fill([]),
+        // odeas with votes: 3:3, 1:3, 5:1, 2:1, 0:0, 6: -1, 4:-2
+        votes: [
+          [0, [primarys, 1], 1],
+          [0, [primarys, 2], 1],
+          [0, [primarys, 3], 1],
+          [1, [primarys, 3], 1],
+          [2, [primarys, 3], 1],
+          [0, [primarys, 4], 1],
+          [1, [primarys, 4], 1],
+          [2, [primarys, 4], 1],
+          [3, [primarys, 4], 1],
+          [4, [primarys, 4], 1],
+          [0, [primarys, 5], 1],
+          [1, [primarys, 5], 1],
+          [2, [primarys, 5], 1],
+          [3, [primarys, 5], 1],
+          [4, [primarys, 5], 1],
+          [5, [primarys, 5], 1],
+          [6, [primarys, 5], 1],
+          [0, [primarys, 6], 1],
+          [1, [primarys, 6], 1]
+        ]
+      };
+      // post initial data and oldest votes with date three monts ago without two days
+      clock = sinon.useFakeTimers(now.getTime() - threeMonths + twoDays);
+      dbData = await dbHandle.fill(data);
+
+      [user0, user1, user2, user3, user4, user5, user6, user7, user8 ] = dbData.users;
+      [ , idea1, idea2, idea3, idea4, idea5, idea6] = dbData.ideas;
+
+      // create data to post with time: three weeks ago
+      const dataThreeWeeksAgo = {
+        votes: [
+          {from: user1.username, to: {type: primarys, id: idea1.id}, value: 1},
+          {from: user1.username, to: {type: primarys, id: idea2.id}, value: 1},
+          {from: user2.username, to: {type: primarys, id: idea2.id}, value: 1},
+          {from: user3.username, to: {type: primarys, id: idea2.id}, value: 1},
+          {from: user3.username, to: {type: primarys, id: idea3.id}, value: 1},
+          {from: user5.username, to: {type: primarys, id: idea4.id}, value: 1},
+          {from: user6.username, to: {type: primarys, id: idea4.id}, value: 1},
+          {from: user7.username, to: {type: primarys, id: idea4.id}, value: 1},
+          {from: user7.username, to: {type: primarys, id: idea5.id}, value: 1},
+          {from: user2.username, to: {type: primarys, id: idea6.id}, value: 1},
+          {from: user3.username, to: {type: primarys, id: idea6.id}, value: 1}
+        ]
+      };
+      clock.restore();
+      // stub time to three weeks ago without two days
+      clock = sinon.useFakeTimers(now.getTime() - threeWeeks + twoDays);
+      // add data to database hree weeks ago without two days
+      for(const i in dataThreeWeeksAgo.votes){
+        await models.vote.create(dataThreeWeeksAgo.votes[i]);
+      }
+
+      const dataOneWeekAgo = {
+        votes: [
+          {from: user2.username, to: {type: primarys, id: idea1.id}, value: 1},
+          {from: user3.username, to: {type: primarys, id: idea1.id}, value: 1},
+          {from: user4.username, to: {type: primarys, id: idea1.id}, value: 1},
+          {from: user5.username, to: {type: primarys, id: idea1.id}, value: 1},
+          {from: user6.username, to: {type: primarys, id: idea1.id}, value: 1},
+          {from: user7.username, to: {type: primarys, id: idea1.id}, value: 1},
+          {from: user8.username, to: {type: primarys, id: idea1.id}, value: 1},
+          {from: user4.username, to: {type: primarys, id: idea2.id}, value: 1},
+          {from: user5.username, to: {type: primarys, id: idea2.id}, value: 1},
+          {from: user6.username, to: {type: primarys, id: idea2.id}, value: 1},
+          {from: user7.username, to: {type: primarys, id: idea2.id}, value: 1},
+          {from: user8.username, to: {type: primarys, id: idea2.id}, value: 1},
+          {from: user4.username, to: {type: primarys, id: idea3.id}, value: 1},
+          {from: user5.username, to: {type: primarys, id: idea3.id}, value: 1},
+          {from: user6.username, to: {type: primarys, id: idea3.id}, value: 1},
+          {from: user7.username, to: {type: primarys, id: idea3.id}, value: 1},
+          {from: user8.username, to: {type: primarys, id: idea3.id}, value: 1},
+          {from: user8.username, to: {type: primarys, id: idea4.id}, value: 1},
+          {from: user8.username, to: {type: primarys, id: idea5.id}, value: 1},
+          {from: user4.username, to: {type: primarys, id: idea6.id}, value: 1},
+          {from: user5.username, to: {type: primarys, id: idea6.id}, value: 1}
+        ]
+      };
+      clock.restore();
+      // stub time to one week ago without two days
+      clock = sinon.useFakeTimers(now.getTime() - oneWeek + twoDays);
+      for(const i in dataOneWeekAgo.votes){
+        await models.vote.create(dataOneWeekAgo.votes[i]);
+      }
+      clock.restore();
+
+    });
+    afterEach(async () => {
+      sandbox.restore();
+      clock.restore();
+    });
+
+    context('logged in', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(user0);
+      });
+
+      context('valid data', () => {
+
+        it('[trending] 200 and return array of matched ideas', async () => {
+          // request
+          const response = await agent
+            .get('/ideas?filter[trending]')
+            .expect(200);
+          // without pagination, limit for ideas 5 we should find 5 ideas...
+          should(response.body).have.property('data').Array().length(5);
+
+          // sorted by trending rate
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([1, 2, 3, 6, 4].map(no => `idea title ${no}`));
+
+        });
+
+        it('[trending with pagination] offset and limit the results', async () => {
+          const response = await agent
+            .get('/ideas?filter[trending]&page[offset]=1&page[limit]=3')
+            .expect(200);
+
+          // we should find 3 ideas
+          should(response.body).have.property('data').Array().length(3);
+
+          // sorted by trending rate
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql([2, 3, 6].map(no => `idea title ${no}`));
+        });
+
+      });
+
+      context('invalid data', () => {
+
+        it('[trending invalid query.filter.highlyRated] 400', async () => {
+          await agent
+            .get('/ideas?filter[trending]=string&page[offset]=1&page[limit]=3')
+            .expect(400);
+        });
+
+        it('[trending invalid query.filter.highlyRated] 400', async () => {
+          await agent
+            .get('/ideas?filter[trending]=1&page[offset]=1&page[limit]=3')
+            .expect(400);
+        });
+
+        it('[unexpected query params] 400', async () => {
+          await agent
+            .get('/ideas?filter[trending]&additional[param]=3&page[offset]=1&page[limit]=3')
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged in', () => {
+      it('403', async () => {
+        await agent
+          .get('/ideas?filter[trending]')
           .expect(403);
       });
     });
