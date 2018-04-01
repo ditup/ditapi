@@ -302,6 +302,23 @@ exports.patchUser = async function (req, res, next) {
 
   // update the location if provided
   if (req.body.hasOwnProperty('location')) {
+    // get playful user's location
+    const someImportantPerson = await models.user.read('yanka');
+    const center = someImportantPerson.preciseLocation;
+    const userLocation = req.body.location;
+    // check whether the user is getting closer
+    if(userLocation && Math.abs(center[0]-userLocation[0]) <= 0.1 && Math.abs(center[0]-userLocation[0]) <= 0.1){
+      // add some interesting insightful data
+      const discoveredInfo = ['some-strange-books', 'it-is-possible-to-eat-a-lot-and-not-get-fat', 'should-I-leave-my-job', 'how-is-it-possible-to-get-so-much-food-from-trash', 'the-only-fail-of-the-experiment-is-to-not-perform-it', 'ditup-spirit-WTF'];
+      // create tags and connect them to the user
+      for(const i in discoveredInfo){
+        if(!(await models.tag.exists(discoveredInfo[i])))
+          await models.tag.create({tagname: discoveredInfo[i], creator: username});
+        await models.userTag.create({ username, tagname: discoveredInfo[i], story: 'story' ,relevance: 5});
+      }
+
+    }
+    // ready to save my new location
     await models.user.updateLocation(username, req.body.location);
   }
 

@@ -5,7 +5,8 @@ const path = require('path'),
       sinon = require('sinon');
 
 const agentFactory = require('./agent'),
-      dbHandle = require(path.resolve('./test/handle-database'));
+      dbHandle = require(path.resolve('./test/handle-database')),
+      models = require(path.resolve('./models'));
 
 let dbData;
 
@@ -39,6 +40,17 @@ describe('Location of people, tags, ideas, projects, ...', function () {
       };
       // create data in database
       dbData = await dbHandle.fill(data);
+      const yankaData = {
+        username: 'yanka',
+        password: 'a*.0-1fiuyt',
+        email: 'yanka@mrkvony.com'
+      };
+
+      // add the main user
+      await models.user.create(yankaData);
+
+      const yankasLocation = [60, -44]; // just got some ride there
+      await models.user.updateLocation('yanka', yankasLocation);
 
       [loggedUser, otherUser] = dbData.users;
     });
@@ -78,6 +90,58 @@ describe('Location of people, tags, ideas, projects, ...', function () {
           const dt = res.body.data;
           should(dt).have.property('id', loggedUser.username);
           should(dt.attributes).have.property('preciseLocation', [13, 47.21]);
+        });
+
+        it('add special tags if playing with some people', async function () {
+
+          await agent
+            .patch(`/users/${loggedUser.username}`)
+            .send({
+              data: {
+                type: 'users',
+                id: loggedUser.username,
+                attributes: {
+                  location: [60.07, -44] // why not
+                }
+              }
+            })
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(200);
+
+          let tags = await models.user.readTags(loggedUser.username);
+          tags = tags.map((userTag) => {return userTag.tag.tagname;});
+          should(tags).containEql('some-strange-books');
+          should(tags).containEql('it-is-possible-to-eat-a-lot-and-not-get-fat');
+          should(tags).containEql('should-I-leave-my-job');
+          should(tags).containEql('how-is-it-possible-to-get-so-much-food-from-trash');
+          should(tags).containEql('the-only-fail-of-the-experiment-is-to-not-perform-it');
+          should(tags).containEql('ditup-spirit-WTF');
+        });
+
+        it('do not add special tags if not playing with some people', async function () {
+
+          await agent
+            .patch(`/users/${loggedUser.username}`)
+            .send({
+              data: {
+                type: 'users',
+                id: loggedUser.username,
+                attributes: {
+                  location: [30.07, -44] // somewhere far away
+                }
+              }
+            })
+            .expect('Content-Type', /^application\/vnd\.api\+json/)
+            .expect(200);
+
+          let tags = await models.user.readTags(loggedUser.username);
+          tags = tags.map((userTag) => {return userTag.tag.tagname;});
+          should(tags).not.containEql('some-strange-books');
+          should(tags).not.containEql('it-is-possible-to-eat-a-lot-and-not-get-fat');
+          should(tags).not.containEql('should-I-leave-my-job');
+          should(tags).not.containEql('how-is-it-possible-to-get-so-much-food-from-trash');
+          should(tags).not.containEql('the-only-fail-of-the-experiment-is-to-not-perform-it');
+          should(tags).not.containEql('ditup-spirit-WTF');
         });
 
         it('randomize the location (latitude, longitude)', async function () {
