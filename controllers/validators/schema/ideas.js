@@ -195,4 +195,27 @@ const getIdeasHighlyRated = {
   required: ['query']
 };
 
-module.exports = { getIdea, getIdeasCommentedBy, getIdeasHighlyRated, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };
+const getIdeasTrending = {
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            trending: {
+              type: 'string',
+              enum: ['']
+            }
+          },
+          required: ['trending'],
+          additionalProperties: false
+        },
+        page
+      },
+      required: ['filter'],
+      additionalProperties: false
+    },
+  },
+  required: ['query']
+};
+
+module.exports = { getIdea, getIdeasCommentedBy, getIdeasHighlyRated, getIdeasTrending, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };

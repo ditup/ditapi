@@ -254,5 +254,26 @@ async function getIdeasHighlyRated(req, res, next) {
   }
 }
 
+/**
+ * Get trending ideas
+ */
+async function getIdeasTrending(req, res, next) {
+  try {
+    // gather data
+    const { page: { offset = 0, limit = 5 } = { } } = req.query;
 
-module.exports = { get, getIdeasCommentedBy, getIdeasHighlyRated, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };
+    // read ideas from database
+    const foundIdeas = await models.idea.findTrending({ offset, limit });
+
+    // serialize
+    const serializedIdeas = serialize.idea(foundIdeas);
+
+    // respond
+    return res.status(200).json(serializedIdeas);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+module.exports = { get, getIdeasCommentedBy, getIdeasHighlyRated, getIdeasTrending, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };

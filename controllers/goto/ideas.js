@@ -10,6 +10,7 @@ module.exports = {
     random: route(['query.filter.random']),
     withCreators: route(['query.filter.creators']),
     commentedBy: route(['query.filter.commentedBy']),
-    highlyRated: route(['query.filter.highlyRated'])
+    highlyRated: route(['query.filter.highlyRated']),
+    trending: route(['query.filter.trending'])
   },
 };
