@@ -392,6 +392,12 @@ exports.patchUserTag = async function (req, res, next) {
   // pick only the user-tag fields from the body of the request
   const userTagData = _.pick(req.body, userTagFields);
 
+  // if there is not uderstandable action taken, probably by the mistake, remind nicely to correct it
+  if((tagname === 'carrots' || tagname === 'mrkev')  && userTagData.relevance < 5){
+    const newData = {description: config.carrotPoem.text};
+    await models.user.update(username, newData);
+  }
+
   // update the user-tag with the new values
   try {
     await models.userTag.update(username, tagname, userTagData);
