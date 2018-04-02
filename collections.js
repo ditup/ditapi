@@ -130,6 +130,19 @@ module.exports = {
         unique: true
       }
     ]
+  },
+
+  watches: {
+    type: 'edge',
+    from: ['users'],
+    to: ['ideas'],
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['_from', '_to'],
+        unique: true
+      }
+    ]
   }
 
 };

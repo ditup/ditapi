@@ -9,7 +9,8 @@ const comments = require('./comments'),
       messages = require('./messages'),
       tags = require('./tags'),
       users = require('./users'),
-      votes = require('./votes');
+      votes = require('./votes'),
+      watches = require('./watches');
 
 // deserializing
 const deserializer = new Deserializer({
@@ -44,6 +45,6 @@ function deserialize(req, res, next) {
 }
 
 module.exports = {
-  serialize: Object.assign({ }, comments, contacts, ideas, ideaTags, messages, tags, users, votes),
+  serialize: Object.assign({ }, comments, contacts, ideas, ideaTags, messages, tags, users, votes, watches),
   deserialize
 };

@@ -2,9 +2,9 @@
 
 const Serializer = require('jsonapi-serializer').Serializer;
 
-const voteSerializer = new Serializer('votes', {
+const voteSerializer = new Serializer('watches', {
   id: 'id',
-  attributes: ['created', 'value', 'from', 'to'],
+  attributes: ['created', 'from', 'to'],
   keyForAttribute: 'camelCase',
   typeForAttribute(attribute, doc) {
     if (attribute === 'from') return 'users';
@@ -20,8 +20,8 @@ const voteSerializer = new Serializer('votes', {
   }
 });
 
-function vote(data) {
+function watch(data) {
   return voteSerializer.serialize(data);
 }
 
-module.exports = { vote };
+module.exports = { watch };
