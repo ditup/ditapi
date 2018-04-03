@@ -314,10 +314,10 @@ class Idea extends Model {
    * @returns {Promise<Idea[]>} - list of found ideas
    */
   static async findTrending({ offset, limit }) {
-    const now = + new Date();
+    const now = Date.now();
     const oneWeek = 604800000; // 1000 * 60 * 60 * 24 * 7
-    const threeWeeks = 1814400000; // 1000 * 60 * 60 * 24 * 21
-    const threeMonths = 7776000000; // 1000 * 60 * 60 * 24 * 90
+    const threeWeeks = 1209600000; // 1000 * 60 * 60 * 24 * 14
+    const threeMonths = 5961600000; // 1000 * 60 * 60 * 24 * 69
     const weekAgo = now - oneWeek;
     const threeWeeksAgo = now - threeWeeks;
     const threeMonthsAgo = now - threeMonths;
@@ -341,8 +341,10 @@ class Idea extends Model {
         LET c = (DOCUMENT(id.creator))
         LET creator = MERGE(KEEP(c, 'username'), c.profile)
         LET ideaOut = MERGE(KEEP(id, 'title', 'detail', 'created'), { id: id._key}, { creator })
+        LET rates = 3*rateWeek + 2*rateThreeWeeks + rateThreeMonths
+        FILTER rates > 0
         // sort by sum of rates
-        SORT 3*rateWeek + 2*rateThreeWeeks + rateThreeMonths DESC
+        SORT rates DESC
         LIMIT @offset, @limit
         RETURN ideaOut`;
 
