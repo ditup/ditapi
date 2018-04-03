@@ -25,7 +25,8 @@ exports.fill = async function (data) {
     ideaTags: [],
     ideaComments: [],
     reactions: [],
-    votes: []
+    votes: [],
+    cares: []
   };
 
   data = _.defaults(data, def);
@@ -136,6 +137,16 @@ exports.fill = async function (data) {
 
     // save the vote's id
     vote.id = newVote.id;
+  }
+
+  for (const care of processed.cares) {
+    const from = care.from.username;
+    const to = { type: care._to.type, id: care.to.id };
+
+    const newCare = await models.care.create({ from, to });
+
+    // save the care's id
+    care.id = newCare.id;
   }
 
   return processed;
@@ -335,6 +346,16 @@ function processData(data) {
       get from() { return output.users[this._from]; },
       get to() { return output[this._to.type][this._to.id]; },
       value
+    };
+  });
+
+  output.cares = data.cares.map(([from, to]) => {
+    const [type, id] = to;
+    return {
+      _from: from,
+      _to: { type, id },
+      get from() { return output.users[this._from]; },
+      get to() { return output[this._to.type][this._to.id]; }
     };
   });
 

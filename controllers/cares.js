@@ -2,6 +2,9 @@ const path = require('path'),
       models = require(path.resolve('./models')),
       serializers = require(path.resolve('./serializers'));
 
+/**
+ * Middleware to add a care to idea.
+ */
 async function post(req, res, next) {
   // read data from request
   const { id } = req.params;
@@ -18,7 +21,7 @@ async function post(req, res, next) {
   } catch (e) {
     // handle errors
     switch (e.code) {
-      // duplicate vote
+      // duplicate care
       case 409: {
         return res.status(409).json({
           errors: [{
@@ -43,92 +46,33 @@ async function post(req, res, next) {
   }
 }
 
-module.exports = { post };
-/*
-const path = require('path'),
-      models = require(path.resolve('./models')),
-      serializers = require(path.resolve('./serializers'));
-
 /**
- * Middleware to POST a vote to idea (and other objects in the future)
- * /
-async function post(req, res, next) {
-  console.log('&&&&&&&&&&&&&&&&&')
-
-  // read data from request
-  const { id } = req.params;
-  const { username } = req.auth;
-
-  console.log(id);
-
-  // what is the type of the object we vote for (i.e. ideas, comments, ...)
-  const primarys = req.baseUrl.substring(1);
-  const primary = primarys.slice(0, -1);
-
-  try {
-    console.log(primarys, '***');
-    // save the vote to database
-    const vote = await models.vote.create({ from: username, to: { type: primarys, id }, value: 1 });
-    // respond
-    const serializedVote = serializers.serialize.vote(vote);
-    return res.status(201).json(serializedVote);
-  } catch (e) {
-    // handle errors
-    switch (e.code) {
-      // duplicate vote
-      case 409: {
-        return res.status(409).json({
-          errors: [{
-            status: 409,
-            detail: 'duplicate vote'
-          }]
-        });
-      }
-      // missing idea
-      case 404: {
-        console.log('.....');
-        return res.status(404).json({
-          errors: [{
-            status: 404,
-            detail: `${primary} doesn't exist`
-          }]
-        });
-
-      }
-      default: {
-        return next(e);
-      }
-    }
-  }
-}
-
-/**
- * Middleware to DELETE a vote from an idea (and other objects in the future).
- * /
+ * Middleware to DELETE a care from an idea (and other objects in the future).
+ */
 async function del(req, res, next) {
 
   // read data from request
   const { id } = req.params;
   const { username } = req.auth;
 
-  // what is the type of the object we vote for (i.e. ideas, comments, ...)
+  // what is the type of the object we care for (i.e. ideas, comments, ...)
   const primarys = req.baseUrl.substring(1);
   const primary = primarys.slice(0, -1);
 
   try {
-    // remove the vote from database
-    await models.vote.remove({ from: username, to: { type: primarys, id } });
+    // remove the care from database
+    await models.care.remove({ from: username, to: { type: primarys, id } });
     // respond
     return res.status(204).end();
   } catch (e) {
     // handle errors
     switch (e.code) {
-      // primary object or vote doesn't exist
+      // primary object or care doesn't exist
       case 404: {
         return res.status(404).json({
           errors: [{
             status: 404,
-            detail: `vote or ${primary} doesn't exist`
+            detail: `care or ${primary} doesn't exist`
           }]
         });
       }
@@ -140,4 +84,3 @@ async function del(req, res, next) {
 }
 
 module.exports = { del, post };
-*/

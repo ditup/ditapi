@@ -15,7 +15,7 @@ const postCares = {
     required: ['body', 'params']
   }
 };
-/*
+
 const deleteCare = {
   properties: {
     params: {
@@ -26,6 +26,5 @@ const deleteCare = {
     required: ['params']
   }
 };
-*/
 
-module.exports = { /* deleteCare, */postCares };
+module.exports = { deleteCare, postCares };

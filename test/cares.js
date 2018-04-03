@@ -22,8 +22,8 @@ describe('Expressing interest in ideas (caring about ideas).', () => {
 
   describe('Start caring about idea `POST /ideas/:id/cares`', () => {
 
-    let idea0;
-    let requestBody;
+    let idea0,
+        requestBody;
 
     beforeEach(async () => {
       const data = {
@@ -111,8 +111,35 @@ describe('Expressing interest in ideas (caring about ideas).', () => {
   });
 
   describe('Stop caring about idea `DELETE /ideas/:id/cares/care`', () => {
+
+    let idea0;
+
+    beforeEach(async () => {
+      const data = {
+        users: 2, // how many users to make
+        verifiedUsers: [0, 1], // which  users to make verified
+        ideas: [[{}, 0], [{}, 0]],
+        cares: [
+          [0, ['ideas', 0]],
+          [0, ['ideas', 1]],
+          [1, ['ideas', 0]]
+        ]
+      };
+      // create data in database
+      dbData = await dbHandle.fill(data);
+
+      loggedUser = dbData.users[0];
+      idea0 = dbData.ideas[0];
+    });
+
     context('logged', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(loggedUser);
+      });
+
       context('valid', () => {
+
         it('[care exists] 204 and remove from database', async () => {
 
           // first care should exist
@@ -127,17 +154,33 @@ describe('Expressing interest in ideas (caring about ideas).', () => {
           should(dbCareAfter).not.ok();
         });
 
-        it('[care doesn\'t exist] 404');
-        it('[idea doesn\'t exist] 404');
+        it('[care doesn\'t exist] 404', async () => {
+          await agent.delete(`/ideas/${idea0.id}/cares/care`)
+            .expect(204);
+
+          await agent.delete(`/ideas/${idea0.id}/cares/care`)
+            .expect(404);
+        });
+
+        it('[idea doesn\'t exist] 404', async () => {
+          await agent.delete('/ideas/0000000/cares/care')
+            .expect(404);
+        });
       });
-      
+
       context('invalid', () => {
-        it('[invalid idea id] 400');
+        it('[invalid idea id] 400', async () => {
+          await agent.delete('/ideas/invalid/cares/care')
+            .expect(400);
+        });
       });
     });
 
     context('not logged', () => {
-      it('403');
+      it('403', async () => {
+        await agent.delete(`/ideas/${idea0.id}/cares/care`)
+          .expect(403);
+      });
     });
   });
 
