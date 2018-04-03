@@ -2,7 +2,7 @@
 
 const Serializer = require('jsonapi-serializer').Serializer;
 
-const voteSerializer = new Serializer('watches', {
+const voteSerializer = new Serializer('cares', {
   id: 'id',
   attributes: ['created', 'from', 'to'],
   keyForAttribute: 'camelCase',
@@ -20,8 +20,8 @@ const voteSerializer = new Serializer('watches', {
   }
 });
 
-function watch(data) {
+function care(data) {
   return voteSerializer.serialize(data);
 }
 
-module.exports = { watch };
+module.exports = { care };

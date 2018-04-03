@@ -2,15 +2,15 @@
 
 const Deserializer = require('jsonapi-serializer').Deserializer;
 
-const comments = require('./comments'),
+const cares = require('./cares'),
+      comments = require('./comments'),
       contacts = require('./contacts'),
       ideas = require('./ideas'),
       ideaTags = require('./idea-tags'),
       messages = require('./messages'),
       tags = require('./tags'),
       users = require('./users'),
-      votes = require('./votes'),
-      watches = require('./watches');
+      votes = require('./votes');
 
 // deserializing
 const deserializer = new Deserializer({
@@ -45,6 +45,6 @@ function deserialize(req, res, next) {
 }
 
 module.exports = {
-  serialize: Object.assign({ }, comments, contacts, ideas, ideaTags, messages, tags, users, votes, watches),
+  serialize: Object.assign({ }, cares, comments, contacts, ideas, ideaTags, messages, tags, users, votes),
   deserialize
 };

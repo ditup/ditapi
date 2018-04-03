@@ -8,14 +8,38 @@ async function post(req, res, next) {
   const { username } = req.auth;
 
   const primarys = req.baseUrl.substring(1);
+  const primary = primarys.slice(0, -1);
 
   try {
-    const watch = await models.watch.create({ from: username, to: { type: primarys, id } });
+    const care = await models.care.create({ from: username, to: { type: primarys, id } });
 
-    const serializedWatch = serializers.serialize.watch(watch);
-    return res.status(201).json(serializedWatch);
+    const serializedCare = serializers.serialize.care(care);
+    return res.status(201).json(serializedCare);
   } catch (e) {
-    return next(e);
+    // handle errors
+    switch (e.code) {
+      // duplicate vote
+      case 409: {
+        return res.status(409).json({
+          errors: [{
+            status: 409,
+            detail: 'duplicate care'
+          }]
+        });
+      }
+      // missing idea
+      case 404: {
+        return res.status(404).json({
+          errors: [{
+            status: 404,
+            detail: `${primary} doesn't exist`
+          }]
+        });
+      }
+      default: {
+        return next(e);
+      }
+    }
   }
 }
 

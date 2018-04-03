@@ -132,7 +132,7 @@ module.exports = {
     ]
   },
 
-  watches: {
+  cares: {
     type: 'edge',
     from: ['users'],
     to: ['ideas'],
