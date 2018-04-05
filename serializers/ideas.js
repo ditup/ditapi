@@ -57,9 +57,11 @@ const ideaSerializer = new Serializer('ideas', {
     myVote(record, current) {
       if (!current.hasOwnProperty('myVote')) return;
       return (current.myVote) ? current.myVote.value : 0;
+    },
+    voteSum(record, current) {
+      return current.voteSum;
     }
   }
-
 });
 
 function idea(data) {

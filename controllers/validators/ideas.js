@@ -5,6 +5,7 @@ const validate = require('./validate-by-schema');
 module.exports = {
   get: validate('getIdea'),
   getIdeasCommentedBy: validate('getIdeasCommentedBy'),
+  getIdeasHighlyVoted: validate('getIdeasHighlyVoted'),
   getIdeasWithCreators: validate('getIdeasWithCreators'),
   getIdeasWithMyTags: validate('getIdeasWithMyTags'),
   getIdeasWithTags: validate('getIdeasWithTags'),

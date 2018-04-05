@@ -274,6 +274,37 @@ class Idea extends Model {
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
+
+
+  /**
+   * Read ideas commented by specified users
+   * @param {string[]} voteSumBottomLimit - minimal query voteSum
+   * @param {integer} offset - pagination offset
+   * @param {integer} limit - pagination limit
+   * @returns {Promise<Idea[]>} - list of found ideas
+   */
+  static async findHighlyVoted(voteSumBottomLimit, { offset, limit }) {
+    const query = `
+      FOR idea IN ideas
+        LET ideaVotes = (FOR vote IN votes FILTER idea._id == vote._to RETURN vote)
+        // get sum of each idea's votes values
+        LET voteSum = SUM(ideaVotes[*].value)
+        // set bottom limit of voteSum
+        FILTER voteSum >= @voteSumBottomLimit
+        // find creator
+        LET c = (DOCUMENT(idea.creator))
+        LET creator = MERGE(KEEP(c, 'username'), c.profile)
+        LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator }, { voteSum })
+
+        // sort by amount of votes
+        SORT ideaOut.voteSum DESC,  ideaOut.created DESC
+        LIMIT @offset, @limit
+        RETURN ideaOut`;
+
+    const params = { voteSumBottomLimit, offset, limit };
+    const cursor = await this.db.query(query, params);
+    return await cursor.all();
+  }
 }
 
 module.exports = Idea;

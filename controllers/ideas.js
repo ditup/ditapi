@@ -231,5 +231,28 @@ async function getIdeasCommentedBy(req, res, next) {
   }
 }
 
+/**
+ * Get highly voted ideas with an optional parameter of minimum votes
+ */
+async function getIdeasHighlyVoted(req, res, next) {
+  try {
+    // gather data
+    const { page: { offset = 0, limit = 5 } = { } } = req.query;
+    const { highlyVoted } = req.query.filter;
 
-module.exports = { get, getIdeasCommentedBy, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };
+    // read ideas from database
+    const foundIdeas = await models.idea.findHighlyVoted(highlyVoted, { offset, limit });
+
+    // serialize
+    const serializedIdeas = serialize.idea(foundIdeas);
+
+    // respond
+    return res.status(200).json(serializedIdeas);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+
+module.exports = { get, getIdeasCommentedBy, getIdeasHighlyVoted, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };
