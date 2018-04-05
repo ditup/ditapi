@@ -834,8 +834,8 @@ describe('read lists of ideas', () => {
         idea4,
         idea5,
         idea6;
-    const now = new Date();
-    let sandbox, clock;
+    const now = Date.now();
+    let sandbox;
     const threeMonths = 7776000000;
     const threeWeeks = 1814400000;
     const oneWeek = 604800000;
@@ -872,7 +872,7 @@ describe('read lists of ideas', () => {
         ]
       };
       // post initial data and oldest votes with date three monts ago without two days
-      clock = sinon.useFakeTimers(now.getTime() - threeMonths + twoDays);
+      sandbox.useFakeTimers(now - threeMonths + twoDays)
       dbData = await dbHandle.fill(data);
 
       [user0, user1, user2, user3, user4, user5, user6, user7, user8 ] = dbData.users;
@@ -894,9 +894,9 @@ describe('read lists of ideas', () => {
           {from: user3.username, to: {type: primarys, id: idea6.id}, value: 1}
         ]
       };
-      clock.restore();
       // stub time to three weeks ago without two days
-      clock = sinon.useFakeTimers(now.getTime() - threeWeeks + twoDays);
+      sandbox.clock.restore();
+      sandbox.useFakeTimers(now - threeWeeks + twoDays)
       // add data to database hree weeks ago without two days
       for(const i in dataThreeWeeksAgo.votes){
         await models.vote.create(dataThreeWeeksAgo.votes[i]);
@@ -927,18 +927,16 @@ describe('read lists of ideas', () => {
           {from: user5.username, to: {type: primarys, id: idea6.id}, value: 1}
         ]
       };
-      clock.restore();
       // stub time to one week ago without two days
-      clock = sinon.useFakeTimers(now.getTime() - oneWeek + twoDays);
+      sandbox.clock.restore();
+      sandbox.useFakeTimers( now - oneWeek + twoDays)
       for(const i in dataOneWeekAgo.votes){
         await models.vote.create(dataOneWeekAgo.votes[i]);
       }
-      clock.restore();
-
+      sandbox.clock.restore();
     });
     afterEach(async () => {
       sandbox.restore();
-      clock.restore();
     });
 
     context('logged in', () => {

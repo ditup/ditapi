@@ -319,8 +319,8 @@ class Idea extends Model {
   static async findTrending({ offset, limit }) {
     const now = Date.now();
     const oneWeek = 604800000; // 1000 * 60 * 60 * 24 * 7
-    const threeWeeks = 1209600000; // 1000 * 60 * 60 * 24 * 14
-    const threeMonths = 5961600000; // 1000 * 60 * 60 * 24 * 69
+    const threeWeeks = 1814400000; // 1000 * 60 * 60 * 24 * 21
+    const threeMonths = 7776000000; // 1000 * 60 * 60 * 24 * 90
     const weekAgo = now - oneWeek;
     const threeWeeksAgo = now - threeWeeks;
     const threeMonthsAgo = now - threeMonths;
@@ -338,8 +338,8 @@ class Idea extends Model {
         COLLECT id = idea
         // get sum of each idea's votes values from last week, last three weeks and last three months
         AGGREGATE rateWeek = SUM((vote.value * TO_NUMBER( @weekAgo <= vote.created))/7),
-                rateThreeWeeks  = SUM((vote.value * TO_NUMBER( @threeWeeksAgo <= vote.created <= @weekAgo))/21),
-                rateThreeMonths = SUM((vote.value * TO_NUMBER( @threeMonthsAgo <= vote.created <= @threeWeeksAgo))/90)
+                rateThreeWeeks  = SUM((vote.value * TO_NUMBER( @threeWeeksAgo <= vote.created  && vote.created <= @weekAgo))/14),
+                rateThreeMonths = SUM((vote.value * TO_NUMBER( @threeMonthsAgo <= vote.created  && vote.created <= @threeWeeksAgo))/69)
         // find creator
         LET c = (DOCUMENT(id.creator))
         LET creator = MERGE(KEEP(c, 'username'), c.profile)
