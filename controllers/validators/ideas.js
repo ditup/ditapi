@@ -6,6 +6,7 @@ module.exports = {
   get: validate('getIdea'),
   getIdeasCommentedBy: validate('getIdeasCommentedBy'),
   getIdeasHighlyVoted: validate('getIdeasHighlyVoted'),
+  getIdeasTrending: validate('getIdeasTrending'),
   getIdeasWithCreators: validate('getIdeasWithCreators'),
   getIdeasWithMyTags: validate('getIdeasWithMyTags'),
   getIdeasWithTags: validate('getIdeasWithTags'),
