@@ -1,7 +1,6 @@
 'use strict';
 
-const { title, detail, id, page, pageOffset0, random, tagsList, usersList } = require('./paths');
-
+const { title, detail, id, keywordsList, page, pageOffset0, random, tagsList, usersList } = require('./paths');
 const postIdeas = {
   properties: {
     body: {
@@ -218,4 +217,32 @@ const getIdeasTrending = {
   required: ['query']
 };
 
-module.exports = { getIdea, getIdeasCommentedBy, getIdeasHighlyVoted, getIdeasTrending, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };
+const getIdeasSearchTitle = {
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            title: {
+              properties: {
+                like: {
+                  type: keywordsList
+                }
+              },
+              required: ['like'],
+              additionalProperties: false
+            }
+          },
+          required: ['title'],
+          additionalProperties: false
+        },
+        page
+      },
+      required: ['filter'],
+      additionalProperties: false
+    },
+  },
+  required: ['query']
+};
+
+module.exports = { getIdea, getIdeasCommentedBy, getIdeasHighlyVoted, getIdeasSearchTitle, getIdeasTrending, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };

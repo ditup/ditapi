@@ -21,6 +21,7 @@ module.exports = {
   random: { $ref: 'sch#/definitions/query/random' },
   tagsList: { $ref: 'sch#/definitions/query/tagsList' },
   usersList: { $ref: 'sch#/definitions/query/usersList' },
+  keywordsList: { $ref: 'sch#/definitions/query/keywordsList' },
   ideaId: { $ref : 'sch#/definitions/idea/ideaId' },
   title: { $ref: 'sch#/definitions/idea/titl' },
   detail: { $ref: 'sch#/definitions/idea/detail' },

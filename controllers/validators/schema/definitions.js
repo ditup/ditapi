@@ -174,6 +174,12 @@ module.exports = {
       items: username,
       maxItems: 10,
       minItems: 1
+    },
+    keywordsList: {
+      type: 'array',
+      items: 'string',
+      maxItems: 10,
+      minItems: 1
     }
   }
 };

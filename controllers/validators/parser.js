@@ -28,7 +28,10 @@ const parametersDictionary = {
     size: 'int',
     creators: 'array',
     commentedBy: 'array',
-    highlyVoted: 'int'
+    highlyVoted: 'int',
+    title: {
+      like: 'array'
+    }
   },
 };
 

@@ -352,6 +352,38 @@ class Idea extends Model {
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
+
+
+  /**
+   * Read ideas with any of specified keywords in the title
+   * @param {string[]} keywords - list of keywords to search with
+   * @param {integer} offset - pagination offset
+   * @param {integer} limit - pagination limit
+   * @returns {Promise<Idea[]>} - list of found ideas
+   */
+  static async findWithTitleKeywords(keywords, { offset, limit }) {
+    const query = `
+          FOR idea IN ideas 
+            LET search = ( FOR keyword in @keywords
+                            RETURN TO_NUMBER(CONTAINS(idea.title, keyword)))
+            LET fit = SUM(search)
+            FILTER fit > 0
+            // find creator
+            LET c = (DOCUMENT(idea.creator))
+            // format for output
+            LET creator = MERGE(KEEP(c, 'username'), c.profile)
+            LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator }, {fit})
+            // sort from newest
+            SORT fit DESC, ideaOut.title
+            // limit
+            LIMIT @offset, @limit
+            // respond
+            RETURN ideaOut`;
+
+    const params = { 'keywords': keywords, offset, limit };
+    const cursor = await this.db.query(query, params);
+    return await cursor.all();
+  }
 }
 
 

@@ -276,4 +276,27 @@ async function getIdeasTrending(req, res, next) {
   }
 }
 
-module.exports = { get, getIdeasCommentedBy, getIdeasHighlyVoted, getIdeasTrending, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };
+/**
+ * Get ideas with any of specified keywords in title
+ */
+async function getIdeasSearchTitle(req, res, next) {
+  try {
+    // gather data
+    const { page: { offset = 0, limit = 10 } = { } } = req.query;
+    const { like: keywords } = req.query.filter.title;
+
+    // read ideas from database
+    const foundIdeas = await models.idea.findWithTitleKeywords(keywords, { offset, limit });
+    // serialize
+    const serializedIdeas = serialize.idea(foundIdeas);
+
+    // respond
+    return res.status(200).json(serializedIdeas);
+
+  } catch (e) {
+    return next(e);
+  }
+}
+
+
+module.exports = { get, getIdeasCommentedBy, getIdeasHighlyVoted, getIdeasSearchTitle, getIdeasTrending, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patch, post };
