@@ -225,9 +225,7 @@ const getIdeasSearchTitle = {
           properties: {
             title: {
               properties: {
-                like: {
-                  type: keywordsList
-                }
+                like: keywordsList
               },
               required: ['like'],
               additionalProperties: false

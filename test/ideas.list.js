@@ -1007,7 +1007,7 @@ describe('read lists of ideas', () => {
     });
   });
 
-  describe.only('GET /ideas?filter[title][like]=string1,string2,string3', () => {
+  describe('GET /ideas?filter[title][like]=string1,string2,string3', () => {
     let user0;
     // create and save testing data
     beforeEach(async () => {
