@@ -7,7 +7,7 @@ const agentFactory = require('./agent'),
       dbHandle = require('./handle-database'),
       models = require(path.resolve('./models'));
 
-describe('ideas', () => {
+describe.only('ideas', () => {
   let agent,
       dbData,
       loggedUser;
@@ -28,7 +28,8 @@ describe('ideas', () => {
         type: 'ideas',
         attributes: {
           title: 'A testing idea 1',
-          detail: 'This is a testing idea detail.'
+          detail: 'This is a testing idea detail.',
+          ditType: 'idea'
         }
       } };
     });
@@ -69,8 +70,7 @@ describe('ideas', () => {
               type: 'ideas',
               attributes: {
                 title: 'A testing idea 1',
-                detail: 'This is a testing idea detail.',
-                ditType: 'idea'
+                detail: 'This is a testing idea detail.'
               }
             }
           });
