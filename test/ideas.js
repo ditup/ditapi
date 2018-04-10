@@ -69,7 +69,8 @@ describe('ideas', () => {
               type: 'ideas',
               attributes: {
                 title: 'A testing idea 1',
-                detail: 'This is a testing idea detail.'
+                detail: 'This is a testing idea detail.',
+                ditType: 'idea'
               }
             }
           });
