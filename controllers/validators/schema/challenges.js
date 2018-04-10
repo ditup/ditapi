@@ -1,8 +1,8 @@
 'use strict';
 
-const { title, detail, ditType, id, keywordsList, page, pageOffset0, random, tagsList, usersList } = require('./paths');
+const { title, detail, ditType, id, page, pageOffset0, random, tagsList, usersList } = require('./paths');
 
-const postIdeas = {
+const postChallenges = {
   properties: {
     body: {
       properties: {
@@ -17,7 +17,7 @@ const postIdeas = {
   required: ['body']
 };
 
-const getIdea = {
+const getChallenge = {
   properties: {
     params: {
       properties: { id },
@@ -28,7 +28,7 @@ const getIdea = {
   required: ['params']
 };
 
-const patchIdea = {
+const patchChallenge = {
   properties: {
     params: {
       properties: { id },
@@ -58,7 +58,7 @@ const patchIdea = {
   required: ['body', 'params']
 };
 
-const getIdeasWithMyTags = {
+const getChallengesWithMyTags = {
   properties: {
     query: {
       properties: {
@@ -80,7 +80,7 @@ const getIdeasWithMyTags = {
   required: ['query']
 };
 
-const getIdeasWithTags = {
+const getChallengesWithTags = {
   properties: {
     query: {
       properties: {
@@ -100,7 +100,7 @@ const getIdeasWithTags = {
   required: ['query']
 };
 
-const getNewIdeas = {
+const getNewChallenges = {
   properties: {
     query: {
       properties: {
@@ -116,7 +116,7 @@ const getNewIdeas = {
   required: ['query']
 };
 
-const getRandomIdeas = {
+const getRandomChallenges = {
   properties: {
     query: {
       properties: {
@@ -134,7 +134,7 @@ const getRandomIdeas = {
   required: ['query']
 };
 
-const getIdeasWithCreators = {
+const getChallengesWithCreators = {
   properties: {
     query: {
       properties: {
@@ -154,7 +154,7 @@ const getIdeasWithCreators = {
   required: ['query']
 };
 
-const getIdeasCommentedBy = {
+const getChallengesCommentedBy = {
   properties: {
     query: {
       properties: {
@@ -174,7 +174,7 @@ const getIdeasCommentedBy = {
   required: ['query']
 };
 
-const getIdeasHighlyVoted = {
+const getChallengesHighlyVoted = {
   properties: {
     query: {
       properties: {
@@ -196,7 +196,7 @@ const getIdeasHighlyVoted = {
   required: ['query']
 };
 
-const getIdeasTrending = {
+const getChallengesTrending = {
   properties: {
     query: {
       properties: {
@@ -219,30 +219,4 @@ const getIdeasTrending = {
   required: ['query']
 };
 
-const getIdeasSearchTitle = {
-  properties: {
-    query: {
-      properties: {
-        filter: {
-          properties: {
-            title: {
-              properties: {
-                like: keywordsList
-              },
-              required: ['like'],
-              additionalProperties: false
-            }
-          },
-          required: ['title'],
-          additionalProperties: false
-        },
-        page
-      },
-      required: ['filter'],
-      additionalProperties: false
-    },
-  },
-  required: ['query']
-};
-
-module.exports = { getIdea, getIdeasCommentedBy, getIdeasHighlyVoted, getIdeasSearchTitle, getIdeasTrending, getIdeasWithCreators, getIdeasWithMyTags, getIdeasWithTags, getNewIdeas, getRandomIdeas, patchIdea, postIdeas };
+module.exports = { getChallenge, getChallengesCommentedBy, getChallengesHighlyVoted, getChallengesTrending, getChallengesWithCreators, getChallengesWithMyTags, getChallengesWithTags, getNewChallenges, getRandomChallenges, patchChallenge, postChallenges };

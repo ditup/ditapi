@@ -8,7 +8,6 @@
 // Authorize only logged user
 function onlyLogged(req, res, next) {
   if (req.auth.logged === true) return next();
-
   return res.status(403).json({ errors: ['Not Authorized'] });
   // TODO improve the error
 }

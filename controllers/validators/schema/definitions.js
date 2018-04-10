@@ -118,6 +118,12 @@ module.exports = {
       maxLength: 2048
     }
   },
+  dit: {
+    ditType: {
+      type: 'string',
+      enum: ['idea', 'challenge']
+    }
+  },
   message: {
     body: {
       type: 'string',

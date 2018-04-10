@@ -78,6 +78,10 @@ module.exports = {
     type: 'document'
   },
 
+  challenges: {
+    type: 'document'
+  },
+
   ideaTags: {
     type: 'edge',
     from: ['ideas'],

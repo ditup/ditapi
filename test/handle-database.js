@@ -24,6 +24,7 @@ exports.fill = async function (data) {
     ideas: [],
     ideaTags: [],
     ideaComments: [],
+    challenges: [],
     reactions: [],
     votes: []
   };
@@ -113,6 +114,20 @@ exports.fill = async function (data) {
 
     // save the comment's id
     ideaComment.id = newComment.id;
+  }
+
+  for(const challenge of processed.challenges) {
+    const creator = challenge.creator.username;
+    const title = challenge.title;
+    const detail = challenge.detail;
+    const created = challenge.created;
+    const outChallenge = await models.dit.create( 'challenge', { title, detail, created, creator });
+    if (!outChallenge) {
+      const e = new Error('challenge could not be saved');
+      e.data = challenge;
+      throw e;
+    }
+    challenge.id = outChallenge.id;
   }
 
   for(const reaction of processed.reactions) {
@@ -306,6 +321,23 @@ function processData(data) {
       content,
       created
     };
+
+    return resp;
+  });
+
+  output.challenges = data.challenges.map(function ([attrs = { }, _creator = 0], i) {
+    const { title = `challenge title ${i}`, detail = `challenge detail ${i}`, created = Date.now() + 1000 * i } = attrs;
+    const resp = {
+      _creator,
+      get creator() {
+        return output.users[_creator];
+      },
+      title,
+      detail,
+      created
+    };
+
+    resp.creator._ideas.push(i);
 
     return resp;
   });
