@@ -1087,6 +1087,13 @@ describe('read lists of ideas', () => {
             .eql(['idea-title6-keyword1', 'idea-title7-keyword1-keyword4']);
         });
 
+        it('should be fine to provide a keyword which includes empty spaces and/or special characters', async () => {
+          // request
+          await agent
+            .get('/ideas?filter[title][like]=keyword , aa,1-i')
+            .expect(200);
+        });
+
       });
 
       context('invalid data', () => {
@@ -1094,6 +1101,24 @@ describe('read lists of ideas', () => {
         it('[too many keywords] 400', async () => {
           await agent
             .get('/ideas?filter[title][like]=keyword1,keyword2,keyword3,keyword4,keyword5,keyword6,keyword7,keyword8,keyword9,keyword10,keyword11')
+            .expect(400);
+        });
+
+        it('[empty keywords] 400', async () => {
+          await agent
+            .get('/ideas?filter[title][like]=keyword1,')
+            .expect(400);
+        });
+
+        it('[too long keywords] 400', async () => {
+          await agent
+            .get(`/ideas?filter[title][like]=keyword1,${'a'.repeat(257)}`)
+            .expect(400);
+        });
+
+        it('[keywords spaces only] 400', async () => {
+          await agent
+            .get('/ideas?filter[title][like]=  ,keyword2')
             .expect(400);
         });
 
