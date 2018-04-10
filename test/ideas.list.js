@@ -1006,4 +1006,143 @@ describe('read lists of ideas', () => {
       });
     });
   });
+
+  describe('GET /ideas?filter[title][like]=string1,string2,string3', () => {
+    let user0;
+    // create and save testing data
+    beforeEach(async () => {
+      const data = {
+        users: 2,
+        verifiedUsers: [0],
+        ideas: [ [{title:'idea-title1'}, 0], [{title:'idea-title2-keyword1'}, 0], [{title:'idea-title3-keyword2'}, 0], [{title:'idea-title4-keyword3'}, 0], [{title:'idea-title5-keyword2-keyword3'}, 0], [{title:'idea-title6-keyword1'}, 0], [{title:'idea-title7-keyword1-keyword4'}, 0] ]
+      };
+
+      dbData = await dbHandle.fill(data);
+
+      [user0, ] = dbData.users;
+    });
+
+    context('logged in', () => {
+
+      beforeEach(() => {
+        agent = agentFactory.logged(user0);
+      });
+
+      context('valid data', () => {
+
+        it('[find ideas with one word] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?filter[title][like]=keyword1')
+            .expect(200);
+
+          // we should find 2 ideas...
+          should(response.body).have.property('data').Array().length(3);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql(['idea-title2-keyword1','idea-title6-keyword1', 'idea-title7-keyword1-keyword4']);
+
+        });
+
+
+        it('[find ideas with two words] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?filter[title][like]=keyword2,keyword3')
+            .expect(200);
+
+          // we should find 4 ideas...
+          should(response.body).have.property('data').Array().length(3);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql(['idea-title5-keyword2-keyword3', 'idea-title3-keyword2', 'idea-title4-keyword3']);
+        });
+
+        it('[find ideas with word not present in any] 200 and return array of matched ideas', async () => {
+
+          // request
+          const response = await agent
+            .get('/ideas?filter[title][like]=keyword10')
+            .expect(200);
+
+          // we should find 0 ideas...
+          should(response.body).have.property('data').Array().length(0);
+
+        });
+
+        it('[pagination] offset and limit the results', async () => {
+          const response = await agent
+            .get('/ideas?filter[title][like]=keyword1&page[offset]=1&page[limit]=2')
+            .expect(200);
+
+          // we should find 3 ideas
+          should(response.body).have.property('data').Array().length(2);
+
+          // sorted by creation date desc
+          should(response.body.data.map(idea => idea.attributes.title))
+            .eql(['idea-title6-keyword1', 'idea-title7-keyword1-keyword4']);
+        });
+
+        it('should be fine to provide a keyword which includes empty spaces and/or special characters', async () => {
+          // request
+          await agent
+            .get('/ideas?filter[title][like]=keyword , aa,1-i')
+            .expect(200);
+        });
+
+      });
+
+      context('invalid data', () => {
+
+        it('[too many keywords] 400', async () => {
+          await agent
+            .get('/ideas?filter[title][like]=keyword1,keyword2,keyword3,keyword4,keyword5,keyword6,keyword7,keyword8,keyword9,keyword10,keyword11')
+            .expect(400);
+        });
+
+        it('[empty keywords] 400', async () => {
+          await agent
+            .get('/ideas?filter[title][like]=keyword1,')
+            .expect(400);
+        });
+
+        it('[too long keywords] 400', async () => {
+          await agent
+            .get(`/ideas?filter[title][like]=keyword1,${'a'.repeat(257)}`)
+            .expect(400);
+        });
+
+        it('[keywords spaces only] 400', async () => {
+          await agent
+            .get('/ideas?filter[title][like]=  ,keyword2')
+            .expect(400);
+        });
+
+        it('[invalid pagination] 400', async () => {
+          await agent
+            .get('/ideas?filter[title][like]=keyword1&page[offset]=1&page[limit]=21')
+            .expect(400);
+        });
+
+        it('[unexpected query params] 400', async () => {
+          await agent
+            .get('/ideas?filter[title][like]=keyword1&additional[param]=3&page[offset]=1&page[limit]=3')
+            .expect(400);
+        });
+      });
+    });
+
+    context('not logged in', () => {
+      it('403', async () => {
+        await agent
+          .get('/ideas?filter[title][like]=keyword1')
+          .expect(403);
+      });
+    });
+  });
+
 });

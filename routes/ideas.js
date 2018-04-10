@@ -48,6 +48,11 @@ router.route('/')
 router.route('/')
   .get(go.get.trending, authorize.onlyLogged, parse, ideaValidators.getIdeasTrending, ideaControllers.getIdeasTrending);
 
+// get ideas with keywords
+router.route('/')
+  .get(go.get.searchTitle, authorize.onlyLogged, parse, ideaValidators.getIdeasSearchTitle, ideaControllers.getIdeasSearchTitle);
+
+
 router.route('/:id')
   // read idea by id
   .get(authorize.onlyLogged, ideaValidators.get, ideaControllers.get)
