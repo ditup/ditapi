@@ -75,6 +75,9 @@ app.use('/ideas', require('./routes/ideas'));
 app.use('/ideas', require('./routes/votes'));
 app.use('/comments', require('./routes/votes'));
 
+// care about ideas
+app.use('/ideas', require('./routes/cares'));
+
 // following are route factories
 // they need to know what is the primary object (i.e. idea, comment, etc.)
 app.use('/ideas', require('./routes/primary-comments')('idea'));

@@ -4,7 +4,7 @@ const Serializer = require('jsonapi-serializer').Serializer;
 
 const voteSerializer = new Serializer('votes', {
   id: 'id',
-  attributes: ['title', 'detail', 'created', 'value', 'from', 'to'],
+  attributes: ['created', 'value', 'from', 'to'],
   keyForAttribute: 'camelCase',
   typeForAttribute(attribute, doc) {
     if (attribute === 'from') return 'users';
