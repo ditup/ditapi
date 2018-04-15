@@ -12,14 +12,14 @@ const agentFactory = require('./agent'),
   Those are: ideas, challenges
  */
 
-testDitsCommonFunctionalities('idea');
-testDitsCommonFunctionalities('challenge');
+testDits('idea');
+testDits('challenge');
 
 /*
   Function takes type of a dit as an argument
   and runs all of the test
 */
-function testDitsCommonFunctionalities(dit){
+function testDits(dit){
   describe('dits', () => {
     let agent,
         dbData,

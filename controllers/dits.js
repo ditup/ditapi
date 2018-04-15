@@ -12,10 +12,10 @@ async function post(req, res, next) {
     // gather data
     const { title, detail, ditType } = req.body;
     const creator = req.auth.username;
-    // save the idea to database
+    // save the dit to database
     const newDit = await models.dit.create(ditType, { title, detail, creator });
 
-    // serialize the idea (JSON API)
+    // serialize the dit (JSON API)
     let serializedDit;
     switch(ditType){
       case 'idea': {
@@ -36,7 +36,7 @@ async function post(req, res, next) {
 }
 
 /**
- * Read idea by id
+ * Read dit by id
  */
 async function get(req, res, next) {
   try {
@@ -45,7 +45,7 @@ async function get(req, res, next) {
     const { username } = req.auth;
     const ditType = req.baseUrl.slice(1,-1);
 
-    // read the idea from database
+    // read the dit from database
     const dit = await models.dit.read(ditType, id);
 
     if (!dit) return res.status(404).json({ });
@@ -54,7 +54,7 @@ async function get(req, res, next) {
     dit.votes = await models.vote.readVotesTo({ type: ditType+'s', id });
     dit.myVote = await models.vote.read({ from: username, to: { type: ditType+'s', id } });
 
-    // serialize the idea (JSON API)
+    // serialize the dit (JSON API)
     let serializedDit;
     switch(ditType){
       case 'idea': {
@@ -76,8 +76,8 @@ async function get(req, res, next) {
 }
 
 /**
- * Update idea's title or detail
- * PATCH /ideas/:id
+ * Update dit's title or detail
+ * PATCH /dits/:id
  */
 async function patch(req, res, next) {
   let ditType;
@@ -88,10 +88,10 @@ async function patch(req, res, next) {
     ditType = req.baseUrl.slice(1,-1);
     const { username } = req.auth;
 
-    // update idea in database
+    // update dit in database
     const dit = await models.dit.update(ditType, id, { title, detail }, username);
 
-    // serialize the idea (JSON API)
+    // serialize the dit (JSON API)
     let serializedDit;
     switch(ditType){
       case 'idea': {
@@ -127,22 +127,33 @@ async function patch(req, res, next) {
 }
 
 /**
- * Get ideas with my tags
+ * Get dits with my tags
  */
 async function getDitsWithMyTags(req, res, next) {
+  let ditType;
   try {
     // gather data
     const { username } = req.auth;
     const { page: { offset = 0, limit = 10 } = { } } = req.query;
+    ditType = req.baseUrl.slice(1,-1);
 
-    // read the ideas from database
-    const foundIdeas = await models.idea.withMyTags(username, { offset, limit });
+    // read the dits from database
+    const foundDits = await models.dit.withMyTags(ditType, username, { offset, limit });
 
-    // serialize
-    const serializedIdeas = serialize.idea(foundIdeas);
-
+    // serialize the dit (JSON API)
+    let serializedDits;
+    switch(ditType){
+      case 'idea': {
+        serializedDits = serialize.idea(foundDits);
+        break;
+      }
+      case 'challenge': {
+        serializedDits = serialize.challenge(foundDits);
+        break;
+      }
+    }
     // respond
-    return res.status(200).json(serializedIdeas);
+    return res.status(200).json(serializedDits);
 
   } catch (e) {
     return next(e);
@@ -150,44 +161,66 @@ async function getDitsWithMyTags(req, res, next) {
 }
 
 /**
- * Get ideas with specified tags
+ * Get dits with specified tags
  */
 async function getDitsWithTags(req, res, next) {
+  let ditType;
   try {
 
     // gather data
     const { page: { offset = 0, limit = 10 } = { } } = req.query;
     const { withTags: tagnames } = req.query.filter;
+    ditType = req.baseUrl.slice(1,-1);
 
-    // read the ideas from database
-    const foundIdeas = await models.idea.withTags(tagnames, { offset, limit });
 
-    // serialize
-    const serializedIdeas = serialize.idea(foundIdeas);
+    // read the dits from database
+    const foundDits = await models.dit.withTags(ditType, tagnames, { offset, limit });
 
+    // serialize the dit (JSON API)
+    let serializedDits;
+    switch(ditType){
+      case 'idea': {
+        serializedDits = serialize.idea(foundDits);
+        break;
+      }
+      case 'challenge': {
+        serializedDits = serialize.challenge(foundDits);
+        break;
+      }
+    }
     // respond
-    return res.status(200).json(serializedIdeas);
-
+    return res.status(200).json(serializedDits);
   } catch (e) {
     return next(e);
   }
 }
 
 /**
- * Get new ideas
+ * Get new dits
  */
 async function getNewDits(req, res, next) {
+  let ditType;
   try {
     const { page: { offset = 0, limit = 5 } = { } } = req.query;
+    ditType = req.baseUrl.slice(1,-1);
 
-    // read ideas from database
-    const foundIdeas = await models.idea.findNew({ offset, limit });
+    // read dits from database
+    const foundDits = await models.dit.findNew(ditType, { offset, limit });
 
-    // serialize
-    const serializedIdeas = serialize.idea(foundIdeas);
-
+    // serialize the dit (JSON API)
+    let serializedDits;
+    switch(ditType){
+      case 'idea': {
+        serializedDits = serialize.idea(foundDits);
+        break;
+      }
+      case 'challenge': {
+        serializedDits = serialize.challenge(foundDits);
+        break;
+      }
+    }
     // respond
-    return res.status(200).json(serializedIdeas);
+    return res.status(200).json(serializedDits);
 
   } catch (e) {
     return next(e);
@@ -195,115 +228,199 @@ async function getNewDits(req, res, next) {
 }
 
 /**
- * Get random ideas
+ * Get random dits
  */
 async function getRandomDits(req, res, next) {
+  let ditType;
   try {
     const { page: { limit = 1 } = { } } = req.query;
+    ditType = req.baseUrl.slice(1,-1);
 
-    // read ideas from database
-    const foundIdeas = await models.idea.random({ limit });
+    // read dits from database
+    const foundDits = await models.dit.random(ditType, { limit });
 
-    // serialize
-    const serializedIdeas = serialize.idea(foundIdeas);
-
+    // serialize the dit (JSON API)
+    let serializedDits;
+    switch(ditType){
+      case 'idea': {
+        serializedDits = serialize.idea(foundDits);
+        break;
+      }
+      case 'challenge': {
+        serializedDits = serialize.challenge(foundDits);
+        break;
+      }
+    }
     // respond
-    return res.status(200).json(serializedIdeas);
-
+    return res.status(200).json(serializedDits);
   } catch (e) {
     return next(e);
   }
 }
 
 /**
- * Get ideas with specified creators
+ * Get dits with specified creators
  */
 async function getDitsWithCreators(req, res, next) {
+  let ditType;
   try {
     // gather data
     const { page: { offset = 0, limit = 10 } = { } } = req.query;
     const { creators } = req.query.filter;
+    ditType = req.baseUrl.slice(1,-1);
 
-    // read ideas from database
-    const foundIdeas = await models.idea.findWithCreators(creators, { offset, limit });
+    // read dits from database
+    const foundDits = await models.dit.findWithCreators(ditType, creators, { offset, limit });
 
-    // serialize
-    const serializedIdeas = serialize.idea(foundIdeas);
-
+    // serialize the dit (JSON API)
+    let serializedDits;
+    switch(ditType){
+      case 'idea': {
+        serializedDits = serialize.idea(foundDits);
+        break;
+      }
+      case 'challenge': {
+        serializedDits = serialize.challenge(foundDits);
+        break;
+      }
+    }
     // respond
-    return res.status(200).json(serializedIdeas);
-
+    return res.status(200).json(serializedDits);
   } catch (e) {
     return next(e);
   }
 }
 
 /**
- * Get ideas commented by specified users
+ * Get dits commented by specified users
  */
 async function getDitsCommentedBy(req, res, next) {
+  let ditType;
   try {
     // gather data
     const { page: { offset = 0, limit = 10 } = { } } = req.query;
     const { commentedBy } = req.query.filter;
+    ditType = req.baseUrl.slice(1,-1);
 
-    // read ideas from database
-    const foundIdeas = await models.idea.findCommentedBy(commentedBy, { offset, limit });
+    // read dits from database
+    const foundDits = await models.dit.findCommentedBy(ditType, commentedBy, { offset, limit });
 
-    // serialize
-    const serializedIdeas = serialize.idea(foundIdeas);
-
+    // serialize the dit (JSON API)
+    let serializedDits;
+    switch(ditType){
+      case 'idea': {
+        serializedDits = serialize.idea(foundDits);
+        break;
+      }
+      case 'challenge': {
+        serializedDits = serialize.challenge(foundDits);
+        break;
+      }
+    }
     // respond
-    return res.status(200).json(serializedIdeas);
-
+    return res.status(200).json(serializedDits);
   } catch (e) {
     return next(e);
   }
 }
 
 /**
- * Get highly voted ideas with an optional parameter of minimum votes
+ * Get highly voted dits with an optional parameter of minimum votes
  */
 async function getDitsHighlyVoted(req, res, next) {
+  let ditType;
   try {
     // gather data
     const { page: { offset = 0, limit = 5 } = { } } = req.query;
     const { highlyVoted } = req.query.filter;
+    ditType = req.baseUrl.slice(1,-1);
 
-    // read ideas from database
-    const foundIdeas = await models.idea.findHighlyVoted(highlyVoted, { offset, limit });
+    // read dits from database
+    const foundDits = await models.dit.findHighlyVoted(ditType, highlyVoted, { offset, limit });
 
-    // serialize
-    const serializedIdeas = serialize.idea(foundIdeas);
-
+    // serialize the dit (JSON API)
+    let serializedDits;
+    switch(ditType){
+      case 'idea': {
+        serializedDits = serialize.idea(foundDits);
+        break;
+      }
+      case 'challenge': {
+        serializedDits = serialize.challenge(foundDits);
+        break;
+      }
+    }
     // respond
-    return res.status(200).json(serializedIdeas);
-
+    return res.status(200).json(serializedDits);
   } catch (e) {
     return next(e);
   }
 }
 
 /**
- * Get trending ideas
+ * Get trending dits
  */
 async function getDitsTrending(req, res, next) {
+  let ditType;
   try {
     // gather data
     const { page: { offset = 0, limit = 5 } = { } } = req.query;
+    ditType = req.baseUrl.slice(1,-1);
+
+    // read dits from database
+    const foundDits = await models.dit.findTrending(ditType, { offset, limit });
+
+    // serialize the dit (JSON API)
+    let serializedDits;
+    switch(ditType){
+      case 'idea': {
+        serializedDits = serialize.idea(foundDits);
+        break;
+      }
+      case 'challenge': {
+        serializedDits = serialize.challenge(foundDits);
+        break;
+      }
+    }
+    // respond
+    return res.status(200).json(serializedDits);
+  } catch (e) {
+    return next(e);
+  }
+}
+
+/**
+ * Get dits with any of specified keywords in title
+ */
+async function getDitsSearchTitle(req, res, next) {
+  let ditType;
+  try {
+    // gather data
+    const { page: { offset = 0, limit = 10 } = { } } = req.query;
+    const { like: keywords } = req.query.filter.title;
+    ditType = req.baseUrl.slice(1,-1);
 
     // read ideas from database
-    const foundIdeas = await models.idea.findTrending({ offset, limit });
+    const foundDits = await models.dit.findWithTitleKeywords(ditType, keywords, { offset, limit });
 
-    // serialize
-    const serializedIdeas = serialize.idea(foundIdeas);
-
+    // serialize the dit (JSON API)
+    let serializedDits;
+    switch(ditType){
+      case 'idea': {
+        serializedDits = serialize.idea(foundDits);
+        break;
+      }
+      case 'challenge': {
+        serializedDits = serialize.challenge(foundDits);
+        break;
+      }
+    }
     // respond
-    return res.status(200).json(serializedIdeas);
+    return res.status(200).json(serializedDits);
 
   } catch (e) {
     return next(e);
   }
 }
 
-module.exports = { get, getDitsCommentedBy, getDitsHighlyVoted, getDitsTrending, getDitsWithCreators, getDitsWithMyTags, getDitsWithTags, getNewDits, getRandomDits, patch, post };
+module.exports = { get, getDitsCommentedBy, getDitsHighlyVoted, getDitsSearchTitle, getDitsTrending, getDitsWithCreators, getDitsWithMyTags, getDitsWithTags, getNewDits, getRandomDits, patch, post };

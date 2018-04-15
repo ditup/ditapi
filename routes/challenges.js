@@ -49,6 +49,11 @@ router.route('/')
 router.route('/')
   .get(go.get.trending, authorize.onlyLogged, parse, challengeValidators.getChallengesTrending, ditControllers.getDitsTrending);
 
+// get challenges with keywords
+router.route('/')
+  .get(go.get.searchTitle, authorize.onlyLogged, parse, challengeValidators.getChallengesSearchTitle, ditControllers.getDitsSearchTitle);
+
+
 router.route('/:id')
   // read challenge by id
   .get(authorize.onlyLogged, challengeValidators.get, ditControllers.get)

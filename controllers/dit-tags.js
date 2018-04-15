@@ -12,15 +12,29 @@ const models = require(path.resolve('./models')),
 async function post(req, res, next) {
   try {
     // gather data from request
+    const { ditType } = req.body;
     const { tagname } = req.body.tag;
     const ditId = req.params.id;
     const username = req.auth.username;
 
     // save new dit-tag to database
-    const newDitTag = await models.ditTag.create(ditId, tagname, { }, username);
+    const newDitTag = await models.ditTag.create(ditType, ditId, tagname, { }, username);
 
     // serialize response body
-    const responseBody = serialize.ditTag(newDitTag);
+    let responseBody;
+    switch(ditType){
+      case 'idea': {
+        responseBody = serialize.ideaTag(newDitTag);
+        break;
+      }
+      case 'challenge': {
+        responseBody = serialize.challengeTag(newDitTag);
+        break;
+      }
+    }
+
+    // serialize response body
+    // const responseBody = serialize.ditTag(newDitTag);
 
     // respond
     return res.status(201).json(responseBody);

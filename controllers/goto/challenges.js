@@ -11,6 +11,7 @@ module.exports = {
     withCreators: route(['query.filter.creators']),
     commentedBy: route(['query.filter.commentedBy']),
     highlyVoted: route(['query.filter.highlyVoted']),
-    trending: route(['query.filter.trending'])
+    trending: route(['query.filter.trending']),
+    searchTitle: route(['query.filter.title.like'])
   },
 };

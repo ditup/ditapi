@@ -25,6 +25,8 @@ exports.fill = async function (data) {
     ideaTags: [],
     ideaComments: [],
     challenges: [],
+    challengeTags: [],
+    challengeComments: [],
     reactions: [],
     votes: []
   };
@@ -128,6 +130,26 @@ exports.fill = async function (data) {
       throw e;
     }
     challenge.id = outChallenge.id;
+  }
+
+  for(const challengeTag of processed.challengeTags) {
+    const creator = challengeTag.creator.username;
+    const challengeId = challengeTag.challenge.id;
+    const tagname = challengeTag.tag.tagname;
+
+    await models.ditTag.create('challenge', challengeId, tagname, { }, creator);
+  }
+
+  for(const challengeComment of processed.challengeComments) {
+    const creator = challengeComment.creator.username;
+    const challengeId = challengeComment.challenge.id;
+    const { content, created } = challengeComment;
+    const primary = { type: 'challenges', id: challengeId };
+
+    const newComment = await models.comment.create({ primary, creator, content, created });
+
+    // save the comment's id
+    challengeComment.id = newComment.id;
   }
 
   for(const reaction of processed.reactions) {
@@ -338,6 +360,32 @@ function processData(data) {
     };
 
     resp.creator._ideas.push(i);
+
+    return resp;
+  });
+
+  output.challengeTags = data.challengeTags.map(function ([_challenge, _tag]) {
+    const resp = {
+      _challenge,
+      _tag,
+      get challenge() { return output.challenges[this._challenge]; },
+      get tag() { return output.tags[this._tag]; },
+      get creator() { return this.challenge.creator; }
+    };
+
+    return resp;
+  });
+
+  output.challengeComments = data.challengeComments.map(([_challenge, _creator, attrs = { }], i) => {
+    const { content = `challenge comment ${i}`, created = Date.now() + 1000 * i } = attrs;
+    const resp = {
+      _creator,
+      _challenge,
+      get creator() { return output.users[this._creator]; },
+      get challenge() { return output.challenges[this._challenge]; },
+      content,
+      created
+    };
 
     return resp;
   });

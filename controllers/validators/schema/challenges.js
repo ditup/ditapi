@@ -1,6 +1,6 @@
 'use strict';
 
-const { title, detail, ditType, id, page, pageOffset0, random, tagsList, usersList } = require('./paths');
+const { title, detail, ditType, id, keywordsList, page, pageOffset0, random, tagsList, usersList } = require('./paths');
 
 const postChallenges = {
   properties: {
@@ -219,4 +219,30 @@ const getChallengesTrending = {
   required: ['query']
 };
 
-module.exports = { getChallenge, getChallengesCommentedBy, getChallengesHighlyVoted, getChallengesTrending, getChallengesWithCreators, getChallengesWithMyTags, getChallengesWithTags, getNewChallenges, getRandomChallenges, patchChallenge, postChallenges };
+const getChallengesSearchTitle = {
+  properties: {
+    query: {
+      properties: {
+        filter: {
+          properties: {
+            title: {
+              properties: {
+                like: keywordsList
+              },
+              required: ['like'],
+              additionalProperties: false
+            }
+          },
+          required: ['title'],
+          additionalProperties: false
+        },
+        page
+      },
+      required: ['filter'],
+      additionalProperties: false
+    },
+  },
+  required: ['query']
+};
+
+module.exports = { getChallenge, getChallengesCommentedBy, getChallengesHighlyVoted, getChallengesSearchTitle, getChallengesTrending, getChallengesWithCreators, getChallengesWithMyTags, getChallengesWithTags, getNewChallenges, getRandomChallenges, patchChallenge, postChallenges };

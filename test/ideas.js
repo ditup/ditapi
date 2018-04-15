@@ -7,7 +7,7 @@ const agentFactory = require('./agent'),
       dbHandle = require('./handle-database'),
       models = require(path.resolve('./models'));
 
-describe.only('ideas', () => {
+describe('ideas', () => {
   let agent,
       dbData,
       loggedUser;

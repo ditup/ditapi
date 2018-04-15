@@ -7,6 +7,7 @@ module.exports = {
   get: validate('getChallenge'),
   getChallengesCommentedBy: validate('getChallengesCommentedBy'),
   getChallengesHighlyVoted: validate('getChallengesHighlyVoted'),
+  getChallengesSearchTitle: validate('getChallengesSearchTitle'),
   getChallengesTrending: validate('getChallengesTrending'),
   getChallengesWithCreators: validate('getChallengesWithCreators'),
   getChallengesWithMyTags: validate('getChallengesWithMyTags'),

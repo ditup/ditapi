@@ -95,6 +95,19 @@ module.exports = {
     ]
   },
 
+  challengeTags: {
+    type: 'edge',
+    from: ['challenges'],
+    to: ['tags'],
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['_from', '_to'],
+        unique: true
+      }
+    ]
+  },
+
   comments: {
     type: 'document',
     indexes: [

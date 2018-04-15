@@ -4,13 +4,13 @@ const _ = require('lodash'),
 const Model = require(path.resolve('./models/model')),
       schema = require('./schema');
 
-class Idea extends Model {
+class Dit extends Model {
 
   /**
-   * Create an idea
+   * Create an dit
    */
   static async create(ditType, { title, detail, created, creator }) {
-    // create the idea
+    // create the dit
     const dit = schema({ title, detail, created });
     const ditCollection = ditType + 's';
     const query = `
@@ -31,7 +31,7 @@ class Idea extends Model {
   }
 
   /**
-   * Read the idea by id (_key in db).
+   * Read the dit by id (_key in db).
    */
   static async read(ditType, id) {
     const ditCollection = ditType + 's';
@@ -49,7 +49,7 @@ class Idea extends Model {
   }
 
   /**
-   * Update an idea
+   * Update an dit
    */
   static async update(ditType, id, newData, username) {
     const dit = _.pick(newData, ['title', 'detail']);
@@ -58,16 +58,16 @@ class Idea extends Model {
     const query = `
       // read [user]
       LET us = (FOR u IN users FILTER u.username == @username RETURN u)
-      // read [idea]
+      // read [dit]
       LET is = (FOR i IN @@ditCollection FILTER i._key == @id RETURN i)
-      // update idea if and only if user matches idea creator
+      // update dit if and only if user matches dit creator
       LET newis = (
         FOR i IN is FOR u IN us FILTER u._id == i.creator
           UPDATE i WITH @dit IN @@ditCollection
           LET creator = MERGE(KEEP(u, 'username'), u.profile)
           RETURN MERGE(KEEP(NEW, 'title', 'detail', 'created'), { id: NEW._key }, { creator })
       )
-      // return old and new idea (to decide what is the error)
+      // return old and new dit (to decide what is the error)
       RETURN [is[0], newis[0]]`;
     const params = { id, dit, username, '@ditCollection': ditCollection };
     const cursor = await this.db.query(query, params);
@@ -76,8 +76,8 @@ class Idea extends Model {
     // if nothing was updated, throw error
     if (!newDit) {
       const e = new Error('not updated');
-      // if old idea was found, then user doesn't have sufficient writing rights,
-      // otherwise idea not found
+      // if old dit was found, then user doesn't have sufficient writing rights,
+      // otherwise dit not found
       e.code = (oldDit) ? 403 : 404;
       throw e;
     }
@@ -86,237 +86,242 @@ class Idea extends Model {
   }
 
   /**
-   * Read ideas with my tags
+   * Read dits with my tags
    */
-  static async withMyTags(username, { offset, limit }) {
-
+  static async withMyTags(ditType, username, { offset, limit }) {
+    const ditTags = ditType + 'Tags';
     const query = `
-      // gather the ideas related to me
+      // gather the dits related to me
       FOR me IN users FILTER me.username == @username
         FOR t, ut IN 1..1 ANY me OUTBOUND userTag
-          FOR i IN 1..1 ANY t INBOUND ideaTags
+          FOR i IN 1..1 ANY t INBOUND @@ditTags
             LET relevance = ut.relevance
             LET tg = KEEP(t, 'tagname')
             SORT relevance DESC
             // collect found tags together
-            COLLECT idea=i INTO collected KEEP relevance, tg
-            LET c = (DOCUMENT(idea.creator))
+            COLLECT ${ditType}=i INTO collected KEEP relevance, tg
+            LET c = (DOCUMENT(${ditType}.creator))
             LET creator = MERGE(KEEP(c, 'username'), c.profile)
-            // sort ideas by sum of relevances of related userTags
+            // sort dits by sum of relevances of related userTags
             LET relSum = SUM(collected[*].relevance)
             SORT relSum DESC
             // format for output
-            LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+            LET ${ditType}Out = MERGE(KEEP(${ditType}, 'title', 'detail', 'created'), { id: ${ditType}._key}, { creator })
             LET tagsOut = collected[*].tg
             // limit
             LIMIT @offset, @limit
             // respond
-            RETURN { idea: ideaOut, tags: tagsOut }`;
-    const params = { username, offset, limit };
+            RETURN { dit: ${ditType}Out, tags: tagsOut }`;
+    const params = { username, offset, limit, '@ditTags': ditTags };
     const cursor = await this.db.query(query, params);
     const out = await cursor.all();
 
-    // generate idea-tags ids, and add them as attributes to each idea
-    // and return array of the ideas
-    return out.map(({ idea, tags }) => {
-      idea.ideaTags = tags.map(({ tagname }) => ({
-        id: `${idea.id}--${tagname}`,
-        idea,
+    // generate dit-tags ids, and add them as attributes to each dit
+    // and return array of the dits
+    return out.map(({ dit, tags }) => {
+      dit[`${ditType}Tags`] = tags.map(({ tagname }) => ({
+        id: `${dit.id}--${tagname}`,
+        [`${ditType}`]: dit,
         tag: { tagname }
       }));
-      return idea;
+      return dit;
     });
   }
 
   /**
-   * Read ideas with tags
+   * Read dits with tags
    * @param {string[]} tagnames - list of tagnames to search with
    * @param {integer} offset - pagination offset
    * @param {integer} limit - pagination limit
-   * @returns {Promise<Idea[]>} - list of found ideas
+   * @returns {Promise<Dit[]>} - list of found dits
    */
-  static async withTags(tagnames, { offset, limit }) {
+  static async withTags(ditType, tagnames, { offset, limit }) {
+    const ditTags = ditType + 'Tags';
     const query = `
       // find the provided tags
       FOR t IN tags FILTER t.tagname IN @tagnames
         SORT t.tagname
         LET tg = KEEP(t, 'tagname')
-        // find the related ideas
-        FOR i IN 1..1 ANY t INBOUND ideaTags
-          // collect tags of each idea together
-          COLLECT idea=i INTO collected KEEP tg
-          // sort ideas by amount of matched tags, and from oldest
-          SORT LENGTH(collected) DESC, idea.created ASC
+        // find the related dits
+        FOR i IN 1..1 ANY t INBOUND @@ditTags
+          // collect tags of each dit together
+          COLLECT ${ditType}=i INTO collected KEEP tg
+          // sort dits by amount of matched tags, and from oldest
+          SORT LENGTH(collected) DESC, ${ditType}.created ASC
           // read and format creator
-          LET c = (DOCUMENT(idea.creator))
+          LET c = (DOCUMENT(${ditType}.creator))
           LET creator = MERGE(KEEP(c, 'username'), c.profile)
           // format for output
-          LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+          LET ${ditType}Out = MERGE(KEEP(${ditType}, 'title', 'detail', 'created'), { id: ${ditType}._key}, { creator })
           LET tagsOut = collected[*].tg
           // limit
           LIMIT @offset, @limit
           // respond
-          RETURN { idea: ideaOut, tags: tagsOut }`;
-    const params = { tagnames, offset, limit };
+          RETURN { dit: ${ditType}Out, tags: tagsOut }`;
+    const params = { tagnames, offset, limit, '@ditTags': ditTags };
     const cursor = await this.db.query(query, params);
     const out = await cursor.all();
 
-    // generate idea-tags ids, and add them as attributes to each idea
-    // and return array of the ideas
-    return out.map(({ idea, tags }) => {
-      idea.ideaTags = tags.map(({ tagname }) => ({
-        id: `${idea.id}--${tagname}`,
-        idea,
+    // generate dit-tags ids, and add them as attributes to each dit
+    // and return array of the dits
+    return out.map(({ dit, tags }) => {
+      dit[`${ditType}Tags`] = tags.map(({ tagname }) => ({
+        id: `${dit.id}--${tagname}`,
+        [`${ditType}`]: dit,
         tag: { tagname }
       }));
-      return idea;
+      return dit;
     });
   }
 
   /**
-   * Read new ideas
+   * Read new dits
    */
-  static async findNew({ offset, limit }) {
-
+  static async findNew(ditType, { offset, limit }) {
+    const ditCollection = ditType + 's';
     const query = `
-      FOR idea IN ideas
+      FOR ${ditType} IN @@ditCollection
         // sort from newest
-        SORT idea.created DESC
+        SORT ${ditType}.created DESC
         LIMIT @offset, @limit
         // find creator
-        LET c = (DOCUMENT(idea.creator))
+        LET c = (DOCUMENT(${ditType}.creator))
         LET creator = MERGE(KEEP(c, 'username'), c.profile)
         // format for output
-        LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+        LET ditOut = MERGE(KEEP(${ditType}, 'title', 'detail', 'created'), { id: ${ditType}._key}, { creator })
         // limit
         // respond
-        RETURN ideaOut`;
-    const params = { offset, limit };
+        RETURN ditOut`;
+    const params = { offset, limit, '@ditCollection': ditCollection };
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
 
   /**
-   * Read random ideas
-   * @param {number} [limit] - max amount of random ideas to return
+   * Read random dits
+   * @param {number} [limit] - max amount of random dits to return
    */
-  static async random({ limit }) {
-
+  static async random(ditType, { limit }) {
+    const ditCollection = ditType + 's';
     const query = `
-      FOR idea IN ideas
+      FOR ${ditType} IN @@ditCollection
         // sort from newest
         SORT RAND()
         LIMIT @limit
         // find creator
-        LET c = (DOCUMENT(idea.creator))
+        LET c = (DOCUMENT(${ditType}.creator))
         LET creator = MERGE(KEEP(c, 'username'), c.profile)
         // format for output
-        LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+        LET ditOut = MERGE(KEEP(${ditType}, 'title', 'detail', 'created'), { id: ${ditType}._key}, { creator })
         // limit
         // respond
-        RETURN ideaOut`;
-    const params = { limit };
+        RETURN ditOut`;
+    const params = { limit, '@ditCollection': ditCollection };
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
 
   /**
-   * Read ideas with specified creators
+   * Read dits with specified creators
    * @param {string[]} usernames - list of usernames to search with
    * @param {integer} offset - pagination offset
    * @param {integer} limit - pagination limit
-   * @returns {Promise<Idea[]>} - list of found ideas
+   * @returns {Promise<Dit[]>} - list of found dits
    */
-  static async findWithCreators(creators, { offset, limit }) {
+  static async findWithCreators(ditType, creators, { offset, limit }) {
     // TODO  to be checked for query optimization or unnecessary things
+    const ditCollection = ditType + 's';
     const query = `
       LET creators = (FOR u IN users FILTER u.username IN @creators RETURN u)
-        FOR idea IN ideas FILTER idea.creator IN creators[*]._id
+        FOR ${ditType} IN @@ditCollection FILTER ${ditType}.creator IN creators[*]._id
             // find creator
-            LET c = (DOCUMENT(idea.creator))
+            LET c = (DOCUMENT(${ditType}.creator))
             // format for output
             LET creator = MERGE(KEEP(c, 'username'), c.profile)
-            LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator })
+            LET ditOut = MERGE(KEEP(${ditType}, 'title', 'detail', 'created'), { id: ${ditType}._key}, { creator })
             // sort from newest
-            SORT idea.created DESC
+            SORT ${ditType}.created DESC
             // limit
             LIMIT @offset, @limit
             // respond
-            RETURN ideaOut`;
+            RETURN ditOut`;
 
-    const params = { offset, limit , creators };
+    const params = { offset, limit , creators, '@ditCollection': ditCollection };
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
 
 
   /**
-   * Read ideas commented by specified users
+   * Read dits commented by specified users
    * @param {string[]} usernames - list of usernames to search with
    * @param {integer} offset - pagination offset
    * @param {integer} limit - pagination limit
-   * @returns {Promise<Idea[]>} - list of found ideas
+   * @returns {Promise<Dit[]>} - list of found dits
    */
-  static async findCommentedBy(commentedBy, { offset, limit }) {
-
+  static async findCommentedBy(ditType, commentedBy, { offset, limit }) {
+    const ditCollection = ditType + 's';
     const query = `
       FOR user IN users 
       FILTER user.username IN @commentedBy
         FOR comment IN comments 
         FILTER comment.creator == user._id 
-        AND IS_SAME_COLLECTION('ideas', comment.primary)
-          FOR idea IN ideas 
-          FILTER idea._id == comment.primary
-          COLLECT i = idea
+        AND IS_SAME_COLLECTION('${ditType}s', comment.primary)
+          FOR ${ditType} IN @@ditCollection 
+          FILTER ${ditType}._id == comment.primary
+          COLLECT i = ${ditType}
           // sort from newest
           SORT i.created DESC
           LIMIT @offset, @limit
       RETURN i`;
 
-    const params = { commentedBy, offset, limit };
+    const params = { commentedBy, offset, limit, '@ditCollection': ditCollection };
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
 
 
   /**
-   * Read highly voted ideas
+   * Read highly voted dits
    * @param {string[]} voteSumBottomLimit - minimal query voteSum
    * @param {integer} offset - pagination offset
    * @param {integer} limit - pagination limit
-   * @returns {Promise<Idea[]>} - list of found ideas
+   * @returns {Promise<Dit[]>} - list of found dits
    */
-  static async findHighlyVoted(voteSumBottomLimit, { offset, limit }) {
+  static async findHighlyVoted(ditType, voteSumBottomLimit, { offset, limit }) {
+    const ditCollection = ditType + 's';
     const query = `
-      FOR idea IN ideas
-        LET ideaVotes = (FOR vote IN votes FILTER idea._id == vote._to RETURN vote)
-        // get sum of each idea's votes values
-        LET voteSum = SUM(ideaVotes[*].value)
+      FOR ${ditType} IN @@ditCollection
+        LET ${ditType}Votes = (FOR vote IN votes FILTER ${ditType}._id == vote._to RETURN vote)
+        // get sum of each dit's votes values
+        LET voteSum = SUM(${ditType}Votes[*].value)
         // set bottom limit of voteSum
         FILTER voteSum >= @voteSumBottomLimit
         // find creator
-        LET c = (DOCUMENT(idea.creator))
+        LET c = (DOCUMENT(${ditType}.creator))
         LET creator = MERGE(KEEP(c, 'username'), c.profile)
-        LET ideaOut = MERGE(KEEP(idea, 'title', 'detail', 'created'), { id: idea._key}, { creator }, { voteSum })
+        LET ditOut = MERGE(KEEP(${ditType}, 'title', 'detail', 'created'), { id: ${ditType}._key}, { creator }, { voteSum })
 
         // sort by amount of votes
-        SORT ideaOut.voteSum DESC,  ideaOut.created DESC
+        SORT ditOut.voteSum DESC,  ditOut.created DESC
         LIMIT @offset, @limit
-        RETURN ideaOut`;
+        RETURN ditOut`;
 
-    const params = { voteSumBottomLimit, offset, limit };
+    const params = { voteSumBottomLimit, offset, limit, '@ditCollection': ditCollection };
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
 
 
   /**
-   * Read trending ideas
+   * Read trending dits
    * @param {integer} offset - pagination offset
    * @param {integer} limit - pagination limit
-   * @returns {Promise<Idea[]>} - list of found ideas
+   * @returns {Promise<Dit[]>} - list of found dits
    */
-  static async findTrending({ offset, limit }) {
+  static async findTrending(ditType, { offset, limit }) {
+    const ditCollection = ditType + 's';
+
     const now = Date.now();
     const oneWeek = 604800000; // 1000 * 60 * 60 * 24 * 7
     const threeWeeks = 1814400000; // 1000 * 60 * 60 * 24 * 21
@@ -325,37 +330,69 @@ class Idea extends Model {
     const threeWeeksAgo = now - threeWeeks;
     const threeMonthsAgo = now - threeMonths;
 
-    // for each idea we are counting 'rate'
+    // for each dit we are counting 'rate'
     // rate is the sum of votes/day in the last three months
     // votes/day from last week are taken with wage 3
     // votes/day from two weeks before last week are taken with wage 2
     // votes/day from the rest of days are taken with wage 1
     const query = `
-      FOR idea IN ideas
+      FOR ${ditType} IN @@ditCollection
         FOR vote IN votes
-        FILTER idea._id == vote._to
-        // group by idea id
-        COLLECT id = idea
-        // get sum of each idea's votes values from last week, last three weeks and last three months
+        FILTER ${ditType}._id == vote._to
+        // group by dit id
+        COLLECT d = ${ditType}
+        // get sum of each dit's votes values from last week, last three weeks and last three months
         AGGREGATE rateWeek = SUM((vote.value * TO_NUMBER( @weekAgo <= vote.created))/7),
                 rateThreeWeeks  = SUM((vote.value * TO_NUMBER( @threeWeeksAgo <= vote.created  && vote.created <= @weekAgo))/14),
                 rateThreeMonths = SUM((vote.value * TO_NUMBER( @threeMonthsAgo <= vote.created  && vote.created <= @threeWeeksAgo))/69)
         // find creator
-        LET c = (DOCUMENT(id.creator))
+        LET c = (DOCUMENT(d.creator))
         LET creator = MERGE(KEEP(c, 'username'), c.profile)
-        LET ideaOut = MERGE(KEEP(id, 'title', 'detail', 'created'), { id: id._key}, { creator })
+        LET ditOut = MERGE(KEEP(d, 'title', 'detail', 'created'), { id: d._key}, { creator })
         LET rates = 3*rateWeek + 2*rateThreeWeeks + rateThreeMonths
         FILTER rates > 0
         // sort by sum of rates
         SORT rates DESC
         LIMIT @offset, @limit
-        RETURN ideaOut`;
+        RETURN ditOut`;
 
-    const params = { weekAgo, threeWeeksAgo, threeMonthsAgo, offset, limit };
+    const params = { weekAgo, threeWeeksAgo, threeMonthsAgo, offset, limit, '@ditCollection': ditCollection };
+    const cursor = await this.db.query(query, params);
+    return await cursor.all();
+  }
+
+  /**
+   * Read dits with any of specified keywords in the title
+   * @param {string[]} keywords - list of keywords to search with
+   * @param {integer} offset - pagination offset
+   * @param {integer} limit - pagination limit
+   * @returns {Promise<Dit[]>} - list of found dits
+   */
+  static async findWithTitleKeywords(ditType, keywords, { offset, limit }) {
+    const ditCollection = ditType + 's';
+    const query = `
+          FOR ${ditType} IN @@ditCollection 
+            LET search = ( FOR keyword in @keywords
+                            RETURN TO_NUMBER(CONTAINS(${ditType}.title, keyword)))
+            LET fit = SUM(search)
+            FILTER fit > 0
+            // find creator
+            LET c = (DOCUMENT(${ditType}.creator))
+            // format for output
+            LET creator = MERGE(KEEP(c, 'username'), c.profile)
+            LET ditOut = MERGE(KEEP(${ditType}, 'title', 'detail', 'created'), { id: ${ditType}._key}, { creator }, {fit})
+            // sort from newest
+            SORT fit DESC, ditOut.title
+            // limit
+            LIMIT @offset, @limit
+            // respond
+            RETURN ditOut`;
+
+    const params = { 'keywords': keywords, offset, limit, '@ditCollection': ditCollection };
     const cursor = await this.db.query(query, params);
     return await cursor.all();
   }
 }
 
 
-module.exports = Idea;
+module.exports = Dit;
