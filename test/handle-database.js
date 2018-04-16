@@ -391,7 +391,7 @@ function processData(data) {
   });
 
   // put comments together
-  Object.defineProperty(output, 'comments', { get: function () { return this.ideaComments; } });
+  Object.defineProperty(output, 'comments', { get: function () { return this.ideaComments.length === 0 ? this.challengeComments : this.ideaComments; } });
 
   output.reactions = data.reactions.map(([_comment, _creator, attrs = { }], i) => {
     const { content = `reaction content ${i}`, created = Date.now() + 1000 * i } = attrs;
