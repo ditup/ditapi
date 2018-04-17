@@ -24,6 +24,7 @@ module.exports = {
   keywordsList: { $ref: 'sch#/definitions/query/keywordsList' },
   ideaId: { $ref : 'sch#/definitions/idea/ideaId' },
   title: { $ref: 'sch#/definitions/idea/titl' },
+  ditType: { $ref: 'sch#/definitions/dit/ditType'},
   detail: { $ref: 'sch#/definitions/idea/detail' },
   content: { $ref: 'sch#/definitions/comment/content' },
   id: { $ref: 'sch#/definitions/shared/objectId' },

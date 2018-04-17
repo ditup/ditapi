@@ -16,10 +16,8 @@ async function post(req, res, next) {
 
     // save the idea to database
     const newIdea = await models.idea.create({ title, detail, creator });
-
     // serialize the idea (JSON API)
     const serializedIdea = serialize.idea(newIdea);
-
     // respond
     return res.status(201).json(serializedIdea);
 

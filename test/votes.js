@@ -9,6 +9,7 @@ const agentFactory = require('./agent'),
 
 voteTestFactory('idea');
 voteTestFactory('comment');
+voteTestFactory('challenge');
 
 /**
  * We can test votes to different objects.

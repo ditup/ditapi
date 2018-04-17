@@ -78,9 +78,26 @@ module.exports = {
     type: 'document'
   },
 
+  challenges: {
+    type: 'document'
+  },
+
   ideaTags: {
     type: 'edge',
     from: ['ideas'],
+    to: ['tags'],
+    indexes: [
+      {
+        type: 'hash',
+        fields: ['_from', '_to'],
+        unique: true
+      }
+    ]
+  },
+
+  challengeTags: {
+    type: 'edge',
+    from: ['challenges'],
     to: ['tags'],
     indexes: [
       {

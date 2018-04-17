@@ -2,6 +2,8 @@
 
 const comment = require('./comment'),
       contact = require('./contact'),
+      dit = require('./dit'),
+      ditTag = require('./dit-tag'),
       idea = require('./idea'),
       ideaTag = require('./idea-tag'),
       message = require('./message'),
@@ -22,4 +24,4 @@ const models = {
   }
 };
 
-module.exports = Object.assign(models, { comment, contact, idea, ideaTag, message, model, tag, user, userTag, vote });
+module.exports = Object.assign(models, { comment, contact, dit, ditTag, idea, ideaTag, message, model, tag, user, userTag, vote });

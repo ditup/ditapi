@@ -1,14 +1,16 @@
 'use strict';
 
-const { title, detail, id, keywordsList, page, pageOffset0, random, tagsList, usersList } = require('./paths');
+const { title, detail, ditType, id, keywordsList, page, pageOffset0, random, tagsList, usersList } = require('./paths');
+
 const postIdeas = {
   properties: {
     body: {
       properties: {
         title,
-        detail
+        detail,
+        ditType
       },
-      required: ['title', 'detail'],
+      required: ['title', 'detail', 'ditType'],
       additionalProperties: false
     }
   },

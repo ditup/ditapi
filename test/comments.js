@@ -9,6 +9,7 @@ const agentFactory = require('./agent'),
       models = require(path.resolve('./models'));
 
 commentTestsFactory('idea');
+commentTestsFactory('challenge');
 commentTestsFactory('comment');
 
 /**
@@ -25,7 +26,6 @@ function commentTestsFactory(primary, only=false) {
   const isReactions = comment === 'reaction';
 
   const ds = (only) ? describe.only : describe;
-
 
   ds(`${comments} of ${primary}`, () => {
 
@@ -71,13 +71,13 @@ function commentTestsFactory(primary, only=false) {
           const data = {
             users: 3,
             verifiedUsers: [0, 1],
-            ideas: Array(1).fill([]),
-            ideaComments: [[0, 0]]
+            ['ideas']: Array(1).fill([]),
+            ['ideaComments']: [[0, 0]]
           };
 
           dbData = await dbHandle.fill(data);
 
-          existentPrimary = dbData.ideaComments[0];
+          existentPrimary = dbData['ideaComments'][0];
           loggedUser = dbData.users[0];
         });
       } else {
@@ -86,7 +86,7 @@ function commentTestsFactory(primary, only=false) {
           const data = {
             users: 3,
             verifiedUsers: [0, 1],
-            ideas: Array(1).fill([])
+            [`${primarys}`]: Array(1).fill([])
           };
 
           dbData = await dbHandle.fill(data);
@@ -256,8 +256,8 @@ function commentTestsFactory(primary, only=false) {
           const data = {
             users: 4,
             verifiedUsers: [0, 1, 2, 3],
-            ideas: Array(3).fill([]),
-            ideaComments: [
+            [`${primarys}`]: Array(3).fill([]),
+            [`${primary}Comments`]: [
               [0, 0], [0, 1], [0, 1], [0, 2], [0, 1], [0, 1], [0, 0], [0, 3],
               [1, 0], [1, 0], [1, 2],
               [2, 0], [2, 1], [2, 1], [2, 2], [2, 1], [2, 1], [2, 0], [2, 3],
@@ -268,7 +268,7 @@ function commentTestsFactory(primary, only=false) {
 
           dbData = await dbHandle.fill(data);
 
-          [primary0,, primary2] = dbData.ideas;
+          [primary0,, primary2] = dbData[`${primarys}`];
           loggedUser = dbData.users[0];
         });
 
@@ -427,8 +427,8 @@ function commentTestsFactory(primary, only=false) {
           const data = {
             users: 2,
             verifiedUsers: [0, 1],
-            ideas: Array(1).fill([]),
-            ideaComments: [[0, 0]],
+            ['ideas']: Array(1).fill([]),
+            ['ideaComments']: [[0, 0]],
             reactions: [[0, 0], [0, 1]]
           };
 
@@ -444,17 +444,17 @@ function commentTestsFactory(primary, only=false) {
           const data = {
             users: 2,
             verifiedUsers: [0, 1],
-            ideas: Array(1).fill([]),
-            ideaComments: [
+            [`${primarys}`]: Array(1).fill([]),
+            [`${primary}Comments`]: [
               [0, 0], [0, 1],
             ]
           };
 
           dbData = await dbHandle.fill(data);
 
-          primary0 = dbData.ideas[0];
+          primary0 = dbData[`${primarys}`][0];
           [user0] = dbData.users;
-          [comment00, comment01] = dbData.ideaComments;
+          [comment00, comment01] = dbData[`${primary}Comments`];
         });
       }
 
@@ -625,8 +625,8 @@ function commentTestsFactory(primary, only=false) {
           const data = {
             users: 2,
             verifiedUsers: [0, 1],
-            ideas: Array(1).fill([]),
-            ideaComments: [[0, 0]],
+            ['ideas']: Array(1).fill([]),
+            ['ideaComments']: [[0, 0]],
             reactions: [[0, 0], [0, 1]]
           };
 
@@ -641,8 +641,8 @@ function commentTestsFactory(primary, only=false) {
           const data = {
             users: 2,
             verifiedUsers: [0, 1],
-            ideas: Array(1).fill([]),
-            ideaComments: [
+            [`${primarys}`]: Array(1).fill([]),
+            [`${primary}Comments`]: [
               [0, 0], [0, 1],
             ],
             reactions: [[0, 0], [0, 1], [1, 0]]
@@ -651,7 +651,7 @@ function commentTestsFactory(primary, only=false) {
           dbData = await dbHandle.fill(data);
 
           [user0] = dbData.users;
-          [comment00, comment01] = dbData.ideaComments;
+          [comment00, comment01] = dbData[`${primary}Comments`];
         });
       }
 
