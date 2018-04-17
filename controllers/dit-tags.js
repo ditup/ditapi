@@ -10,16 +10,16 @@ const models = require(path.resolve('./models')),
  * Adds a tag to a dit
  */
 async function post(req, res, next) {
+  let ditType;
   try {
     // gather data from request
-    const { ditType } = req.body;
     const { tagname } = req.body.tag;
     const ditId = req.params.id;
     const username = req.auth.username;
 
+    ditType = req.baseUrl.slice(1,-1);
     // save new dit-tag to database
     const newDitTag = await models.ditTag.create(ditType, ditId, tagname, { }, username);
-
     // serialize response body
     let responseBody;
     switch(ditType){
@@ -33,13 +33,9 @@ async function post(req, res, next) {
       }
     }
 
-    // serialize response body
-    // const responseBody = serialize.ditTag(newDitTag);
-
     // respond
     return res.status(201).json(responseBody);
   } catch (e) {
-
     // handle errors
     switch (e.code) {
       // duplicate dit-tag
@@ -54,7 +50,7 @@ async function post(req, res, next) {
       // dit creator is not me
       case 403: {
         return res.status(403).json({ errors: [
-          { status: 403, detail: 'not logged in as dit creator' }
+          { status: 403, detail: `not logged in as ${ditType} creator` }
         ]});
       }
       // unexpected error
@@ -71,15 +67,27 @@ async function post(req, res, next) {
  * GET /dits/:id/tags
  */
 async function get(req, res, next) {
+  let ditType;
   try {
     // read dit id
     const { id } = req.params;
+    ditType = req.baseUrl.slice(1, -1);
 
     // read ditTags from database
-    const ditTags = await models.ditTag.readTagsOfDit(id);
+    const newDitTags = await models.ditTag.readTagsOfDit(ditType, id);
 
     // serialize response body
-    const responseBody = serialize.ditTag(ditTags);
+    let responseBody;
+    switch(ditType){
+      case 'idea': {
+        responseBody = serialize.ideaTag(newDitTags);
+        break;
+      }
+      case 'challenge': {
+        responseBody = serialize.challengeTag(newDitTags);
+        break;
+      }
+    }
 
     // respond
     return res.status(200).json(responseBody);
@@ -88,7 +96,7 @@ async function get(req, res, next) {
     if (e.code === 404) {
       return res.status(404).json({ errors: [{
         status: 404,
-        detail: '${ditType} not found'
+        detail: `${ditType} not found`
       }] });
     }
 
@@ -102,11 +110,13 @@ async function get(req, res, next) {
  * DELETE /dits/:id/tags/:tagname
  */
 async function del(req, res, next) {
+  let ditType;
   try {
     const { id, tagname } = req.params;
     const { username } = req.auth;
+    ditType = req.baseUrl.slice(1, -1);
 
-    await models.ditTag.remove(id, tagname, username);
+    await models.ditTag.remove(ditType, id, tagname, username);
 
     return res.status(204).end();
   } catch (e) {
@@ -116,7 +126,7 @@ async function del(req, res, next) {
       }
       case 403: {
         return res.status(403).json({ errors: [
-          { status: 403, detail: 'not logged in as ${ditType} creator' }
+          { status: 403, detail: `not logged in as ${ditType} creator` }
         ] });
       }
       default: {

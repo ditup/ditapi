@@ -10,8 +10,10 @@ const path = require('path'),
 async function post(req, res, next) {
   try {
     // gather data
-    const { title, detail, ditType } = req.body;
+    const { title, detail } = req.body;
     const creator = req.auth.username;
+    const ditType = req.baseUrl.slice(1,-1);
+
     // save the dit to database
     const newDit = await models.dit.create(ditType, { title, detail, creator });
 

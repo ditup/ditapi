@@ -4,14 +4,18 @@ const path = require('path');
 
 const Model = require(path.resolve('./models/model')),
       schema = require('./schema');
+const ditsDictionary = { challenge: 'challenge', idea: 'idea' };
+
 
 class DitTag extends Model {
-
   /**
    * Create ditTag in database
    */
   static async create(ditType, ditId, tagname, ditTagInput, creatorUsername) {
-    // generate standard ideaTag
+    // allow just particular strings for a ditType
+    ditType = ditsDictionary[ditType];
+
+    // generate standard ditTag
     const ditTag = await schema(ditTagInput);
     // / STOPPED
     const query = `
@@ -22,15 +26,15 @@ class DitTag extends Model {
       // array of users (1 or 0)
       LET us = (FOR u IN users FILTER u.username == @creatorUsername RETURN u)
       // create the ditTag (if dit, tag and creator exist)
-      LET ditTag = (FOR d IN ds FOR t IN ts FOR u IN us FILTER u._id == d.creator
+      LET ${ditType}Tag = (FOR d IN ds FOR t IN ts FOR u IN us FILTER u._id == d.creator
         INSERT MERGE({ _from: d._id, _to: t._id, creator: u._id }, @ditTag) IN ${ditType}Tags RETURN KEEP(NEW, 'created'))[0] || { }
       // if ditTag was not created, default to empty object (to be able to merge later)
       // gather needed data
       LET creator = MERGE(KEEP(us[0], 'username'), us[0].profile)
       LET tag = KEEP(ts[0], 'tagname')
-      LET dit = MERGE(KEEP(us[0], 'title', 'detail'), { id: us[0]._key })
+      LET ${ditType} = MERGE(KEEP(ds[0], 'title', 'detail'), { id: ds[0]._key })
       // return data
-      RETURN MERGE(ditTag, { creator, tag, dit })`;
+      RETURN MERGE(${ditType}Tag, { creator, tag, ${ditType} })`;
 
     const params = { ditId, tagname, ditTag, creatorUsername };
 
@@ -51,17 +55,17 @@ class DitTag extends Model {
 
     function generateError(response) {
       let e;
-      // check that idea, tag and creator exist
-      const { dit, tag, creator } = response;
-
+      // check that dit, tag and creator exist
       // some of them don't exist, then ditTag was not created
-      if (!(dit && tag && creator)) {
+      if (!(response[`${ditType}`] && response['tag'] && response['creator'])) {
         e = new Error('Not Found');
         e.code = 404;
         e.missing = [];
 
-        ['dit', 'tag', 'creator'].forEach((potentialMissing) => {
-          if (!response[potentialMissing]) e.missing.push(potentialMissing);
+        [`${ditType}`, 'tag', 'creator'].forEach((potentialMissing) => {
+          if (!response[potentialMissing]){
+            e.missing.push(potentialMissing);
+          }
         });
       } else {
         // if all exist, then dit creator !== ditTag creator, not authorized
@@ -75,100 +79,112 @@ class DitTag extends Model {
   }
 
   /**
-   * Read ideaTag from database
+   * Read ditTag from database
    */
-  static async read(ideaId, tagname) {
+  static async read(ditType, ditId, tagname) {
+    const ditCollection = ditType + 's';
+    const ditTags = ditType + 'Tags';
+    // allow just particular strings for a ditType
+    ditType = ditsDictionary[ditType];
 
     const query = `
       FOR t IN tags FILTER t.tagname == @tagname
-        FOR i IN ideas FILTER i._key == @ideaId
-          FOR it IN ideaTags FILTER it._from == i._id AND it._to == t._id
-            LET creator = (FOR u IN users FILTER u._id == it.creator
+        FOR d IN @@ditCollection FILTER d._key == @ditId
+          FOR dt IN @@ditTags FILTER dt._from == d._id AND dt._to == t._id
+            LET creator = (FOR u IN users FILTER u._id == dt.creator
               RETURN MERGE(KEEP(u, 'username'), u.profile))[0]
-            LET ideaTag = KEEP(it, 'created')
+            LET ${ditType}Tag = KEEP(dt, 'created')
             LET tag = KEEP(t, 'tagname')
-            LET idea = MERGE(KEEP(i, 'title', 'detail'), { id: i._key })
-            RETURN MERGE(ideaTag, { creator, tag, idea })`;
-    const params = { ideaId, tagname };
-
+            LET ${ditType} = MERGE(KEEP(d, 'title', 'detail'), { id: d._key })
+            RETURN MERGE(${ditType}Tag, { creator, tag, ${ditType} })`;
+    const params = { ditId, tagname, '@ditCollection': ditCollection, '@ditTags': ditTags };
     const cursor = await this.db.query(query, params);
 
     return (await cursor.all())[0];
   }
 
   /**
-   * Read tags of idea
+   * Read tags of dit
    */
-  static async readTagsOfIdea(ideaId) {
+  static async readTagsOfDit(ditType, ditId) {
+    const ditCollection = ditType + 's';
+    const ditTag = ditType + 'Tags';
+    // allow just particular strings for a ditType
+    ditType = ditsDictionary[ditType];
 
     const query = `
-      // read idea into array (length 1 or 0)
-      LET is = (FOR i IN ideas FILTER i._key == @ideaId RETURN i)
-      // read ideaTags
-      LET its = (FOR i IN is
-        FOR it IN ideaTags FILTER it._from == i._id
-          FOR t IN tags FILTER it._to == t._id
+      // read dit into array (length 1 or 0)
+      LET ds = (FOR d IN @@ditCollection FILTER d._key == @ditId RETURN d)
+      // read ditTags
+      LET dts = (FOR d IN ds
+        FOR dt IN @@ditTag FILTER dt._from == d._id
+          FOR t IN tags FILTER dt._to == t._id
             SORT t.tagname
-            LET ideaTag = KEEP(it, 'created')
+            LET ${ditType}Tag = KEEP(dt, 'created')
             LET tag = KEEP(t, 'tagname')
-            LET idea = MERGE(KEEP(i, 'title', 'detail'), { id: i._key })
-            RETURN MERGE(ideaTag, { tag, idea })
+            LET ${ditType} = MERGE(KEEP(d, 'title', 'detail'), { id: d._key })
+            RETURN MERGE(${ditType}Tag, { tag, ${ditType} })
       )
-      RETURN { ideaTags: its, idea: is[0] }`;
-    const params = { ideaId };
+      RETURN { ${ditType}Tags: dts, ${ditType}: ds[0] }`;
+    const params = { ditId, '@ditCollection': ditCollection, '@ditTag':ditTag };
 
     const cursor = await this.db.query(query, params);
 
-    const [{ idea, ideaTags }] = await cursor.all();
-
-    // when idea not found, error
-    if (!idea) {
-      const e = new Error('idea not found');
+    // const [{ dit, ditTags }] = await cursor.all();
+    const ditTagsData = await cursor.all();
+    // when dit not found, error
+    if (!ditTagsData[0][`${ditType}`]) {
+      const e = new Error(`${ditType} not found`);
       e.code = 404;
       throw e;
     }
 
-    return ideaTags;
+    return ditTagsData[0][`${ditType}Tags`];
   }
 
   /**
-   * Remove ideaTag from database
+   * Remove ditTag from database
    */
-  static async remove(ideaId, tagname, username) {
+  static async remove(ditType, ditId, tagname, username) {
+    const ditCollection = ditType + 's';
+    const ditTags = ditType + 'Tags';
+    // allow just particular strings for a ditType
+    ditType = ditsDictionary[ditType];
+
     const query = `
       // find users (1 or 0)
       LET us = (FOR u IN users FILTER u.username == @username RETURN u)
-      // find ideas (1 or 0)
-      LET is = (FOR i IN ideas FILTER i._key == @ideaId RETURN i)
-      // find [ideaTag] between idea and tag specified (1 or 0)
-      LET its = (FOR i IN is
+      // find dits (1 or 0)
+      LET ds = (FOR i IN @@ditCollection FILTER i._key == @ditId RETURN i)
+      // find [ditTag] between dit and tag specified (1 or 0)
+      LET dts = (FOR i IN ds
         FOR t IN tags FILTER t.tagname == @tagname
-          FOR it IN ideaTags FILTER it._from == i._id AND it._to == t._id
-            RETURN it)
-      // find and remove [ideaTag] if and only if user is creator of idea
-      // is user authorized to remove the ideaTag in question?
-      LET itsdel = (FOR u IN us FOR i IN is FILTER u._id == i.creator
-        FOR it IN its
-        REMOVE it IN ideaTags
-        RETURN it)
-      // return [ideaTag] between idea and tag
-      RETURN its`;
+          FOR dt IN @@ditTags FILTER dt._from == i._id AND dt._to == t._id
+            RETURN dt)
+      // find and remove [ditTag] if and only if user is creator of dit
+      // is user authorized to remove the ditTag in question?
+      LET dtsdel = (FOR u IN us FOR d IN ds FILTER u._id == d.creator
+        FOR dt IN dts
+        REMOVE dt IN @@ditTags
+        RETURN dt)
+      // return [ditTag] between dit and tag
+      RETURN dts`;
 
-    const params = { ideaId, tagname, username };
+    const params = { ditId, tagname, username, '@ditTags': ditTags, '@ditCollection': ditCollection};
 
     // execute query and gather database response
     const cursor = await this.db.query(query, params);
-    const [matchedIdeaTags] = await cursor.all();
+    const [matchedDitTags] = await cursor.all();
 
     // return or error
     switch (cursor.extra.stats.writesExecuted) {
-      // ideaTag was removed: ok
+      // ditTag was removed: ok
       case 1: {
         return;
       }
-      // ideaTag was not removed: error
+      // ditTag was not removed: error
       case 0: {
-        throw generateError(matchedIdeaTags);
+        throw generateError(matchedDitTags);
       }
       // unexpected error
       default: {
@@ -177,19 +193,19 @@ class DitTag extends Model {
     }
 
     /**
-     * When no ideaTag was removed, it can have 2 reasons:
-     * 1. ideaTag was not found
-     * 2. ideaTag was found, but the user is not creator of the idea
+     * When no ditTag was removed, it can have 2 reasons:
+     * 1. ditTag was not found
+     * 2. ditTag was found, but the user is not creator of the dit
      *    therefore is not authorized to do so
      */
     function generateError(response) {
       let e;
       if (response.length === 0) {
-        // ideaTag was not found
+        // ditTag was not found
         e = new Error('not found');
         e.code = 404;
       } else {
-        // ideaTag was found, but user is not idea's creator
+        // ditTag was found, but user is not dit's creator
         e = new Error('not authorized');
         e.code = 403;
       }
