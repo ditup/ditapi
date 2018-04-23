@@ -36,5 +36,43 @@ module.exports = {
     // allowed headers
     allowedHeaders: ['Content-Type', 'Authorization']
   },
-  jwt: { expirationTime: '7d' }
+  jwt: { expirationTime: '7d' },
+
+  carrotPoem: {
+    text: `Trzy zające sobie szły
+i skakały wszystkie trzy.
+Mój zajączku naucz mnie,
+ja tak samo skakać chcę.
+
+Każdy zając marchew jada,
+to na skoki świetna rada.
+Hop, sa,sa, ram, pam, pam
+Od marchewki siłę mam.
+Hop, sa,sa, ram, pam, pam
+Od marchewki siłę mam.
+
+Cztery kozy poszły w las
+i skakały cały czas.
+Moja kozo naucz mnie,
+ja tak samo skakać chcę.
+
+Jem marchewkę na surowo,
+bo to smacznie, bo to zdrowo.
+Hop, sa,sa, ram, pam, pam
+Od marchewki siłę mam.
+Hop, sa,sa, ram, pam, pam
+Od marchewki siłę mam.
+
+Pięć baranków drogą szło
+i skakało, że ho, ho.
+Mój baranku naucz mnie
+ja tak samo skakać chcę.
+
+Czy jesienią czy to latem
+na kolację jam sałatę i marchewkę także jem.
+Hop, sa,sa, ram, pam, pam
+Od marchewki siłę mam.
+Hop, sa,sa, ram, pam, pam
+Od marchewki siłę mam.`
+  }
 };

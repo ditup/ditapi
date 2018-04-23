@@ -623,9 +623,10 @@ describe('Tags of user', function () {
       beforeEachPopulate({
         users: 2, // how many users to make
         verifiedUsers: [0, 1], // which  users to make verified
-        tags: 1,
+        namedTags: ['carrots', 'mrkev'],
         userTag: [
           [0, 0, 'story', 3],
+          [0, 1, 'hodne', 5]
         ]
       });
 
@@ -691,6 +692,108 @@ describe('Tags of user', function () {
             const userTagDb = await models.userTag.read(me.username,
               userTag.tag.tagname);
             should(userTagDb).have.property('relevance', 2);
+          });
+
+          it('[update relevance of the tag \'carrots\' with maximum relevance] update relevance and leave the user alone', async function () {
+            const [me] = dbData.users;
+            const [userTag] = dbData.userTag;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${userTag.tag.tagname}`,
+                attributes: {
+                  relevance: 5
+                }
+              }
+            };
+
+            await agent
+              .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
+              .send(patchData)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const userDataAfter = await models.user.read(me.username);
+            should(userDataAfter.profile.description).equal('');
+          });
+
+          it('[update relevance of the tag \'carrots\' with relevance other than maximum] update relevance and ivite the user to think about her action', async function () {
+            const [me] = dbData.users;
+            const [userTag] = dbData.userTag;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${userTag.tag.tagname}`,
+                attributes: {
+                  relevance: 1
+                }
+              }
+            };
+
+            await agent
+              .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
+              .send(patchData)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const userDataAfter = await models.user.read(me.username);
+
+            const changedDescription = config.carrotPoem.text;
+            should(userDataAfter.profile.description).equal(changedDescription);
+          });
+
+          it('[update relevance of the tag \'carrots\' with relevance other than maximum, even 4] update relevance and ivite the user to think about her action', async function () {
+            const [me] = dbData.users;
+            const [userTag] = dbData.userTag;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${userTag.tag.tagname}`,
+                attributes: {
+                  relevance: 4
+                }
+              }
+            };
+
+            await agent
+              .patch(`/users/${me.username}/tags/${userTag.tag.tagname}`)
+              .send(patchData)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const userDataAfter = await models.user.read(me.username);
+
+            const changedDescription = config.carrotPoem.text;
+            should(userDataAfter.profile.description).equal(changedDescription);
+          });
+
+          it('[foreign languages support] update relevance and ivite the user to think about her action', async function () {
+            const [me] = dbData.users;
+            const [, userTagCZ] = dbData.userTag;
+
+            const patchData = {
+              data: {
+                type: 'user-tags',
+                id: `${me.username}--${userTagCZ.tag.tagname}`,
+                attributes: {
+                  relevance: 4
+                }
+              }
+            };
+
+            await agent
+              .patch(`/users/${me.username}/tags/${userTagCZ.tag.tagname}`)
+              .send(patchData)
+              .expect(200)
+              .expect('Content-Type', /^application\/vnd\.api\+json/);
+
+            const userDataAfter = await models.user.read(me.username);
+
+            const changedDescription = config.carrotPoem.text;
+            should(userDataAfter.profile.description).equal(changedDescription);
           });
         });
 
